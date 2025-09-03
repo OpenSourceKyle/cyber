@@ -1,10 +1,11 @@
-# PTP Notes
+# Cyber
 
- Study notes and tools for networking, web app hacking, penetration testing, and basic programming (C++, Python). Includes HTTP/S, cookies, SQLi, XSS, enumeration, nmap usage, and more.
+A website and repository for everything related to my studies and notes to be used as a reference.
 
-## Getting Started
+## Quick Start
 
 To clone this repository with all its submodules, use:
 
 ```bash
-git clone --recursive https://github.com/thekylewitty/cyber-ptp.git
+git clone --recursive https://github.com/opensourcekyle/cyber.git
+```
