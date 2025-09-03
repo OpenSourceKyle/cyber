@@ -1,0 +1,8 @@
+.toc li li {
+    display: none !important;
+}
+
+/* Ensure H1 items are visible and properly styled */
+.toc li {
+    display: block !important;
+} 

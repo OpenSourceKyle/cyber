@@ -1,0 +1,50 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "windows-2022-amd64"
+  config.vm.communicator = "winrm"
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+  config.vm.network "forwarded_port", guest: 3389, host: 3389, id: "rdp", auto_correct: true
+
+  config.vm.provider "libvirt" do |vb|
+    vb.memory = 4096
+    vb.cpus = 2
+  end
+
+  config.vm.provision "shell", privileged: true, inline: <<-PS
+    Write-Host "[+] Checking if PowerShell version is compatible..."
+    $PSVersion = $PSVersionTable.PSVersion
+    Write-Host "`t[+] Installing with PowerShell version $PSVersion"
+
+    Write-Host "[+] Checking if script is running as administrator..."
+    $IsAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($IsAdmin) {
+      Write-Host "`t[+] Running as administrator"
+    } else {
+      Write-Host "`t[!] Not running as administrator"
+    }
+
+    Write-Host "[+] Checking if execution policy is unrestricted..."
+    $policy = Get-ExecutionPolicy
+    if ($policy -eq "Unrestricted" -or $policy -eq "Bypass") {
+      Write-Host "`t[+] Execution policy is $policy"
+    } else {
+      Write-Host "`t[!] Execution policy is $policy -- may block scripts"
+      Write-Host "`t[-] Hint: Set-ExecutionPolicy Unrestricted -Scope CurrentUser"
+    }
+
+    # Disable Windows Update immediately on first boot
+    Write-Host "[+] Disabling Windows Update..."
+    Stop-Service wuauserv -Force
+    Set-Service wuauserv -StartupType Disabled
+
+    # Begin FLARE VM install
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/mandiant/flare-vm/main/install.ps1" -OutFile "install.ps1"
+    .\\install.ps1 -password 'vagrant' -execution-type 'boxstarter'
+
+    if (Test-Path "C:\\ProgramData\\chocolatey\\lib\\flarevm.installer") {
+      Write-Host "[+] FLARE VM installed successfully"
+    } else {
+      Write-Host "[!] FLARE VM install failed or incomplete"
+    }
+  PS
+end
