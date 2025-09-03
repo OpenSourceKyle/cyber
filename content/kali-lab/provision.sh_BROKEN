@@ -1,0 +1,99 @@
+#!/bin/bash
+set -e
+
+export DEBIAN_FRONTEND=noninteractive
+
+echo "[i] Updating package lists..."
+until sudo apt-get update; do
+  echo "APT update failed, retrying in 5 seconds..."
+  sleep 5
+done
+
+echo "[i] Installing GNOME + GDM3 (no minimal flags)..."
+echo "[i] Pre-seeding debconf for gdm3..."
+sudo bash -c 'cat <<EOF | debconf-set-selections
+debconf debconf/frontend select Noninteractive
+shared/default-display-manager select gdm3
+EOF'
+sudo apt-get -y install \
+  kali-desktop-gnome \
+  gdm3 gnome-shell gnome-session gnome-terminal nautilus gnome-control-center \
+  dbus-x11 qemu-guest-agent spice-vdagent xserver-xorg-video-qxl \
+  gedit python2 curl sshpass
+
+# Optional extras you had: zellij + py2 venv (left as-is)
+curl -L https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz -o zellij.tar.gz
+tar -xvf zellij.tar.gz
+sudo mv zellij /usr/local/bin/
+rm -f zellij.tar.gz
+zellij --version || true
+
+echo "[i] Setting up Python 2 virtualenv helper..."
+curl https://bootstrap.pypa.io/pip/2.7/get-pip.py --output /tmp/get-pip.py
+sudo python2 /tmp/get-pip.py >/dev/null 2>&1 || true
+rm -f /tmp/get-pip.py
+sudo python2 -m pip install --upgrade pip setuptools virtualenv >/dev/null 2>&1 || true
+
+echo "[i] Making GDM3 the display manager and enabling GUI boot..."
+echo "/usr/sbin/gdm3" | sudo tee /etc/X11/default-display-manager >/dev/null
+sudo systemctl disable --now lightdm 2>/dev/null || true
+sudo systemctl disable --now sddm 2>/dev/null || true
+sudo systemctl enable gdm3
+sudo systemctl set-default graphical.target
+
+echo "[i] Configuring GDM3 autologin for vagrant..."
+sudo install -d -m 0755 /etc/gdm3
+sudo bash -c 'cat >/etc/gdm3/custom.conf <<EOF
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=vagrant
+WaylandEnable=false
+DefaultSession=gnome-xorg.desktop
+EOF'
+
+# Some installs still read daemon.conf; harmless to mirror it
+sudo bash -c 'cat >/etc/gdm3/daemon.conf <<EOF
+[daemon]
+AutomaticLoginEnable=true
+AutomaticLogin=vagrant
+WaylandEnable=false
+DefaultSession=gnome-xorg.desktop
+EOF'
+
+# AccountsService hint
+sudo install -d -m 0755 /var/lib/AccountsService/users
+sudo bash -c 'cat >/var/lib/AccountsService/users/vagrant <<EOF
+[User]
+Session=gnome
+XSession=gnome-xorg
+SystemAccount=false
+EOF'
+sudo chmod 644 /var/lib/AccountsService/users/vagrant
+
+# Per-user session hint
+sudo -u vagrant bash -c 'printf "[Desktop]\nSession=gnome-xorg\n" > ~/.dmrc && chmod 644 ~/.dmrc'
+
+echo "[i] Disabling screensaver/lock after login via autostart..."
+sudo -u vagrant mkdir -p /home/vagrant/.config/autostart
+sudo -u vagrant bash -c 'cat > /home/vagrant/.config/autostart/disable-screensaver.desktop <<EOF
+[Desktop Entry]
+Type=Application
+Exec=sh -c "gsettings set org.gnome.desktop.session idle-delay 0; gsettings set org.gnome.desktop.screensaver lock-enabled false; gsettings set org.gnome.desktop.lockdown disable-lock-screen true"
+X-GNOME-Autostart-enabled=true
+Name=Disable Screensaver
+EOF'
+
+echo "[i] Appending custom Zsh configuration if present..."
+ZSH_CUSTOMIZATIONS_FILE="/tmp/zsh_customizations.zshrc"
+if [ -f "$ZSH_CUSTOMIZATIONS_FILE" ]; then
+  cat "$ZSH_CUSTOMIZATIONS_FILE" >> /home/vagrant/.zshrc
+  sudo chown vagrant:vagrant /home/vagrant/.zshrc
+else
+  echo "  -> WARNING: zsh_customizations.zshrc not found. Skipping."
+fi
+
+echo "[i] Cleanup..."
+sudo apt-get autoremove -y || true
+sudo apt-get clean || true
+
+echo "[✓] Done. Reboot and you should land in GNOME as vagrant without a password."

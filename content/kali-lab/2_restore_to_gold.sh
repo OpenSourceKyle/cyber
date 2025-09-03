@@ -19,12 +19,6 @@ if [[ "$1" == "-f" || "$1" == "--force" ]]; then
   echo "[!] Force mode enabled. The VM will be restored without confirmation."
 fi
 
-# --- Main Workflow ---
-echo "[*] Step 1: Halting the VM to prepare for restore..."
-vagrant halt
-
-echo "[*] Step 2: Preparing to restore the 'gold_image' snapshot..."
-
 # --- Confirmation Logic ---
 if [ "$FORCE_MODE" = false ]; then
   read -p "    -> This will DESTROY all current changes to the VM. Are you sure? (y/n) " -n 1 -r
@@ -35,6 +29,12 @@ if [ "$FORCE_MODE" = false ]; then
     exit 1
   fi
 fi
+
+# --- Main Workflow ---
+echo "[*] Step 1: Halting the VM to prepare for restore..."
+vagrant halt
+
+echo "[*] Step 2: Preparing to restore the 'gold_image' snapshot..."
 
 # --- Restore Execution ---
 echo "    -> Restoring snapshot 'gold_image'..."

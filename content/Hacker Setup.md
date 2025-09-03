@@ -23,6 +23,7 @@
 ### Plugins
 vagrant plugin install vagrant-libvirt
 vagrant plugin install vagrant-dns
+vagrant plugin install vagrant-scp
 
 ### Firewall rules (GUFW)
 sudo ufw allow proto udp from any to any port 67,68

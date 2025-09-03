@@ -53,7 +53,7 @@ opnotes() {
 
     local VIM_TIMESTAMP_FUNC="strftime('%Y-%m-%d %H:%M:%S')"
     local VIM_TIMESTAMP_DELIMITER=" -- "
-    local F4_TARGET_TEMPLATE="=================================<CR>X.X.X.X -- domain.com -- win/lin x32/x64<CR>=================================<CR><CR>echo 'export TARGET=X.X.X.X' >> ~/.zshrc"
+    local F4_TARGET_TEMPLATE="=================================<CR>TARGET_IP_ADDRESS -- domain.com -- win/lin x32/x64<CR>=================================<CR>vpn-connect<CR>echo 'export TARGET=TARGET_IP_ADDRESS' >> ~/.zshrc && source ~/.zshrc"
     local F5_INSERT_EXPRESSION="<C-R>=${VIM_TIMESTAMP_FUNC} . '${VIM_TIMESTAMP_DELIMITER}'<CR>"
 
     vim \
@@ -64,4 +64,42 @@ opnotes() {
         -c "inoremap <F4> <Esc>i${F4_TARGET_TEMPLATE}" \
         -c "vnoremap <F4> <Esc>i${F4_TARGET_TEMPLATE}" \
         "$NOTES_FILE"
+}
+
+# --- VPN Disconnect ---
+vpn-disconnect() {
+  echo "Terminating all OpenVPN processes..."
+  sudo killall openvpn
+  echo "Done."
+}
+
+# --- EZ VPN Connect ---
+vpn-connect() {
+  # Check for .ovpn files in /vagrant/
+  if ! ls /vagrant/*.ovpn >/dev/null 2>&1; then
+    echo "No .ovpn files found in /vagrant/"
+    return 1
+  fi
+  # Since we know files exist, we can now safely populate the array.
+  local files=(/vagrant/*.ovpn)
+  # Present a numbered list of the .ovpn files for the user to select.
+  echo "Please select an OpenVPN configuration file:"
+  select file in "${files[@]}"; do
+    # If the user's selection is valid (not empty).
+    if [[ -n "$file" ]]; then
+      echo "Disconnecting from any VPNs just in case..."
+      vpn-disconnect
+      
+      # Get the base name of the file (e.g., "myconfig" from "/vagrant/myconfig.ovpn")
+      local log_name=$(basename "$file" .ovpn)
+      echo "Starting OpenVPN with config: $file"
+      echo "Log file will be at in /tmp/"
+
+      # Run the OpenVPN command with the selected file and corrected log path.
+      sudo nohup openvpn --config "$file" > "/tmp/vpn_${log_name}.log" 2>&1 &
+      break
+    else
+      echo "Invalid selection. Please try again."
+    fi
+  done
 }

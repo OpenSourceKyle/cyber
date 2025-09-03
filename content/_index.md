@@ -6,11 +6,16 @@ hidemeta: true
 
 **Host Discovery -> Scanning -> Gain Access/Exploit -> Survey -> PrivEsc -> Pivot**
 
-# Scanning
+# Host Discovery
 
 ## NMAP
 
 Ref: https://linux.die.net/man/1/nmap
+
+Filtering out live hosts:
+```bash
+grep 'Status: Up' *.gnmap | awk '{print $2}' > live_hosts.txt
+```
 
 ### Host Discovery: `-sn`
 
@@ -155,7 +160,7 @@ sudo nmap -Pn --script ftp-anon <target_ip>
 nmap -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users <target_ip>
 ```
 
-## SMB / Enum4linux
+## SMB / LDAP / Kerberos
 
 ```bash
 # Perform a full enumeration of a target using enum4linux
@@ -166,6 +171,16 @@ smbclient -L //<TARGET>/ -U <USERNAME>
 
 # Connect to an SMB share with a null session (no password)
 smbclient -N //<TARGET>/<SHARE>
+
+# SMB enumeration:
+sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" <TARGET>
+
+# LDAP-based enumeration
+# Useful when SMB queries are blocked or hardened.
+sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' <TARGET>
+
+# DNS / Start of Authority
+dig @<TARGET> SOA
 ```
 
 ## Web
@@ -190,7 +205,7 @@ wpscan --url http://<USER>/ --enumerate u
 2025-08-19 18:26:03 -- wpscan --url http://<TARGET>/ --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --password-attack wp-login
 ```
 
-# URL Encode String
+### URL Encode String
 
 ```bash
 echo '<COMMAND>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.quote(sys.stdin.read()))'
@@ -229,8 +244,27 @@ hydra -t 4 -l <USER> -P /usr/share/wordlists/rockyou.txt ssh://<TARGET>:<PORT>
 
 ## Metasploit / Meterpreter
 
+### Search (for too many results)
+
 ```bash
 searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc'
+```
+
+### Survey
+
+```bash
+sysinfo
+getuid
+getpid
+ipconfig
+ps
+run winenum
+run post/windows/gather/checkvm
+run post/windows/gather/enum_applications
+run post/windows/gather/enum_logged_on_users
+# --- Privilege Escalation & Credential Gathering ---
+run post/windows/gather/smart_hashdump
+run post/multi/recon/local_exploit_suggester
 ```
 
 ### Finding and Executing Exploits
@@ -535,6 +569,66 @@ openssl passwd -6 <PASSWORD>
 db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } });
 ```
 
+## Living Off the Land
+
+Ref: https://lolbas-project.github.io/#
+
+## Good Locations
+
+### Windows
+
+```
+| Variable                  | Description                                            | Example Value               |
+|---------------------------|--------------------------------------------------------|-----------------------------|
+| %windir%                  | Windows installation directory                         | C:\Windows                  |
+| %SystemRoot%              | Alias for %windir%                                     | C:\Windows                  |
+| %ProgramFiles%            | Default directory for 64-bit programs                  | C:\Program Files            |
+| %ProgramFiles(x86)%       | Default directory for 32-bit programs on 64-bit systems| C:\Program Files (x86)      |
+| %CommonProgramFiles%      | Default directory for 64-bit common files              | C:\Program Files\Common Files|
+| %CommonProgramFiles(x86)% | Default directory for 32-bit common files on 64-bit systems | C:\Program Files (x86)\Common Files |
+| %SystemDrive%             | Drive letter of the system partition                   | C:                          |
+| %USERPROFILE%             | Path to the current user's profile directory           | C:\Users\username           |
+| %APPDATA%                 | User's roaming application data directory              | C:\Users\username\AppData\Roaming |
+| %LOCALAPPDATA%            | User's local application data directory                | C:\Users\username\AppData\Local |
+| %TEMP% or %TMP%           | User's temporary files directory                       | C:\Users\username\AppData\Local\Temp |
+| %HOMEDRIVE%               | Drive letter of the user's home directory              | C:                          |
+| %HOMEPATH%                | Path to the user's home directory                      | \Users\username             |
+| %PATH%                    | Semicolon-separated list of executable search paths    | C:\Windows;C:\Windows\System32 |
+| %PATHEXT%                 | Semicolon-separated list of executable file extensions | .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC |
+| %PUBLIC%                  | Path to the public user directory                      | C:\Users\Public             |
+| %USERNAME%                | The name of the current user                           | username                    |
+| %COMPUTERNAME%            | The name of the computer                               | DESKTOP-XXXXXX              |
+```
+
+### System Settings
+
+```bash
+| Command | Utility | Description |
+|---|---|---|
+| appwiz.cpl | Programs and Features | Uninstall or change programs |
+| certmgr.msc | Certificate Manager | Manage user and computer certificates |
+| compmgmt.msc | Computer Management | A collection of administrative tools |
+| control /name Microsoft.WindowsUpdate | Windows Update | Opens the Windows Update settings page |
+| control.exe | Control Panel | Opens the main Control Panel window |
+| devmgmt.msc | Device Manager | Manage hardware devices and drivers |
+| diskmgmt.msc | Disk Management | Manage disk drives and partitions |
+| dsa.msc | Active Directory Users & Computers| Manage users, groups, and computers in a domain |
+| eventvwr.msc | Event Viewer | View system event logs |
+| gpedit.msc | Local Group Policy Editor | Manage local security and user settings |
+| gpmc.msc | Group Policy Management Console | Manage Group Policy in an Active Directory forest |
+| lusrmgr.msc | Local Users and Groups | Manage local user accounts and groups |
+| mmc | Microsoft Management Console | Create custom administrative consoles |
+| msconfig | System Configuration | Manage boot options and startup programs |
+| msinfo32 | System Information | View detailed system hardware and software info |
+| ncpa.cpl | Network Connections | View and manage network adapters |
+| perfmon.msc | Performance Monitor | Monitor system performance |
+| regedit | Registry Editor | Edit the Windows registry |
+| secpol.msc | Local Security Policy | Manage local security settings |
+| services.msc | Services | Manage system services |
+| taskmgr | Task Manager | Monitor system processes and performance |
+| WF.msc | Windows Defender Firewall | Configure advanced firewall settings |
+```
+
 # Resources
 
 ## Prep Commands
@@ -542,9 +636,6 @@ db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } 
 ```bash
 # Add HOST for local DNS resolution in /etc/hosts file
 echo '<TARGET_IP> <TARGET_HOST>' | sudo tee -a /etc/hosts
-
-# Decompress a gzipped file
-sudo gunzip /usr/share/wordlists/rockyou.txt.gz
 ```
 
 ## EZ Wins & Searching Info
