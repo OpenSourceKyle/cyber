@@ -87,14 +87,11 @@ vpn-connect() {
   select file in "${files[@]}"; do
     # If the user's selection is valid (not empty).
     if [[ -n "$file" ]]; then
-      echo "Disconnecting from any VPNs just in case..."
       vpn-disconnect
-      
       # Get the base name of the file (e.g., "myconfig" from "/vagrant/myconfig.ovpn")
       local log_name=$(basename "$file" .ovpn)
       echo "Starting OpenVPN with config: $file"
       echo "Log file will be at in /tmp/"
-
       # Run the OpenVPN command with the selected file and corrected log path.
       sudo nohup openvpn --config "$file" > "/tmp/vpn_${log_name}.log" 2>&1 &
       break

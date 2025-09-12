@@ -3,7 +3,7 @@
 - make zsh hook or something that background scan commands, saves output to unique file in ~/kali_logs (maybe make this exportable $HACKER_LOG)
     - send notification when done?
     - force default pwd is in kali_logs and not ~
-- tmux for not losing meterpreter and multiple sessions
+- ~~tmux for not losing meterpreter and multiple sessions~~
 - make AI assistant
 - vim highlighter for targets and split screen to have targets on top (maybe better thing exists without vim base)
 - make cheatsheet guide:
@@ -79,4 +79,7 @@ sudo nohup openvpn --config /vagrant/crappycodewizard.ovpn > >(tee nohup.log) 2>
 
 # Scrape PDFs to Text
 pdftotext -layout *.pdf - | grep -v "Penetration Testing Professional" > info.txt
+
+# Vagrant Tunneling
+vagrant ssh -- -N -L <LPORT>:<TARGET_IP>:<TARGET_PORT>
 ```
