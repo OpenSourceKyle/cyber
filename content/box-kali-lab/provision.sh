@@ -10,7 +10,7 @@ until sudo apt-get update; do
 done
 
 ### INSTALL MAIN PACKAGES
-echo "[i] Installing Kali Desktop, guest tools, and GUI components..."
+echo "[i] Installing packages..."
 sudo apt-get -y --no-install-recommends install \
   kali-desktop-xfce \
   qemu-guest-agent \
@@ -18,10 +18,17 @@ sudo apt-get -y --no-install-recommends install \
   xserver-xorg-video-qxl \
   lightdm \
   gedit \
+  curl \
   seclists \
   python2 \
-  curl \
-  sshpass
+  sshpass \
+  rlwrap
+
+### INSTALL DOCKER
+# https://www.kali.org/docs/containers/installing-docker-on-kali/
+sudo apt install -y docker.io
+sudo systemctl enable docker --nowA
+sudo usermod -aG docker $USER
 
 ### INSTALL ZELLIJ (TMUX ALTERNATIVE)
 curl -L https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz -o zellij.tar.gz
@@ -43,6 +50,7 @@ sudo python2 -m pip install --upgrade pip setuptools > /dev/null 2>&1
 # Install virtualenv
 echo "  -> Installing virtualenv..."
 sudo python2 -m pip install virtualenv > /dev/null 2>&1
+python2 -m virtualenv $HOME/py2-env
 
 ### CONFIGURE AUTOLOGIN
 echo "[i] Configuring LightDM for autologin..."
@@ -103,6 +111,17 @@ if [ -f "$ZSH_CUSTOMIZATIONS_FILE" ]; then
 else
   echo "  -> WARNING: zsh_customizations.zshrc not found. Skipping."
 fi
+
+### Extras
+{
+# Extract Rockyou passwords
+sudo gunzip /usr/share/wordlists/rockyou.txt.gz
+# Update searchsploit
+sudo searchsploit --update
+# Metasploit DB
+sudo systemctl enable --now postgresql
+sudo msfdb init
+} || true
 
 ### Cleanup
 echo "[i] Cleaning up packages..."

