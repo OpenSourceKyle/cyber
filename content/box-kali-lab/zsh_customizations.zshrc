@@ -99,3 +99,10 @@ vpn-connect() {
     fi
   done
 }
+
+# Add hashcat-utils binaries
+export PATH=$PATH:/usr/lib/hashcat-utils
+
+# --- Open Zellij (tmux alt) by default ---
+
+if [[ ( -o interactive || -n "$SSH_CONNECTION" ) && -z "$ZELLIJ" ]]; then exec zellij; fi

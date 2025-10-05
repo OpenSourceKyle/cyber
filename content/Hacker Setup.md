@@ -10,7 +10,7 @@
     - scan IP or block
     - run forked background scan per service that is specialized (SMB, Wordpress, etc.)
     - maybe AI to read scan and highlight top moves?
-- ~~add docker setup: https://www.kali.org/docs/containers/installing-docker-on-kali/~~
+- ~~add docker setup: https://www.kali.org/docs/containers/installing-docker-on-kali/ ~~
 - ~~system update~~
 - ~~windows survey?~~
 - ~~windows privesc?~~
@@ -84,4 +84,11 @@ pdftotext -layout *.pdf - | grep -v "Penetration Testing Professional" > info.tx
 
 # Vagrant Tunneling
 vagrant ssh -- -N -L <LPORT>:<TARGET_IP>:<TARGET_PORT>
+
+# DNS Server Reconfig
+sudo rm -f /etc/resolv.conf && \
+echo -e "nameserver <DNS_SERVER>" | sudo tee /etc/resolv.conf && \
+sudo chattr +i /etc/resolv.conf
+
+dig +short <TARGET>
 ```

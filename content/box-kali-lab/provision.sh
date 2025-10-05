@@ -22,12 +22,14 @@ sudo apt-get -y --no-install-recommends install \
   seclists \
   python2 \
   sshpass \
-  rlwrap
+  rlwrap \
+  hashcat-utils \
+  obsidian
 
 ### INSTALL DOCKER
 # https://www.kali.org/docs/containers/installing-docker-on-kali/
 sudo apt install -y docker.io
-sudo systemctl enable docker --nowA
+sudo systemctl enable --now docker
 sudo usermod -aG docker $USER
 
 ### INSTALL ZELLIJ (TMUX ALTERNATIVE)
@@ -112,6 +114,15 @@ else
   echo "  -> WARNING: zsh_customizations.zshrc not found. Skipping."
 fi
 
+### VIM CONFIGURATION
+echo "[i] Setting up vim configuration..."
+sudo bash -c 'cat > /home/vagrant/.vimrc <<EOF
+set mouse=
+set number
+EOF'
+sudo chown vagrant:vagrant /home/vagrant/.vimrc
+echo "  -> Successfully created .vimrc with basic settings."
+
 ### Extras
 {
 # Extract Rockyou passwords
@@ -121,6 +132,12 @@ sudo searchsploit --update
 # Metasploit DB
 sudo systemctl enable --now postgresql
 sudo msfdb init
+# Install RustScan
+echo "[i] Installing RustScan..."
+curl -L https://github.com/bee-san/RustScan/releases/latest/download/rustscan.deb.zip -o /tmp/rustscan.deb.zip
+unzip -o /tmp/rustscan.deb.zip -d /tmp/
+sudo dpkg -i /tmp/rustscan_*.deb || sudo apt-get install -f -y
+rm -f /tmp/rustscan.deb.zip /tmp/rustscan.deb
 } || true
 
 ### Cleanup
