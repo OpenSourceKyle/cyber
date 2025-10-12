@@ -9,17 +9,25 @@
 
 set -e
 
+# --- Configuration ---
+SNAPSHOT_NAME="gold_image"
+
 # --- Check to prompt user or not ---
 FORCE_MODE=false
 if [[ "$1" == "-f" || "$1" == "--force" ]]; then
   FORCE_MODE=true
   echo "[!] Force mode enabled. The snapshot will be overwritten without confirmation."
 else
-  read -p "    -> This will overwrite any existing 'gold_image' snapshot. Are you sure? (y/n) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "[!] Aborted by user. No snapshot was taken."
-    exit 1
+  # Check if snapshot already exists
+  if vagrant snapshot list | grep -q "^$SNAPSHOT_NAME "; then
+    read -p "    -> This will overwrite the existing '$SNAPSHOT_NAME' snapshot. Are you sure? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "[!] Aborted by user. No snapshot was taken."
+      exit 1
+    fi
+  else
+    echo "[*] No existing '$SNAPSHOT_NAME' snapshot found. Proceeding with creation..."
   fi
 fi
 
@@ -28,8 +36,8 @@ echo "[*] Step 1: Provisioning the VM with 'vagrant up'..."
 vagrant up --provision
 echo "[*] Step 2: Halting the VM for a clean snapshot..."
 vagrant halt
-echo "[*] Step 3: Preparing to save the halted state to snapshot 'gold_image'..."
-vagrant snapshot save gold_image --force
+echo "[*] Step 3: Preparing to save the halted state to snapshot '$SNAPSHOT_NAME'..."
+vagrant snapshot save $SNAPSHOT_NAME --force
 
 # --- Done ---
 echo

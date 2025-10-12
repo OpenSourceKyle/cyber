@@ -12,6 +12,9 @@
 # Exit immediately if any command fails
 set -e
 
+# --- Configuration ---
+SNAPSHOT_NAME="gold_image"
+
 # --- Argument Parsing ---
 FORCE_MODE=false
 if [[ "$1" == "-f" || "$1" == "--force" ]]; then
@@ -34,15 +37,15 @@ fi
 echo "[*] Step 1: Halting the VM to prepare for restore..."
 vagrant halt
 
-echo "[*] Step 2: Preparing to restore the 'gold_image' snapshot..."
+echo "[*] Step 2: Preparing to restore the '$SNAPSHOT_NAME' snapshot..."
 
 # --- Restore Execution ---
-echo "    -> Restoring snapshot 'gold_image'..."
+echo "    -> Restoring snapshot '$SNAPSHOT_NAME'..."
 # Vagrant's own confirmation is bypassed by our script's logic,
 # but we add -f to the command itself for non-interactive environments.
-yes | vagrant snapshot restore gold_image
+yes | vagrant snapshot restore $SNAPSHOT_NAME
 
 echo
-echo "[+] SUCCESS: The VM has been reset to the 'gold_image' state."
+echo "[+] SUCCESS: The VM has been reset to the '$SNAPSHOT_NAME' state."
 echo "    To boot the clean machine, run:"
 echo "     vagrant up"

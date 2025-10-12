@@ -5,7 +5,7 @@
     - force default pwd is in kali_logs and not ~
 - ~~tmux for not losing meterpreter and multiple sessions~~
 - vim highlighter for targets and split screen to have targets on top (maybe better thing exists without vim base)
-    - set mouse= by default
+    - ~~set mouse= by default~~
 - make cheatsheet guide:
     - scan IP or block
     - run forked background scan per service that is specialized (SMB, Wordpress, etc.)
