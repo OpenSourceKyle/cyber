@@ -30,7 +30,8 @@ sudo apt-get -y --no-install-recommends install \
   powershell \
   autossh \
   sshuttle \
-  putty-tools
+  putty-tools \
+  feroxbuster
 
 ### INSTALL DOCKER
 # https://www.kali.org/docs/containers/installing-docker-on-kali/

