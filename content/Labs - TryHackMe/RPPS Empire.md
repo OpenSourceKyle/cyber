@@ -73,4 +73,16 @@ starkiller
 	Uri: 127.0.0.1:1337
 	User: empireadmin
 	Pass: password123
+
+### STAGERS
+- multi/launcher - A fairly universal stager that can be used for a variety of devices.
+- windows/launcher_bat - Windows Batch file
+- multi/bash - Basic Bash Stager
+  
+- windows/ducky - Ducky script for the USB Rubber Ducky for physical USB attacks.
+- windows/hta - HTA server an HTML application protocol that can be used to evade AV.
+- osx/applescript - Stager in AppleScript: Apples own programming language.
+- osx/teensy - Similar to the rubber ducky is a small form factor micro-controller for physical attacks.
+  
+  
 ```

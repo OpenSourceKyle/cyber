@@ -1,0 +1,178 @@
+---
+- name: Extract rockyou wordlist
+  ansible.builtin.command: gunzip -f /usr/share/wordlists/rockyou.txt.gz
+  args:
+    creates: /usr/share/wordlists/rockyou.txt
+  become: true
+  failed_when: false
+  
+- name: Install kerbrute
+  block:
+    - name: Check if kerbrute is already installed
+      ansible.builtin.stat:
+        path: /usr/sbin/kerbrute
+      register: security_tools_kerbrute_binary
+
+    - name: Download kerbrute
+      ansible.builtin.get_url:
+        url: https://github.com/ropnop/kerbrute/releases/download/v1.0.3/kerbrute_linux_amd64
+        dest: /tmp/kerbrute_linux_amd64
+        mode: "0755"
+      register: security_tools_kerbrute_download
+      when: not security_tools_kerbrute_binary.stat.exists
+
+    - name: Install kerbrute to /usr/sbin
+      ansible.builtin.copy:
+        src: /tmp/kerbrute_linux_amd64
+        dest: /usr/sbin/kerbrute
+        mode: "0755"
+        remote_src: true
+      become: true
+      when: not security_tools_kerbrute_binary.stat.exists and (security_tools_kerbrute_download is changed or not ansible_check_mode)
+
+    - name: Verify kerbrute installation
+      ansible.builtin.command: /usr/sbin/kerbrute version
+      register: security_tools_kerbrute_version
+      changed_when: false
+      failed_when: false
+
+    - name: Clean up kerbrute download
+      ansible.builtin.file:
+        path: /tmp/kerbrute_linux_amd64
+        state: absent
+      when: security_tools_kerbrute_download is defined
+
+- name: Install rustscan
+  block:
+    - name: Check if rustscan is already installed
+      ansible.builtin.command: dpkg -l rustscan
+      register: security_tools_rustscan_check
+      changed_when: false
+      failed_when: false
+
+    - name: Download rustscan
+      ansible.builtin.get_url:
+        url: https://github.com/bee-san/rustscan/releases/latest/download/rustscan.deb.zip
+        dest: /tmp/rustscan.deb.zip
+        mode: "0644"
+      when: security_tools_rustscan_check.rc != 0
+
+    - name: Unzip rustscan deb
+      ansible.builtin.unarchive:
+        src: /tmp/rustscan.deb.zip
+        dest: /tmp/
+        remote_src: true
+      when: security_tools_rustscan_check.rc != 0
+
+    - name: Find rustscan deb file
+      ansible.builtin.find:
+        paths: /tmp
+        patterns: "rustscan_*.deb"
+      register: security_tools_rustscan_deb_files
+      when: security_tools_rustscan_check.rc != 0
+
+    - name: Install rustscan deb package
+      ansible.builtin.apt:
+        deb: "{{ item.path }}"
+      loop: "{{ security_tools_rustscan_deb_files.files | default([]) }}"
+      become: true
+      register: security_tools_rustscan_install
+      failed_when: false
+      when: security_tools_rustscan_check.rc != 0 and security_tools_rustscan_deb_files.files | length > 0
+
+    - name: Fix rustscan dependencies if needed
+      ansible.builtin.apt:
+        name: "*"
+        state: present
+        update_cache: true
+      become: true
+      when: security_tools_rustscan_check.rc != 0 and security_tools_rustscan_install is failed
+
+    - name: Clean up rustscan downloads
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ ['/tmp/rustscan.deb.zip'] + (security_tools_rustscan_deb_files.files | default([]) | map(attribute='path') | list) }}"
+      when: security_tools_rustscan_check.rc != 0
+
+- name: Install bloodhound
+  block:
+    - name: Check if bloodhound-cli is already installed
+      ansible.builtin.command: which bloodhound-cli
+      register: security_tools_bloodhound_check
+      changed_when: false
+      failed_when: false
+
+    - name: Create temporary directory for bloodhound
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: bloodhound
+      register: security_tools_bloodhound_tmpdir
+      when: security_tools_bloodhound_check.rc != 0
+
+    - name: Download bloodhound-cli
+      ansible.builtin.get_url:
+        url: https://github.com/specterops/bloodhound-cli/releases/latest/download/bloodhound-cli-linux-amd64.tar.gz
+        dest: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli-linux-amd64.tar.gz"
+        mode: "0644"
+      register: security_tools_bloodhound_download
+      when: security_tools_bloodhound_check.rc != 0
+
+    - name: Extract bloodhound-cli
+      ansible.builtin.unarchive:
+        src: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli-linux-amd64.tar.gz"
+        dest: "{{ security_tools_bloodhound_tmpdir.path }}"
+        remote_src: true
+      when: security_tools_bloodhound_check.rc != 0 and (security_tools_bloodhound_download is changed or not ansible_check_mode)
+
+    - name: Install bloodhound-cli
+      ansible.builtin.command: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli install"
+      args:
+        chdir: "{{ security_tools_bloodhound_tmpdir.path }}"
+      become: true
+      changed_when: true
+      when: security_tools_bloodhound_check.rc != 0 and (security_tools_bloodhound_download is changed or not ansible_check_mode)
+
+    - name: Clean up bloodhound temporary directory
+      ansible.builtin.file:
+        path: "{{ security_tools_bloodhound_tmpdir.path }}"
+        state: absent
+      when: security_tools_bloodhound_check.rc != 0 and security_tools_bloodhound_tmpdir.path is defined
+
+- name: Clone static-binaries repository
+  ansible.builtin.git:
+    repo: https://github.com/andrew-d/static-binaries.git
+    dest: /home/vagrant/static-binaries
+    version: master
+  failed_when: false
+
+- name: Setup Metasploit database
+  block:
+    - name: Enable and start PostgreSQL
+      ansible.builtin.systemd:
+        name: postgresql
+        enabled: true
+        state: started
+      become: true
+
+    - name: Initialize Metasploit database
+      ansible.builtin.command: msfdb init
+      args:
+        creates: /root/.msf4/db
+      become: true
+      failed_when: false
+
+- name: Update searchsploit database
+  ansible.builtin.command: searchsploit --update
+  become: true
+  failed_when: false
+  changed_when: false
+
+- name: Install seclists
+  ansible.builtin.apt:
+    name: seclists
+    state: present
+    install_recommends: false
+    update_cache: false
+  become: true
+

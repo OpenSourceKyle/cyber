@@ -1,15 +1,13 @@
 #!/bin/bash
-# This script automates the creation of the 'gold_image' snapshot.
-# It provisions, halts, and then snapshots the VM.
+# This script retakes the 'gold_image' snapshot from the current VM state.
+# It halts the machine and then creates a new snapshot, overwriting the existing one.
 #
 # USAGE:
-#   ./1_create_gold_image.sh        (Runs in interactive mode, will ask for confirmation)
-#   ./1_create_gold_image.sh -f     (Runs in non-interactive mode, overwrites without asking)
-#   ./1_create_gold_image.sh --force (Same as -f)
+#   ./3_retake_gold_snapshot.sh        (Runs in interactive mode, will ask for confirmation)
+#   ./3_retake_gold_snapshot.sh -f     (Runs in non-interactive mode, overwrites without asking)
+#   ./3_retake_gold_snapshot.sh --force (Same as -f)
 
 set -e
-
-
 
 # --- Load shared configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,8 +26,7 @@ if [[ "$1" == "-f" || "$1" == "--force" ]]; then
   echo "[!] Force mode enabled. The snapshot will be overwritten without confirmation."
 else
   # Check if snapshot already exists
-  if echo "$SNAPSHOT_LIST" | grep -qE "^[[:space:]]*$SNAPSHOT_NAME[[:space:]]*$"; then
-    echo "[*] '$SNAPSHOT_NAME' already exists!"
+  if echo "$SNAPSHOT_LIST" | grep -q "^$SNAPSHOT_NAME "; then
     read -p "    -> This will overwrite the existing '$SNAPSHOT_NAME' snapshot. Are you sure? (y/n) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -42,15 +39,13 @@ else
 fi
 
 # --- Main Workflow ---
-echo "[*] Step 1: Provisioning the VM with 'vagrant up'..."
-vagrant up --provision
-echo "[*] Step 2: Halting the VM for a clean snapshot..."
+echo "[*] Step 1: Halting the VM for a clean snapshot..."
 vagrant halt
-echo "[*] Step 3: Preparing to save the halted state to snapshot '$SNAPSHOT_NAME'..."
+echo "[*] Step 2: Preparing to save the halted state to snapshot '$SNAPSHOT_NAME'..."
 vagrant snapshot save $SNAPSHOT_NAME --force
 
 # --- Done ---
 echo
-echo "[+] SUCCESS: Gold image snapshot created successfully."
+echo "[+] SUCCESS: Gold image snapshot retaken successfully."
 echo "    To begin working from the clean state, run:"
 echo "     vagrant up"

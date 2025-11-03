@@ -3,9 +3,8 @@
 - make zsh hook or something that background scan commands, saves output to unique file in ~/kali_logs (maybe make this exportable $HACKER_LOG)
     - send notification when done?
     - force default pwd is in kali_logs and not ~
-- ~~tmux for not losing meterpreter and multiple sessions~~
+- set **some msfvenom** options automagically like LHOST (tun0 or listening port) and any other VARS? maybe random autoport
 - vim highlighter for targets and split screen to have targets on top (maybe better thing exists without vim base)
-    - ~~set mouse= by default~~
 - make cheatsheet guide:
     - scan IP or block
     - run forked background scan per service that is specialized (SMB, Wordpress, etc.)
@@ -14,6 +13,7 @@
 - ~~system update~~
 - ~~windows survey?~~
 - ~~windows privesc?~~
+- - ~~tmux for not losing meterpreter and multiple sessions~~
 
 ---
 

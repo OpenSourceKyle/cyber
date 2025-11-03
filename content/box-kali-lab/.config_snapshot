@@ -1,0 +1,5 @@
+#!/bin/bash
+# Shared configuration for VM snapshot management scripts
+# This file contains the snapshot name that all scripts will use
+
+SNAPSHOT_NAME="gold_image"

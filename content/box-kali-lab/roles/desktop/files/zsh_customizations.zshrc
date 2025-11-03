@@ -51,19 +51,8 @@ opnotes() {
     mkdir -p "$NOTES_DIR_BASE"
     touch "$NOTES_FILE"
 
-    local VIM_TIMESTAMP_FUNC="strftime('%Y-%m-%d %H:%M:%S')"
-    local VIM_TIMESTAMP_DELIMITER=" -- "
-    local F4_TARGET_TEMPLATE="=================================<CR>TARGET_IP_ADDRESS -- domain.com -- win/lin x32/x64<CR>=================================<CR>vpn-connect<CR>echo 'export TARGET=TARGET_IP_ADDRESS' >> ~/.zshrc && source ~/.zshrc"
-    local F5_INSERT_EXPRESSION="<C-R>=${VIM_TIMESTAMP_FUNC} . '${VIM_TIMESTAMP_DELIMITER}'<CR>"
-
-    vim \
-        -c "nnoremap <F5> I${F5_INSERT_EXPRESSION}" \
-        -c "inoremap <F5> <Esc>I${F5_INSERT_EXPRESSION}" \
-        -c "vnoremap <F5> <Esc>I${F5_INSERT_EXPRESSION}" \
-        -c "nnoremap <F4> i${F4_TARGET_TEMPLATE}" \
-        -c "inoremap <F4> <Esc>i${F4_TARGET_TEMPLATE}" \
-        -c "vnoremap <F4> <Esc>i${F4_TARGET_TEMPLATE}" \
-        "$NOTES_FILE"
+    # Use the external .vimrc file for vim configuration
+    vim "$NOTES_FILE"
 }
 
 # --- VPN Disconnect ---

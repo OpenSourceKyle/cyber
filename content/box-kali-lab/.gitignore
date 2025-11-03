@@ -1,2 +1,15 @@
-# Exclude OpenVPN configuration files
+.vagrant
+.ansible
+.swp
+*creds*
+*vault*
+all
+*.md.backup
+hosts
+artifacts/
+*.log
+.yamllint
+venv/
+.vscode/
+*.tmp
 *.ovpn

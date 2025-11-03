@@ -12,8 +12,15 @@
 # Exit immediately if any command fails
 set -e
 
-# --- Configuration ---
-SNAPSHOT_NAME="gold_image"
+# --- Load shared configuration ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/.config_snapshot"
+
+# --- Get current snapshot list ---
+echo "[*] Checking current snapshots..."
+SNAPSHOT_LIST=$(vagrant snapshot list)
+echo "$SNAPSHOT_LIST"
+echo
 
 # --- Argument Parsing ---
 FORCE_MODE=false

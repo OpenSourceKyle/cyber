@@ -1,0 +1,20 @@
+" Vim configuration for opnotes
+" F4: Insert target template
+" F5: Insert timestamp
+
+" Define template variables
+let g:target_template = "=================================\nTARGET_IP_ADDRESS -- domain.com -- win/lin x32/x64\n=================================\nvpn-connect\necho 'export TARGET=TARGET_IP_ADDRESS' >> ~/.zshrc && source ~/.zshrc\necho \"\$TARGET TARGET\" | sudo tee -a /etc/hosts"
+let g:timestamp_delimiter = " -- "
+
+" F4 mappings for target template
+nnoremap <F4> :put =g:target_template<CR>
+inoremap <F4> <Esc>:put =g:target_template<CR>i
+vnoremap <F4> <Esc>:put =g:target_template<CR>
+
+" F5 mappings for timestamp
+nnoremap <F5> I<C-R>=strftime('%Y-%m-%d %H:%M:%S') . g:timestamp_delimiter<CR>
+inoremap <F5> <Esc>I<C-R>=strftime('%Y-%m-%d %H:%M:%S') . g:timestamp_delimiter<CR>
+vnoremap <F5> <Esc>I<C-R>=strftime('%Y-%m-%d %H:%M:%S') . g:timestamp_delimiter<CR>
+
+set mouse=
+"set number

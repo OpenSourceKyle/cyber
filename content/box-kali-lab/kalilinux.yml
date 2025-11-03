@@ -1,0 +1,13 @@
+---
+- name: Provision Kali Linux Lab
+  hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+  roles:
+    - base
+    - desktop
+    - development
+    - security_tools

