@@ -1,3 +1,7 @@
++++
+title = "Active Directory Basics"
++++
+
 # https://tryhackme.com/room/winadbasics
 
 ```bash

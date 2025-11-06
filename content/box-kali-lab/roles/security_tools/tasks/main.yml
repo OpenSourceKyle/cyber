@@ -5,7 +5,7 @@
     creates: /usr/share/wordlists/rockyou.txt
   become: true
   failed_when: false
-  
+
 - name: Install kerbrute
   block:
     - name: Check if kerbrute is already installed
@@ -13,34 +13,19 @@
         path: /usr/sbin/kerbrute
       register: security_tools_kerbrute_binary
 
-    - name: Download kerbrute
+    - name: Download and install kerbrute to /usr/sbin
       ansible.builtin.get_url:
         url: https://github.com/ropnop/kerbrute/releases/download/v1.0.3/kerbrute_linux_amd64
-        dest: /tmp/kerbrute_linux_amd64
-        mode: "0755"
-      register: security_tools_kerbrute_download
-      when: not security_tools_kerbrute_binary.stat.exists
-
-    - name: Install kerbrute to /usr/sbin
-      ansible.builtin.copy:
-        src: /tmp/kerbrute_linux_amd64
         dest: /usr/sbin/kerbrute
         mode: "0755"
-        remote_src: true
       become: true
-      when: not security_tools_kerbrute_binary.stat.exists and (security_tools_kerbrute_download is changed or not ansible_check_mode)
+      when: not security_tools_kerbrute_binary.stat.exists
 
     - name: Verify kerbrute installation
       ansible.builtin.command: /usr/sbin/kerbrute version
       register: security_tools_kerbrute_version
       changed_when: false
       failed_when: false
-
-    - name: Clean up kerbrute download
-      ansible.builtin.file:
-        path: /tmp/kerbrute_linux_amd64
-        state: absent
-      when: security_tools_kerbrute_download is defined
 
 - name: Install rustscan
   block:
@@ -98,52 +83,55 @@
 - name: Install bloodhound
   block:
     - name: Check if bloodhound-cli is already installed
-      ansible.builtin.command: which bloodhound-cli
-      register: security_tools_bloodhound_check
-      changed_when: false
-      failed_when: false
-
-    - name: Create temporary directory for bloodhound
-      ansible.builtin.tempfile:
-        state: directory
-        suffix: bloodhound
-      register: security_tools_bloodhound_tmpdir
-      when: security_tools_bloodhound_check.rc != 0
+      ansible.builtin.stat:
+        path: /usr/local/bin/bloodhound-cli
+      register: security_tools_bloodhound_binary
 
     - name: Download bloodhound-cli
       ansible.builtin.get_url:
         url: https://github.com/specterops/bloodhound-cli/releases/latest/download/bloodhound-cli-linux-amd64.tar.gz
-        dest: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli-linux-amd64.tar.gz"
+        dest: /tmp/bloodhound-cli-linux-amd64.tar.gz
         mode: "0644"
       register: security_tools_bloodhound_download
-      when: security_tools_bloodhound_check.rc != 0
+      when: not security_tools_bloodhound_binary.stat.exists
 
     - name: Extract bloodhound-cli
       ansible.builtin.unarchive:
-        src: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli-linux-amd64.tar.gz"
-        dest: "{{ security_tools_bloodhound_tmpdir.path }}"
+        src: /tmp/bloodhound-cli-linux-amd64.tar.gz
+        dest: /tmp/
         remote_src: true
-      when: security_tools_bloodhound_check.rc != 0 and (security_tools_bloodhound_download is changed or not ansible_check_mode)
+      when: not security_tools_bloodhound_binary.stat.exists and (security_tools_bloodhound_download is changed or not ansible_check_mode)
 
-    - name: Install bloodhound-cli
-      ansible.builtin.command: "{{ security_tools_bloodhound_tmpdir.path }}/bloodhound-cli install"
-      args:
-        chdir: "{{ security_tools_bloodhound_tmpdir.path }}"
+    - name: Install bloodhound-cli to /usr/local/bin
+      ansible.builtin.copy:
+        src: /tmp/bloodhound-cli
+        dest: /usr/local/bin/bloodhound-cli
+        mode: "0755"
+        remote_src: true
       become: true
-      changed_when: true
-      when: security_tools_bloodhound_check.rc != 0 and (security_tools_bloodhound_download is changed or not ansible_check_mode)
+      when: not security_tools_bloodhound_binary.stat.exists and (security_tools_bloodhound_download is changed or not ansible_check_mode)
 
-    - name: Clean up bloodhound temporary directory
+    - name: Verify bloodhound-cli installation
+      ansible.builtin.command: /usr/local/bin/bloodhound-cli --version
+      register: security_tools_bloodhound_version
+      changed_when: false
+      failed_when: false
+
+    - name: Clean up bloodhound downloads
       ansible.builtin.file:
-        path: "{{ security_tools_bloodhound_tmpdir.path }}"
+        path: "{{ item }}"
         state: absent
-      when: security_tools_bloodhound_check.rc != 0 and security_tools_bloodhound_tmpdir.path is defined
+      loop:
+        - /tmp/bloodhound-cli-linux-amd64.tar.gz
+        - /tmp/bloodhound-cli
+      when: security_tools_bloodhound_download is defined
 
-- name: Clone static-binaries repository
+- name: Clone security tools git repositories
   ansible.builtin.git:
-    repo: https://github.com/andrew-d/static-binaries.git
-    dest: /home/vagrant/static-binaries
-    version: master
+    repo: "{{ item.repo }}"
+    dest: "{{ item.dest | default('/home/vagrant/' ~ (item.repo | basename | regex_replace('\\.git$', ''))) }}"
+    version: "{{ item.version | default('master') }}"
+  loop: "{{ security_tools_git_repos }}"
   failed_when: false
 
 - name: Setup Metasploit database
@@ -157,8 +145,8 @@
 
     - name: Initialize Metasploit database
       ansible.builtin.command: msfdb init
-      args:
-        creates: /root/.msf4/db
+      register: msfdb_output
+      changed_when: "'The database appears to be already configured' not in msfdb_output.stdout"
       become: true
       failed_when: false
 
@@ -175,4 +163,3 @@
     install_recommends: false
     update_cache: false
   become: true
-

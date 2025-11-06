@@ -1,3 +1,7 @@
++++
+title = "Net Sec Challenge"
++++
+
 # https://tryhackme.com/room/netsecchallenge
 
 ```bash

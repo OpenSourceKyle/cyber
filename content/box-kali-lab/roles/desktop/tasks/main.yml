@@ -108,11 +108,22 @@
     mode: "0644"
   become: true
 
-- name: Deploy zsh configuration
-  ansible.builtin.copy:
-    src: zsh_customizations.zshrc
-    dest: /home/vagrant/.zshrc
-    owner: vagrant
-    group: vagrant
-    mode: "0644"
-  become: true
+- name: Deploy zsh customizations
+  block:
+    - name: Deploy zsh customizations file
+      ansible.builtin.copy:
+        src: zsh_customizations.zshrc
+        dest: /home/vagrant/.zshrc.local
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Ensure .zshrc sources .zshrc.local if it doesn't already
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.zshrc
+        line: '[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local'
+        regexp: '^\[\[ -f ~/\.zshrc\.local \]\]'
+        create: true
+        owner: vagrant
+        group: vagrant
+        mode: "0644"

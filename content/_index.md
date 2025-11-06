@@ -1,8 +1,8 @@
----
-date: "2025-08-29"
-layout: "single"
-hidemeta: true
----
++++
+title = "Cyber Cheatsheet"
+type = "home"
++++
+
 # 🎯 Overview
 
 ## 📋 Methodology Phases
@@ -625,7 +625,7 @@ gobuster --quiet --threads 64 --output gobuster_dir_medium dir ---follow-redirec
 
 ### FEROXBUSTER: faster and recursive
 
-feroxbuster -t 64 -o feroxbuster_dir_common --depth 2 -w /usr/share/seclists/Discovery/Web-Content/common.txt -u http://<TARGET>:3333
+feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common -u http://<TARGET>
 ```
 
 ### 🌐 Subdomains
@@ -1141,6 +1141,8 @@ Get-ChildItem -Path C:\ -Recurse -ErrorAction SilentlyContinue -Name flag.txt
 
 Upgrade a simple shell to a more interactive PTY.
 
+- https://blog.ropnop.com/upgrading-simple-shells-to-fully-interactive-ttys/
+
 ### 🐍 Python Method
 
 ```bash
@@ -1149,13 +1151,10 @@ Upgrade a simple shell to a more interactive PTY.
 # Terminal
 for i in python3 python python2; do command -v "$i" >/dev/null && "$i" -c 'import pty; pty.spawn("/bin/bash")' && exit; done
 
-# Meterpreter
-execute -f 'python -c "import pty; pty.spawn(\"/bin/bash\")"' -i -t
-
 # === STEP 2 ===
 
 # Interpret terminal escape codes
-export TERM=xterm
+export TERM=xterm-256color
 
 # === STEP 3 ===
 

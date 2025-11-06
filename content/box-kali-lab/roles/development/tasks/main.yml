@@ -68,21 +68,49 @@
         - /tmp/zellij
       when: development_zellij_download is defined
 
+- name: Configure Zellij
+  block:
+    - name: Ensure Zellij config directory exists
+      ansible.builtin.file:
+        path: /home/vagrant/.config/zellij
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: "0755"
+      become: true
+
+    - name: Configure Zellij to disable startup tips
+      ansible.builtin.lineinfile:
+        path: /home/vagrant/.config/zellij/config.kdl
+        regexp: '^\s*show_startup_tips\s*'
+        line: 'show_startup_tips false'
+        create: true
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+      become: true
+
 - name: Setup Python 2 virtual environment
   block:
+    - name: Check if pip2 is already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/pip2
+      register: development_pip2_binary
+
     - name: Download pip 2.7 installer
       ansible.builtin.get_url:
         url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
         dest: /tmp/get-pip.py
         mode: "0644"
       register: development_pip_download
+      when: not development_pip2_binary.stat.exists
 
     - name: Install pip for Python 2
       ansible.builtin.command: python2 /tmp/get-pip.py
       args:
         creates: /usr/local/bin/pip2
       become: true
-      when: development_pip_download is changed or not ansible_check_mode
+      when: not development_pip2_binary.stat.exists and (development_pip_download is changed or not ansible_check_mode)
       register: development_pip_install
 
     - name: Upgrade pip and setuptools
@@ -93,7 +121,7 @@
         executable: pip2
         state: present
       become: true
-      when: development_pip_install is changed or not ansible_check_mode
+      when: not development_pip2_binary.stat.exists and (development_pip_install is changed or not ansible_check_mode)
 
     - name: Install virtualenv
       ansible.builtin.pip:
@@ -111,3 +139,4 @@
       ansible.builtin.file:
         path: /tmp/get-pip.py
         state: absent
+      when: development_pip_download is defined

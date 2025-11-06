@@ -1,3 +1,7 @@
++++
+title = "Hackernote"
++++
+
 # https://tryhackme.com/room/hackernote
 
 ```bash

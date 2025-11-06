@@ -1,3 +1,7 @@
++++
+title = "Hydra"
++++
+
 # https://tryhackme.com/room/hydra
 
 ```bash

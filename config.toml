@@ -1,6 +1,13 @@
 baseURL = "/"
 title = "Cyber Cheatsheet"
-theme = "PaperMod"
+theme = "hugo-theme-relearn"
+
+# Ignore venv directories and other non-content files
+ignoreFiles = [
+  "venv/",
+  "box-kali-lab/",
+  "box-win-lab/"
+]
 
 [params]
 defaultTheme = "auto"
@@ -9,4 +16,4 @@ TocOpen = true
 
 [params.homeInfoParams]
 Title = "Cyber Cheatsheet"
-Content = " Study notes and tools for networking, web app hacking, penetration testing, and basic programming (C++, Python). Includes HTTP/S, cookies, SQLi, XSS, enumeration, nmap usage, and more."
+Content = "Study notes and tools for networking, web app hacking, penetration testing, and basic programming (C++, Python). Includes HTTP/S, cookies, SQLi, XSS, enumeration, nmap usage, and more."

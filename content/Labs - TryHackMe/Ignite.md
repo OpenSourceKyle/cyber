@@ -1,3 +1,7 @@
++++
+title = "Ignite"
++++
+
 # https://tryhackme.com/room/ignite
 
 ```bash

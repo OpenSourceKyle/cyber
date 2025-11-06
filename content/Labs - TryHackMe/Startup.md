@@ -1,3 +1,7 @@
++++
+title = "Startup"
++++
+
 # https://tryhackme.com/room/startup
 
 ```bash

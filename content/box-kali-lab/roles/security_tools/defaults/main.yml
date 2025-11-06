@@ -1,0 +1,8 @@
+---
+# Git repositories to clone for security tools
+# If dest is not specified, defaults to /home/vagrant/<repo-name>
+security_tools_git_repos:
+  - repo: https://github.com/andrew-d/static-binaries.git
+    version: master
+  - repo: https://github.com/carlospolop/PEASS-ng.git
+    version: master

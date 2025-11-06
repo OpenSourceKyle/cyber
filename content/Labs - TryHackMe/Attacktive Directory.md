@@ -1,3 +1,7 @@
++++
+title = "Attacktive Directory"
++++
+
 # https://tryhackme.com/room/attacktivedirectory
 
 ```bash

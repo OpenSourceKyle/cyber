@@ -82,6 +82,16 @@ vpn-connect() {
       echo "Log file will be at in /tmp/vpn_${log_name}.log"
       # Run the OpenVPN command with the selected file and corrected log path.
       sudo nohup openvpn --config "$file" > "/tmp/vpn_${log_name}.log" 2>&1 &
+      # Wait for OpenVPN to initialize
+      sleep 10
+      # Check the log file for connection status
+      if grep -q "Initialization Sequence Completed" "/tmp/vpn_${log_name}.log" 2>/dev/null; then
+        echo "✅ VPN connection successful!"
+      elif grep -qi "error\|failed\|fatal" "/tmp/vpn_${log_name}.log" 2>/dev/null; then
+        echo "❌ VPN connection failed. Check /tmp/vpn_${log_name}.log for details."
+      else
+        echo "⏳ VPN is still connecting... Check /tmp/vpn_${log_name}.log for status."
+      fi
       break
     else
       echo "Invalid selection. Please try again."
@@ -91,6 +101,9 @@ vpn-connect() {
 
 # Add hashcat-utils binaries
 export PATH=$PATH:/usr/lib/hashcat-utils
+
+# Aliases
+alias ll='ls -la --color=auto'
 
 # --- Open Zellij (tmux alt) by default ---
 

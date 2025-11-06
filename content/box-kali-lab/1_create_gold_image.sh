@@ -43,7 +43,7 @@ fi
 
 # --- Main Workflow ---
 echo "[*] Step 1: Provisioning the VM with 'vagrant up'..."
-vagrant up --provision
+source venv/bin/activate && vagrant up --provision
 echo "[*] Step 2: Halting the VM for a clean snapshot..."
 vagrant halt
 echo "[*] Step 3: Preparing to save the halted state to snapshot '$SNAPSHOT_NAME'..."

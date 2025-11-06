@@ -45,3 +45,12 @@
     autoremove: true
     autoclean: true
   become: true
+
+- name: Ensure Obsidian config directory exists with correct permissions
+  ansible.builtin.file:
+    path: /home/vagrant/.config/obsidian
+    state: directory
+    owner: vagrant
+    group: vagrant
+    mode: "0755"
+  become: false

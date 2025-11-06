@@ -1,3 +1,7 @@
++++
+title = "Intro to Web Hacking"
++++
+
 # https://tryhackme.com/path/outline/jrpenetrationtester
 
 ```bash

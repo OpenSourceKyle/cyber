@@ -1,3 +1,7 @@
++++
+title = "Data Exfiltration"
++++
+
 # https://tryhackme.com/room/dataxexfilt
 
 - Living Off Trusted Sites (LOTS) Project: https://lots-project.com/

@@ -24,6 +24,8 @@ resources/
 node_modules/
 package-lock.json
 .hugo_build.lock
+go.mod
+go.sum
 
 ### EXTRAS
 .obsidian/

@@ -1,3 +1,7 @@
++++
+title = "EasyCTF"
++++
+
 # https://tryhackme.com/room/easyctf
 
 ```bash

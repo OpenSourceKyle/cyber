@@ -1,3 +1,7 @@
++++
+title = "Windows Local Persistence"
++++
+
 # https://tryhackme.com/room/windowslocalpersistence
 
 ```bash

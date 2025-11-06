@@ -1,7 +1,8 @@
-# https://app.hackthebox.com/starting-point
++++
+title = "Unified"
++++
 
-```bash
-# https://tryhackme.com/room/blog
+# https://app.hackthebox.com/starting-point
 
 ```bash
 
@@ -123,7 +124,7 @@ local     0.000GB
 // nothing
 
 2025-08-20 15:39:06 -- find / -name "system.properties" 2>/dev/null
-cat /path/to/your/system.properties```
+cat /path/to/your/system.properties
 // nothing interesting
 
 $6$Ry6Vdbse$8enMR5Znxoo.WfCMd/Xk65GwuQEPx1M.QP8/qHiQV0PvUc3uHuonK4WcTQFN1CRk3GwQaquyVwCVq8iQgPTt4.
@@ -227,5 +228,4 @@ warren	warren@unified.htb		Read Only
 /root/root.txt
 /home/michael/user.txt
 // pwned
-```
 ```

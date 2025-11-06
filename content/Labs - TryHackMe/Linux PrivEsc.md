@@ -1,3 +1,7 @@
++++
+title = "Linux PrivEsc"
++++
+
 # https://tryhackme.com/room/linuxprivesc
 
 ```bash
