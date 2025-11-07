@@ -1,6 +1,7 @@
 +++
-title = "HackTheBox Labs"
-archetype = "chapter"
+title = "Labs - HackTheBox"
+description = "HackTheBox lab writeups and notes"
 +++
 
-{{% children type="list" sort="title" %}}
+{{% children type="list" description=false %}}
+

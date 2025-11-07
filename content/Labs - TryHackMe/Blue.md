@@ -1,7 +1,6 @@
 +++
 title = "Blue"
 +++
-
 # https://tryhackme.com/room/blue
 ```bash
 =================================

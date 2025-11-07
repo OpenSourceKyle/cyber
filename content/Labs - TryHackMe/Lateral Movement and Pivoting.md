@@ -1,7 +1,6 @@
 +++
 title = "Lateral Movement and Pivoting"
 +++
-
 # https://tryhackme.com/room/lateralmovementandpivoting
 
 Extra reading: https://adepts.of0x.cc/shadowmove-hijack-socket/

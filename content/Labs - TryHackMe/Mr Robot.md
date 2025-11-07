@@ -1,7 +1,6 @@
 +++
 title = "Mr Robot"
 +++
-
 # https://tryhackme.com/room/mrrobot
 
 ```bash

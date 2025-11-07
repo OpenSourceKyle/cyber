@@ -1,7 +1,6 @@
 +++
 title = "Unified"
 +++
-
 # https://app.hackthebox.com/starting-point
 
 ```bash

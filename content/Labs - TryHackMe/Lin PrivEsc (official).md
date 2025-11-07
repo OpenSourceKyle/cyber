@@ -1,7 +1,6 @@
 +++
 title = "Lin PrivEsc (official)"
 +++
-
 # https://tryhackme.com/room/linprivesc
 
 ```bash

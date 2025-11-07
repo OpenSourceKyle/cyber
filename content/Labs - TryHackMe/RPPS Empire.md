@@ -1,7 +1,6 @@
 +++
 title = "RPPS Empire"
 +++
-
 # https://tryhackme.com/room/rppsempire
 
 ```bash

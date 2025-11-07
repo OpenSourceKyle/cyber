@@ -1,7 +1,6 @@
 +++
 title = "GoldenEye"
 +++
-
 # https://tryhackme.com/room/goldeneye
 
 ```bash

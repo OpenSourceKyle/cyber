@@ -1,7 +1,6 @@
 +++
 title = "Wreath"
 +++
-
 # https://tryhackme.com/room/wreath
 
 ```bash

@@ -117,19 +117,16 @@
       changed_when: false
       failed_when: false
 
-    - name: Clean up bloodhound downloads
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /tmp/bloodhound-cli-linux-amd64.tar.gz
-        - /tmp/bloodhound-cli
-      when: security_tools_bloodhound_download is defined
+- name: Ensure security tools base directory exists
+  ansible.builtin.file:
+    path: "{{ security_tools_base_dir | expanduser }}"
+    state: directory
+    mode: "0755"
 
 - name: Clone security tools git repositories
   ansible.builtin.git:
     repo: "{{ item.repo }}"
-    dest: "{{ item.dest | default('/home/vagrant/' ~ (item.repo | basename | regex_replace('\\.git$', ''))) }}"
+    dest: "{{ item.dest | default((security_tools_base_dir | expanduser) ~ '/' ~ (item.repo | basename | regex_replace('\\.git$', ''))) }}"
     version: "{{ item.version | default('master') }}"
   loop: "{{ security_tools_git_repos }}"
   failed_when: false

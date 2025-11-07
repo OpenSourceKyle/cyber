@@ -1,7 +1,6 @@
 +++
 title = "Blog"
 +++
-
 # https://tryhackme.com/room/blog
 
 ```bash

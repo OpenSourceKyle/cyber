@@ -24,18 +24,19 @@ git submodule update --init --recursive
 git submodule update --remote --recursive
 ```
 
-### Adding Front Matter to Lab Files
+### Adding Front Matter to Lab Files (pre-commit hook)
 
-Lab files need front matter for Hugo to render them correctly. A script automatically adds front matter to any lab files that don't have it:
+A git pre-commit hook is set up at `.git/hooks/pre-commit` to automatically add front matter to lab files before each commit. This ensures all new lab files will have proper front matter even if you forget to add it manually.
 
-**Manually run the script:**
+The hook:
+
+- Automatically runs `scripts/add-front-matter.py` on lab directories before each commit
+- Processes files in `content/Labs - TryHackMe` and `content/Labs - HackTheBox`
+- Automatically stages any modified files after adding front matter
+- Runs silently and won't interrupt your commit workflow
+
+**Note:** If you clone this repository, you may need to make the hook executable:
+
 ```bash
-python3 scripts/add-front-matter.py
+chmod +x .git/hooks/pre-commit
 ```
-
-**Dry run (see what would be changed):**
-```bash
-python3 scripts/add-front-matter.py --dry-run
-```
-
-A git pre-commit hook is also set up to automatically add front matter when you commit lab files. This ensures all new lab files will have proper front matter even if you forget to add it manually.

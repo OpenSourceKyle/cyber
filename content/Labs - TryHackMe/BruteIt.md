@@ -1,7 +1,6 @@
 +++
 title = "BruteIt"
 +++
-
 # https://tryhackme.com/room/bruteit
 
 ```bash

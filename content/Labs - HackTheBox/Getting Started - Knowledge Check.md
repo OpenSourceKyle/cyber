@@ -1,7 +1,6 @@
 +++
 title = "Getting Started - Knowledge Check"
 +++
-
 # https://academy.hackthebox.com/beta/module/77/section/859
 
 ```bash

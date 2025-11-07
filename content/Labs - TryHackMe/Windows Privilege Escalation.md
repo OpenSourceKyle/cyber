@@ -1,7 +1,6 @@
 +++
 title = "Windows Privilege Escalation"
 +++
-
 # https://tryhackme.com/room/windowsprivesc20
 
 ```bash

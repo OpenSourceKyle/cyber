@@ -1,7 +1,6 @@
 +++
 title = "Ice"
 +++
-
 # https://tryhackme.com/room/ice
 
 ```bash

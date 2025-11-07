@@ -1,10 +1,12 @@
 # --- Zsh Real-time Logging (Local VM Storage Version) ---
 
+# Base directory for logs and notes
+export LOG_DIR_BASE="$HOME/0_logs"
+
 if [[ -z "$ZSH_LOGGING_ACTIVE" ]]; then
     export ZSH_LOGGING_ACTIVE=1
 
     # Save everything to a reliable directory in the user's home folder.
-    LOG_DIR_BASE="$HOME/kali_logs"
     mkdir -p "$LOG_DIR_BASE"
     LOG_DATE=$(date +"%Y-%m-%d")
 
@@ -45,10 +47,9 @@ zshexit() {
 
 # --- opnotes: Focused Note-Taking ---
 opnotes() {
-    local NOTES_DIR_BASE="$HOME/kali_logs"
-    local NOTES_FILE="$NOTES_DIR_BASE/1_opnotes.txt"
+    local NOTES_FILE="$LOG_DIR_BASE/1_opnotes.txt"
 
-    mkdir -p "$NOTES_DIR_BASE"
+    mkdir -p "$LOG_DIR_BASE"
     touch "$NOTES_FILE"
 
     # Use the external .vimrc file for vim configuration

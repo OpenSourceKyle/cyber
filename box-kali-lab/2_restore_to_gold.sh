@@ -14,13 +14,10 @@ set -e
 
 # --- Load shared configuration ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/.config_snapshot"
+source "$SCRIPT_DIR/5_config"
 
 # --- Get current snapshot list ---
-echo "[*] Checking current snapshots..."
-SNAPSHOT_LIST=$(vagrant snapshot list)
-echo "$SNAPSHOT_LIST"
-echo
+display_snapshot_list
 
 # --- Argument Parsing ---
 FORCE_MODE=false

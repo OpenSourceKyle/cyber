@@ -1,7 +1,6 @@
 +++
 title = "Badbyte"
 +++
-
 # https://tryhackme.com/room/badbyte
 
 ```bash

@@ -1,7 +1,6 @@
 +++
 title = "PolKit"
 +++
-
 # https://tryhackme.com/room/polkit
 
 ```bash

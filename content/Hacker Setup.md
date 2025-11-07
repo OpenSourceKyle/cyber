@@ -1,3 +1,8 @@
++++
+title = "Hacker Setup Notes"
+type = "home"
++++
+
 # TODO
 
 - make zsh hook or something that background scan commands, saves output to unique file in ~/kali_logs (maybe make this exportable $HACKER_LOG)

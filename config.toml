@@ -2,9 +2,9 @@ baseURL = "/"
 title = "Cyber Cheatsheet"
 theme = "hugo-theme-relearn"
 
-# Ignore venv directories and other non-content files
+# Ignore .venv directories and other non-content files
 ignoreFiles = [
-  "venv/",
+  ".venv/",
   "box-kali-lab/",
   "box-win-lab/"
 ]

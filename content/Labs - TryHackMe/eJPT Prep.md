@@ -1,7 +1,6 @@
 +++
 title = "eJPT Prep"
 +++
-
 # https://tryhackme.com/room/ejptprep
 
 ```bash

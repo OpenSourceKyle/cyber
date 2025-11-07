@@ -1,7 +1,7 @@
 +++
-title = "TryHackMe Labs"
-archetype = "chapter"
+title = "Labs - TryHackMe"
+description = "TryHackMe room writeups and notes"
 +++
 
-{{% children type="list" sort="title" %}}
+{{% children type="list" description=false %}}
 
