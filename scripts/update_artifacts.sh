@@ -5,11 +5,9 @@
 
 set -euo pipefail
 
-# Define the directory where repositories will be stored
-TOOLS_DIR="${TOOLS_DIR:-tools}"
-
-# Define the directory where scripts will be stored
-SCRIPTS_DIR="${SCRIPTS_DIR:-scripts}"
+# Define the directory where repositories and scripts will be stored
+# Default to ../tools (one directory above where this script is located)
+TOOLS_DIR="${TOOLS_DIR:-../tools}"
 
 # List of repositories to clone/update
 # Format: repo_url:branch (branch is optional, defaults to master/main)
@@ -18,20 +16,19 @@ REPOS=(
 )
 
 # List of scripts/files to download
-# Format: url (files will be saved to SCRIPTS_DIR with their original filename)
+# Format: url (files will be saved to TOOLS_DIR with their original filename)
 SCRIPTS=(
   "https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh"
-  "https://github.com/carlospolop/PEASS-ng/releases/latest/download/winPEAS.ps1"
+  "https://github.com/peass-ng/PEASS-ng/raw/refs/heads/master/winPEAS/winPEASps1/winPEAS.ps1"
   "https://github.com/carlospolop/PEASS-ng/releases/latest/download/winPEAS.bat"
   "https://github.com/carlospolop/PEASS-ng/releases/latest/download/winPEASx64.exe"
-  "https://github.com/carlospolop/PEASS-ng/releases/latest/download/winPEAS.exe"
+  "https://github.com/peass-ng/PEASS-ng/releases/download/20251101-a416400b/winPEASx86.exe"
 )
 
-echo "Starting artifact update process..."
+echo "=== Starting artifact update process ==="
 
-# Create tools and scripts directories if they don't exist
+# Create tools directory if it doesn't exist
 mkdir -p "$TOOLS_DIR"
-mkdir -p "$SCRIPTS_DIR"
 
 # Function to extract repository name from URL
 get_repo_name() {
@@ -44,9 +41,10 @@ update_repo() {
   local repo_spec="$1"
   local repo_url branch
   
-  # Split by colon to get repo URL and branch
+  # Split by last colon to get repo URL and branch (URLs contain colons like https://)
   if [[ "$repo_spec" == *":"* ]]; then
-    repo_url="${repo_spec%%:*}"
+    # Use parameter expansion to split on the last colon
+    repo_url="${repo_spec%:*}"
     branch="${repo_spec##*:}"
   else
     repo_url="$repo_spec"
@@ -71,7 +69,7 @@ update_repo() {
     git pull origin "$branch" || git pull origin master || true
     cd - > /dev/null
   else
-    echo "  Cloning repository..."
+    echo "=== Cloning repository ==="
     git clone --branch "$branch" --single-branch --depth 1 "$repo_url" "$repo_path" || \
     git clone --branch master --single-branch --depth 1 "$repo_url" "$repo_path" || \
     git clone --single-branch --depth 1 "$repo_url" "$repo_path"
@@ -85,20 +83,55 @@ download_script() {
   local script_spec="$1"
   local url dest_path dest_dir
   
-  # Split by colon to get URL and destination path (if custom path specified)
-  if [[ "$script_spec" == *":"* ]]; then
-    url="${script_spec%%:*}"
+  # Check if a custom destination path is specified (format: url:destination_path)
+  # URLs contain colons (https://), so we need to distinguish between:
+  # - URL with protocol (https://example.com/file) - no custom path
+  # - URL with custom path (https://example.com/file:/custom/path) - has custom path
+  # For URLs, we look for a colon that comes AFTER the protocol (after ://)
+  if [[ "$script_spec" =~ ^https?:// ]]; then
+    # This is a URL - check if there's a colon after the :// part
+    local after_protocol="${script_spec#*://}"
+    # Check if there's a colon in the path part (not in the protocol)
+    if [[ "$after_protocol" == *":"* ]]; then
+      # There's a colon after the protocol, check if what follows looks like a path
+      local after_last_colon="${script_spec##*:}"
+      # If it starts with //, it's part of the URL protocol, not a custom path
+      # If it starts with a single / (not //), ./, or ~, it's likely a custom path
+      if [[ "$after_last_colon" =~ ^[.~] ]] || [[ "$after_last_colon" =~ ^/[^/] ]]; then
+        # Custom destination path specified (starts with /, ./, or ~, but not //)
+        url="${script_spec%:*}"
+        dest_path="${script_spec##*:}"
+        local full_dest="$dest_path"
+        dest_dir=$(dirname "$full_dest")
+      else
+        # No custom path (starts with // or something else), use the URL's filename
+        url="$script_spec"
+        dest_path=$(basename "$url")
+        local full_dest="$TOOLS_DIR/$dest_path"
+        dest_dir="$TOOLS_DIR"
+      fi
+    else
+      # No colon after protocol, no custom path
+      url="$script_spec"
+      dest_path=$(basename "$url")
+      local full_dest="$TOOLS_DIR/$dest_path"
+      dest_dir="$TOOLS_DIR"
+    fi
+  elif [[ "$script_spec" == *":"* ]] && [[ "${script_spec##*:}" =~ ^[/.~] ]]; then
+    # Not a URL, but has a colon and the part after looks like a path
+    url="${script_spec%:*}"
     dest_path="${script_spec##*:}"
     local full_dest="$dest_path"
     dest_dir=$(dirname "$full_dest")
   else
+    # No custom path, use the URL's filename
     url="$script_spec"
     dest_path=$(basename "$url")
-    local full_dest="$SCRIPTS_DIR/$dest_path"
-    dest_dir="$SCRIPTS_DIR"
+    local full_dest="$TOOLS_DIR/$dest_path"
+    dest_dir="$TOOLS_DIR"
   fi
   
-  echo "Downloading script: $(basename "$full_dest")"
+  echo "=== Downloading script: $(basename "$full_dest") ==="
   
   # Create destination directory if it doesn't exist
   mkdir -p "$dest_dir"
@@ -127,5 +160,4 @@ for script in "${SCRIPTS[@]}"; do
   download_script "$script"
 done
 
-echo "Artifact update process completed."
-
+echo "✓ Artifact update process completed..."

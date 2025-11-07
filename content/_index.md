@@ -77,24 +77,29 @@ nc -unvzw5 <TARGET> <PORT>
 
 ## Nmap
 
-- **`Open`** - received SYN-ACK
-- **`Closed`** - received RST
+- **`Open`** - received TCP SYN-ACK
+- **`Closed`** - received TCP RST
 - **`Filtered`** - no response
-- **`Unfiltered`** - Nmap can't determine the state, but the port is accessible (seen with `-sA` ACK scans)
-- **`Open/Filtered`** - Nmap can't tell if the port is open or blocked by a firewall
-- **`Closed/Filtered`** - Nmap can't tell if the port is closed or blocked by a firewall
+- **`Unfiltered`** - (with `-sA` TCP ACK scans) can't determine the state, but the port is accessible
+- **`Open/Filtered`** - can't tell if the port is open or blocked by a firewall
+- **`Closed/Filtered`** - (with `-sI` IP ID idle scan) can't tell if the port is closed or blocked by a firewall
 
 Filtering out live hosts for `-iL`:
 
 ```bash
 # Find Live Hosts
-sudo nmap -n -sn --reason -oA host_disc
+sudo nmap -n -sn --reason -oA host_disc <TARGET>
 # Create list
 grep 'Status: Up' host_disc.gnmap | awk '{print $2}' > live_hosts.txt
 # Scan normally w/ list
-sudo nmap -n -Pn -sV -sC -oA host_disc_live -iL live_hosts.txt
+sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live -iL live_hosts.txt
+# Trace packet
+sudo nmap -n -Pn -sS -p 21 --packet-trace --disable-arp-ping <TARGET>
+# TCP Full-Connect
+sudo nmap -n -Pn -sT -sV -sC --reason <TARGET>
+# UDP
+sudo nmap -n -Pn -sU -F
 ```
-
 
 ### Webservers
 
