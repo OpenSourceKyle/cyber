@@ -1,6 +1,7 @@
 baseURL = "/"
 title = "Cyber Cheatsheet"
 theme = "hugo-theme-relearn"
+themesDir = ".themes"
 
 # Ignore .venv directories and other non-content files
 ignoreFiles = [

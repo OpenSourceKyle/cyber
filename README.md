@@ -15,13 +15,8 @@ git clone --recursive https://github.com/opensourcekyle/cyber.git
 **First time setup** (if you cloned without `--recursive` or the theme is missing):
 
 ```bash
-git submodule update --init --recursive
-```
-
-**Update the theme** to the latest version:
-
-```bash
-git submodule update --remote --recursive
+rm -rf .themes
+git submodule add https://github.com/McShelby/hugo-theme-relearn.git .themes/hugo-theme-relearn
 ```
 
 ### Adding Front Matter to Lab Files (pre-commit hook)
