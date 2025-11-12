@@ -35,6 +35,7 @@
       - mono-runtime
       - rubeus
       - feroxbuster
+      - enum4linux-ng
     state: present
     install_recommends: false
     update_cache: false

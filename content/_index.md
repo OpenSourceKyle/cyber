@@ -61,18 +61,64 @@ type = "home"
 
 # Information Gathering/Intelligence Gathering
 
+| **No.** | **Principle**                                                          |
+| ------- | ---------------------------------------------------------------------- |
+| 1.      | There is more than meets the eye. Consider all points of view.         |
+| 2.      | Distinguish between what **we see** and what **we do not see**.        |
+| 3.      | There are always ways to gain more information. Understand the target. |
+
+| Layer | Name                    | Goal / Purpose                                                                                                                      |
+| :---- | :---------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| **1** | **Internet Presence**   | **Discover Assets:** Identify all public-facing domains, subdomains, IPs, and netblocks.                                            |
+| **2** | **Gateway**             | **Analyze the Perimeter:** Understand the target's external interfaces and protection mechanisms (e.g., WAF, firewall).             |
+| **3** | **Accessible Services** | **Enumerate Services:** Identify and understand the function of every open port and running service on the discovered assets.       |
+| **4** | **Processes**           | **Understand Functionality:** Analyze how data is processed by services and identify dependencies between inputs and outputs.       |
+| **5** | **Privileges**          | **Identify Permissions:** Determine the privileges of each service's user account and look for overlooked or excessive permissions. |
+| **6** | **OS Setup**            | **Internal Recon:** After gaining access, gather information on the OS configuration, security posture, and admin practices.        |
+
 - Ports:
     - https://www.stationx.net/common-ports-cheat-sheet/
     - https://web.archive.org/web/20240315102711/https://packetlife.net/media/library/23/common-ports.pdf
     - https://nullsec.us/top-1-000-tcp-and-udp-ports-nmap-default/
 
+## Infrastructure
+
+### Subdomains
+
+- https://crt.sh/
+- https://domain.glass/
+- (PAID) https://buckets.grayhatwarfare.com/
+
+```bash
+# Domain => Subdomains via Cert Registry
+curl -s https://crt.sh/\?q\=<DOMAIN>\&output\=json | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u | tee subdomainlist.txt
+# Full Info 
+for i in $(cat subdomainlist.txt) ; do host $i | tee -a hostinfo.txt ; done
+# (IPv4) Domain Name => IP Address
+for i in $(cat subdomainlist.txt) ; do host $i | grep "has address" | cut -d" " -f1,4 | tee -a domain_ipaddress.txt ; done
+# (IPv4) Addresses Only
+for i in $(cat domain_ipaddress.txt) ; do host $i | grep "has address" | cut -d" " -f4 | tee -a ip-addresses.txt ; done
+# (IPv4) Addresses => Services via Shodan
+for i in $(cat ip-addresses.txt) ; do shodan host $i ; done
+
+# DNS
+dig any <DOMAIN>
+
+# Content Search: google.com Dork
+inurl:<DOMAIN> intext:<TERM>
+```
+
 ## Scanning
 
 ```bash
+# -p: source port
 # TCP
 nc -nvzw5 <TARGET> <PORT>
 # UDP
 nc -unvzw5 <TARGET> <PORT>
+
+# Connect to Encrypted Service (TLS/SSL)
+openssl s_client -starttls ftp -connect <TARGET>:<PORT>
 ```
 
 ## Nmap
@@ -90,18 +136,89 @@ Filtering out live hosts for `-iL`:
 # Find Live Hosts
 sudo nmap -n -sn --reason -oA host_disc <TARGET>
 # Create list
-grep 'Status: Up' host_disc.gnmap | awk '{print $2}' > live_hosts.txt
+grep 'Status: Up' host_disc.gnmap | awk '{print $2}' | tee live_hosts.txt
 # Scan normally w/ list
 sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live -iL live_hosts.txt
-# Trace packet
-sudo nmap -n -Pn -sS -p 21 --packet-trace --disable-arp-ping <TARGET>
-# TCP Full-Connect
+# Trace packet (MORE INFO)
+sudo nmap -n -Pn -sS --packet-trace --disable-arp-ping -p <PORT> <TARGET>
+
+# TCP Full-Connect (3-way handshake)
 sudo nmap -n -Pn -sT -sV -sC --reason <TARGET>
-# UDP
-sudo nmap -n -Pn -sU -F
+
+# UDP (normally no response)
+sudo nmap -n -Pn -sU -sV -sC --reason --top-ports=100 <TARGET>
+
+# Create HTML reports from nmap XML scan
+# https://nmap.org/book/output.html
+xsltproc <SCAN_FILE>.xml -o <OUTPUT>.html
+
+# SPAM: scan using multiple IP addresses
+sudo nmap -n -Pn --max-retries=1 --source-port <SRC_PORT> -D RND:5 <TARGET>
+
+# --max-retries <ATTEMPTS>
+# -T <AGGRESSION_1_5>
+# --packet-trace
+# --reason
+# --disable-arp-ping
+# --top-ports=<NUM>
+# --script <SCRIPT>
+# -g <SRC_PORT>
+# --dns-server <NAMESERVER>
 ```
 
-### Webservers
+### 📜 Nmap Scripting Engine (NSE)
+
+The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts for vulnerability detection, service enumeration, and exploitation.
+
+**Reference:** [NSE Usage Guide](https://nmap.org/book/nse-usage.html)
+
+#### 📖 How to Use NSE
+
+**Basic Usage:**
+- `-sC` - Run a set of popular, common scripts
+- `--script` - Run specific scripts by name, category, or file path
+- `--script-help` - Show arguments for `--script-args`
+
+**Advanced Usage:**
+- Combine scripts with wildcards: `--script "smb-*,http-*"`
+- Use comprehensive documentation: [NSE Script Database](https://nmap.org/nsedoc/scripts/)
+- Search for scripts: `grep "ftp" /usr/share/nmap/scripts/script.db`
+
+```bash
+# --script-trace : trace script scans
+nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' -oA nmap_http_put <TARGET>
+```
+
+##### 📂 Script Categories
+
+Location: `/usr/share/nmap/scripts`
+- https://nmap.org/nsedoc/scripts/
+
+- **auth** - Scripts related to authentication, such as bypassing credentials or checking for default ones.
+- **broadcast** - Used to discover hosts on the local network by broadcasting requests.
+- **brute** - Scripts that perform brute-force attacks to guess passwords or credentials.
+- **default** - The core set of scripts that are run automatically with `-sC` or `-A`.
+- **discovery** - Actively gathers more information about a network, often using public registries or protocols like SNMP.
+- **dos** - Tests for vulnerabilities that could lead to a denial-of-service attack.
+- **exploit** - Actively attempts to exploit known vulnerabilities on a target system.
+- **external** - Interacts with external services or databases.
+- **fuzzer** - Sends unexpected or randomized data to a service to find bugs or vulnerabilities.
+- **intrusive** - These scripts can be noisy, resource-intensive, or potentially crash the target system.
+- **malware** - Scans for known malware or backdoors on a target host.
+- **safe** - Scripts that are considered safe to run as they are not designed to crash services, use excessive resources, or exploit vulnerabilities.
+- **version** - Extends the functionality of Nmap's version detection feature.
+- **vuln** - Checks a target for specific, known vulnerabilities.
+
+#### 📥 Install New NSE Script
+
+```bash
+sudo wget --output-file /usr/share/nmap/scripts/<SCRIPT>.nse \
+    https://svn.nmap.org/nmap/scripts/<SCRIPT>.nse
+
+nmap --script-updatedb
+```
+
+## Webservers
 
 - OWASP Top 10:
     - https://owasp.org/www-project-top-ten/
@@ -143,16 +260,106 @@ feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --dept
 
 # Vulnerability Assessment/Analysis
 
+## 📁 FTP
+
+- `TCP/20`: data transfer
+    - Active: Client->Server
+    - Passive: Server->Client
+- `TCP/21`: control channel
+
+- Commands: https://web.archive.org/web/20230326204635/https://www.smartfile.com/blog/the-ultimate-ftp-commands-list/
+- Server Return Codes: https://en.wikipedia.org/wiki/List_of_FTP_server_return_codes
+
+**TFTP has no auth and uses only UDP.
+
 ```bash
-# List SMB shares w/o password
-smbclient -N --list <TARGET> > smb_shares.txt
+# === vsFTPd ===
+# http://vsftpd.beasts.org/vsftpd_conf.html
 
-# Connect to SMB share w/ a null session (no password)
-smbclient -N //<TARGET>/<SHARE>
-
-# Connect to SMB share with password
-smbclient --password=<PASSWORD> '\\<HOSTNAME>\<SHARE>'
+# Server Config
+cat /etc/vsftpd.conf | grep -v "#"
+# DISALLOWED FTP users
+cat /etc/ftpusers
 ```
+
+```bash
+# Connect to FTP server in passive mode with anonymous login
+# Username: anonymous
+# Password: (no password required)
+ftp -p -a <HOST>
+
+# List files and directories
+ls
+ls -R
+
+# Download file
+get <FILENAME>
+# Upload file
+put <FILENAME>
+# Download ALL files
+wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
+
+# Execute local commands (outside of session)
+!<COMMAND>
+```
+
+## SMB/CIFS
+
+- `TCP/135`: old RPC
+- `TCP/137,138,139`: old (CIFS/SMB1)
+- `TCP/445`: RPC/(SMB2/3)
+- Shares:
+    - `C$` (drive)
+    - `ADMIN$` (Windows drive)
+    - `IPC$` (RPC)
+    - `PRINT$`
+
+```bash
+# ANON: List available SMB shares
+smbclient -U "" -N --list //<TARGET>/ | tee smb_shares.txt
+smbclient -U "guest" -N --list //<TARGET>/ | tee smb_shares.txt
+
+# ANON: Connect to an SMB share
+smbclient -U "" -N //<TARGET>/<SHARE>
+smbclient -U "guest" -N //<TARGET>/<SHARE>
+
+# Connect to SMB share
+smbclient --user=<DOMAIN>/<USERNAME> --password='<PASSWORD>' //<TARGET>/<SHARE>
+# SMB commands once connected:
+ls                    # List files
+get <FILE>           # Download file
+recurse              # Toggle directory recursion
+
+# Execute local commands (outside of session)
+!<COMMAND>
+
+# SMB enumeration:
+sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA nmap_smb_domains <TARGET>
+
+# RPC
+rpcclient --user=<DOMAIN>/<USERNAME> --password='<PASSWORD>' <TARGET>
+srvinfo	 # Server information
+enumdomains	 # Enumerate all domains that are deployed in the network
+querydominfo	# Provides domain, server, and user information of deployed domains
+netshareenumall	 # Enumerates all available shares
+netsharegetinfo <SHARE>	 # Provides information about a specific share
+enumdomusers  # Enumerates all domain users
+queryuser <RID>  # user info
+
+# Brute-Forcing RIDs via RPC
+for i in $(seq 500 1100);do rpcclient -N -U "" <TARGET> -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
+
+# Same with other tools
+samrdump.py <TARGET>
+smbmap -H <TARGET>
+crackmapexec smb <TARGET> --shares -u '' -p ''
+
+# Enumeration SMB/NetBIOS
+enum4linux -a <TARGET> | tee enum4linux.txt
+enum4linux-ng -A <TARGET> | tee enum4linux-ng.txt
+```
+
+## SNMP
 
 ```bash
 # - SNMPv1/v2c use a plaintext **Community String** for access.
