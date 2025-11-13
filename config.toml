@@ -10,6 +10,10 @@ ignoreFiles = [
   "box-win-lab/"
 ]
 
+[markup.goldmark.renderer]
+  # Allow HTML and markdown rendering in shortcodes (required for tables in details shortcode)
+  unsafe = true
+
 [params]
 defaultTheme = "auto"
 ShowToc = true

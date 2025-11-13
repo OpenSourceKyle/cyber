@@ -262,25 +262,30 @@ feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --dept
 
 ## 📁 FTP
 
-- `TCP/20`: data transfer
+- `TCP 20`: data transfer
     - Active: Client->Server
     - Passive: Server->Client
-- `TCP/21`: control channel
+- `TCP 21`: control channel
+- Server Config: `/etc/vsftpd.conf`
+    - http://vsftpd.beasts.org/vsftpd_conf.html
+- DISALLOWED FTP users: `/etc/ftpusers`
 
 - Commands: https://web.archive.org/web/20230326204635/https://www.smartfile.com/blog/the-ultimate-ftp-commands-list/
 - Server Return Codes: https://en.wikipedia.org/wiki/List_of_FTP_server_return_codes
 
 **TFTP has no auth and uses only UDP.
 
-```bash
-# === vsFTPd ===
-# http://vsftpd.beasts.org/vsftpd_conf.html
+{{% details "Dangerous Settings" %}}
 
-# Server Config
-cat /etc/vsftpd.conf | grep -v "#"
-# DISALLOWED FTP users
-cat /etc/ftpusers
-```
+| **Setting**                    | **Description**                                                                    |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| `anonymous_enable=YES`         | Allowing anonymous login?                                                          |
+| `anon_upload_enable=YES`       | Allowing anonymous to upload files?                                                |
+| `anon_mkdir_write_enable=YES`  | Allowing anonymous to create new directories?                                      |
+| `no_anon_password=YES`         | Do not ask anonymous for password?                                                 |
+| `anon_root=/home/username/ftp` | Directory for anonymous.                                                           |
+| `write_enable=YES`             | Allow the usage of FTP commands: STOR, DELE, RNFR, RNTO, MKD, RMD, APPE, and SITE? |
+{{% /details %}}
 
 ```bash
 # Connect to FTP server in passive mode with anonymous login
@@ -305,14 +310,30 @@ wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 
 ## SMB/CIFS
 
-- `TCP/135`: old RPC
-- `TCP/137,138,139`: old (CIFS/SMB1)
-- `TCP/445`: RPC/(SMB2/3)
+- `TCP 135`: old RPC
+- `TCP 137,138,139`: old (CIFS/SMB1)
+- `TCP 445`: RPC/(SMB2/3)
 - Shares:
     - `C$` (drive)
     - `ADMIN$` (Windows drive)
     - `IPC$` (RPC)
     - `PRINT$`
+
+{{% details "Dangerous Settings" %}}
+
+|**Setting**|**Description**|
+|---|---|
+|`browseable = yes`|Allow listing available shares in the current share?|
+|`read only = no`|Forbid the creation and modification of files?|
+|`writable = yes`|Allow users to create and modify files?|
+|`guest ok = yes`|Allow connecting to the service without using a password?|
+|`enable privileges = yes`|Honor privileges assigned to specific SID?|
+|`create mask = 0777`|What permissions must be assigned to the newly created files?|
+|`directory mask = 0777`|What permissions must be assigned to the newly created directories?|
+|`logon script = script.sh`|What script needs to be executed on the user's login?|
+|`magic script = script.sh`|Which script should be executed when the script gets closed?|
+|`magic output = script.out`|Where the output of the magic script needs to be stored?|
+{{% /details %}}
 
 ```bash
 # ANON: List available SMB shares
@@ -359,19 +380,382 @@ enum4linux -a <TARGET> | tee enum4linux.txt
 enum4linux-ng -A <TARGET> | tee enum4linux-ng.txt
 ```
 
-## SNMP
+## NFS
+
+Similiar to SMB.
+
+- `TCP/UDP 111`: NFSv2/v3
+    - and various dynamic ports using `rpcbind` and `portmapper`
+- `TCP 2049`: NFSv4
+- Server Config: `/etc/exports`
+    - https://manpages.ubuntu.com/manpages/trusty/man5/exports.5.html
+
+{{% details "Dangerous Options" %}}
+
+| **Dangerous Option** | **Description**                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `rw`                 | Read and write permissions.                                                                                          |
+| `insecure`           | Ports above 1024 will be used.                                                                                       |
+| `nohide`             | If another file system was mounted below an exported directory, this directory is exported by its own exports entry. |
+| `no_root_squash`     | All files created by root are kept with the UID/GID 0.                                                               |
+{{% /details %}}
 
 ```bash
-# - SNMPv1/v2c use a plaintext **Community String** for access.
-# - Default Strings: **`public`** (Read-Only) and **`private`** (Read/Write) are common.
-onesixtyone -c <WORDLIST> <TARGET_IP>
+# Show shared dirs
+exportfs -sv
+# Show NFS Shares on server
+showmount -e <TARGET>
 
-# .1.3.6.1.2.1.1.1.0      System Description (OS, version)
-# .1.3.6.1.2.1.1.5.0      System Name (Hostname)
-# .1.3.6.1.2.1.25.1.1.0   System Uptime
-# .1.3.6.1.2.1.25.4.2.1.2 List of all running processes. Check for passwords in arguments
-# .1.3.6.1.2.1.4.20       IP Address and Routing Table information
-snmpwalk -v <VERSION> -c <COMMUNITY_STRING> <TARGET_IP> <OID>
+# Mount NFS
+mkdir target-NFS
+sudo mount -t nfs -o nolock <TARGET>:/ ./target-NFS
+sudo umount ./target-NFS
+
+# Enumerate
+sudo nmap -p111,2049 -sV -sC <TARGET>
+sudo nmap -p111,2049 -sV --script nfs* <TARGET>
+```
+
+## DNS
+
+- `UDP/TCP 53`: 
+- Server Config (Bind9)
+    - `/etc/bind/named.conf.local`
+    - `/etc/bind/named.conf.options`
+    - `/etc/bind/named.conf.log`
+    - https://wiki.debian.org/BIND9
+- https://web.archive.org/web/20250329174745/https://securitytrails.com/blog/most-popular-types-dns-attacks
+
+{{% details "Dangerous Settings" %}}
+
+| **Option**        | **Description**                                                                |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `allow-query`     | Defines which hosts are allowed to send requests to the DNS server.            |
+| `allow-recursion` | Defines which hosts are allowed to send recursive requests to the DNS server.  |
+| `allow-transfer`  | Defines which hosts are allowed to receive zone transfers from the DNS server. |
+| `zone-statistics` | Collects statistical data of zones.                                            |
+{{% /details %}}
+
+```bash
+# Query Nameserver for domain
+dig @<DNS_SERVER> ns <DOMAIN>
+
+# Query Version; sometimes works
+dig CH TXT version.bind <DOMAIN>
+
+# Any; sometimes works
+dig @<DNS_SERVER> ANY <DOMAIN>
+
+# RARE: zone transfer (full enumeration)
+dig @<DNS_SERVER> AXFR <DOMAIN>
+
+# Subdomain Brute-forcing
+for sub in $(cat /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt) ; do dig @<DNS_SERVER> $sub.<DOMAIN> | grep -v ';\|SOA' | sed -r '/^\s*$/d' | grep $sub | tee -a subdomains.txt ; done
+
+# /usr/share/SecLists/Discovery/DNS/namelist.txt
+gobuster --quiet --threads 64 --output gobuster_dns_top110000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -r <DNS_SERVER> -d <DOMAIN>
+```
+
+## SMTP/ESMTP
+
+- `TCP 25`: unencrypted
+- `TCP 465/587/2525`: encrypted
+- Security:
+    - DKIM: https://dkim.org/
+    - Sender Policy Framework (SPF): https://dmarcian.com/what-is-spf/
+    - DMARC: https://dmarc.org/
+- https://serversmtp.com/smtp-error/
+{{% details "Dangerous Settings" %}}
+
+| **Option**               | **Description**                                                                                                                                                                          |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mynetworks = 0.0.0.0/0` | With this setting, this SMTP server can send fake emails and thus initialize communication between multiple parties. Another attack possibility would be to spoof the email and read it. |
+{{% /details %}}
+
+```bash
+# CAREFUL! Open relay check
+sudo nmap -p25,465,587,2525 --script smtp-open-relay <TARGET>
+
+# User enum
+smtp-user-enum -m 60 -w 20 -M VRFY -U <WORDLIST> -t <TARGET>
+
+# Manual enumeration
+telnet <TARGET> 25
+EHLO <HOSTNAME>
+VRFY <USER>  # 250 success; 252 maybe/not; 550 failure
+EXPN
+```
+
+## IMAP/POP3
+
+- `TCP 143/993`: IMAP unc/enc
+- `TCP 110/995`: POP3 unc/enc
+
+{{% details "Dangerous Settings" %}}
+
+| **Setting**               | **Description**                                                                           |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| `auth_debug`              | Enables all authentication debug logging.                                                 |
+| `auth_debug_passwords`    | This setting adjusts log verbosity, the submitted passwords, and the scheme gets logged.  |
+| `auth_verbose`            | Logs unsuccessful authentication attempts and their reasons.                              |
+| `auth_verbose_passwords`  | Passwords used for authentication are logged and can also be truncated.                   |
+| `auth_anonymous_username` | This specifies the username to be used when logging in with the ANONYMOUS SASL mechanism. |
+{{% /details %}}
+
+```bash
+### Non-Interactive
+
+# IMAPS
+curl -vkL --user '<USER>':'<PASSWORD>' 'imaps://<TARGET>' -X <COMMAND>
+
+# POP3S
+curl -vkL --user '<USER>':'<PASSWORD>' 'pop3s://<TARGET>' -X <COMMAND>
+
+### Interactive
+
+# IMAPS
+openssl s_client -connect <TARGET>:imaps
+1 LOGIN <USERNAME> <PASSWORD>
+1 LIST "" *	# Lists all directories
+1 SELECT "<MAILBOX>" # Selects a mailbox
+1 UNSELECT "<MAILBOX>" # Exits the selected mailbox
+1 FETCH <ID> all # Metadata of email
+1 FETCH 1:* (BODY[]) # Show all emails
+1 CREATE "INBOX" # Creates a mailbox with a specified name
+1 DELETE "INBOX" # Deletes a mailbox
+1 RENAME "ToRead" "Important" #	Renames a mailbox
+1 LSUB "" *	# Returns a subset of names from the set of names that the User has declared as being active or subscribed
+1 CLOSE	# Removes all messages with the Deleted flag set
+1 LOGOUT # Closes the connection
+
+# POP3s
+openssl s_client -connect <TARGET>:pop3s
+USER <USERNAME>
+PASS <PASSWORD>
+STAT	# List num of saved emails from the server.
+LIST	# List number and size of all emails.
+RETR <ID>	# Deliver the requested email by ID.
+DELE <ID> # Delete the requested email by ID.
+CAPA	# Display the server capabilities.
+RSET	# Reset the transmitted information.
+QUIT	# Close connection
+```
+
+## SNMP
+
+- `UDP 161`: normal
+- `UDP 162`: "trap" or alert
+- OIDs: https://www.alvestrand.no/objectid/top.html
+- Versions:
+    - v1/v2c: unencrypted
+    - v3: encryption via PSK
+- `/etc/snmp/snmpd.conf`
+    - https://www.net-snmp.org/docs/man/snmpd.conf.html
+
+*Management Information Base (MIB)* is a text file of *Object Identifier (OID)* s, which provide addresses to access device info, in the *Abstract Syntax Notation One (ASN.1)* based ASCII text format. Community Strings are sort of "passwords" to manage the access level.
+
+{{% details "Dangerous Settings" %}}
+
+| **Settings**                                  | **Description**                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `rwuser noauth`                               | Provides access to the full OID tree without authentication.                          |
+| `rwcommunity <COMMUNITY_STRING> <IPv4_ADDR>`  | Provides access to the full OID tree regardless of where the requests were sent from. |
+| `rwcommunity6 <COMMUNITY_STRING> <IPv6_ADDR>` | Same access as with `rwcommunity` with the difference of using IPv6.                  |
+{{% /details %}}
+
+```bash
+### Brute-force names of Community Strings
+# - Default Strings: "public" (Read-Only) and "private" (Read/Write) are common
+onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp.txt <TARGET_IP>
+// probably "public"
+
+### Brute-force OIDs and info
+# -v 2c
+snmpwalk -v <VERSION> -c <COMMUNITY_STRING> <TARGET_IP> .1
+
+### Brute-force OIDs
+# -2 : use v2
+# braa usu. uses Version 1
+braa <COMMUNITY_STRING>@<TARGET>:.1.*
+braa <COMMUNITY_STRING>@<TARGET>:.1.3.6.*
+```
+
+## MySQL
+
+- `TCP 3306`: normal
+- Server Config:
+    - `/etc/mysql/mysql.conf.d/mysqld.cnf`
+- https://dev.mysql.com/doc/refman/8.0/en/system-schema.html#:~:text=The%20mysql%20schema%20is%20the,used%20for%20other%20operational%20purposes
+
+
+{{% details "Dangerous Settings" %}}
+- https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
+
+| **Settings**       | **Description**                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `user`             | Sets which user the MySQL service will run as.                                                               |
+| `password`         | Sets the password for the MySQL user.                                                                        |
+| `admin_address`    | The IP address on which to listen for TCP/IP connections on the administrative network interface.            |
+| `debug`            | This variable indicates the current debugging settings                                                       |
+| `sql_warnings`     | This variable controls whether single-row INSERT statements produce an information string if warnings occur. |
+| `secure_file_priv` | This variable is used to limit the effect of data import and export operations.                              |
+{{% /details %}}
+
+```bash
+# Login
+# - try "root"
+mysql -u <USER> -h <TARGET>
+mysql -u <USER> --password=<PASSWORD> -h <TARGET>
+
+select version() ;
+show databases ;
+use <DATABASE> ;
+show tables ;
+show columns from <TABLE> ;
+
+select * from <TABLE> ;
+select * from <TABLE> where <COLUMN> = "<VALUE>" ;
+
+use sys ;  # tables and metadata
+select host, unique_users from host_summary ;
+
+use information_schema ;  # metadata
+```
+
+## MSSQL
+
+- `TCP 1433`: normal
+
+Microsoft's closed-source version of SQL.
+
+- https://www.microsoft.com/en-us/sql-server/sql-server-2019
+- https://learn.microsoft.com/en-us/ssms/install/install?view=sql-server-ver15
+- https://learn.microsoft.com/en-us/sql/relational-databases/databases/system-databases?view=sql-server-ver15
+- https://learn.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15
+
+{{% details "Dangerous Settings" %}}
+
+- MSSQL clients not using encryption to connect to the MSSQL server
+- The use of self-signed certificates when encryption is being used. It is possible to spoof self-signed certificates
+- The use of [named pipes](https://docs.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15)
+- Weak & default `sa` credentials. Admins may forget to disable this account
+
+{{% /details %}}
+
+```bash
+# Enumerate via nmap
+sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 <TARGET>
+
+# Enumerate via MSF
+use auxiliary/scanner/mssql/mssql_ping
+set RHOSTS <TARGET>
+run
+
+# Login via Windows auth
+impacket-mssqlclient -windows-auth <USER>@<TARGET>
+impacket-mssqlclient -windows-auth <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
+
+select name from sys.databases ;
+```
+
+## Oracle TNS
+
+- `TCP 1521`: normal
+- Server Config:
+    - `$ORACLE_HOME/network/admin/tnsnames.ora`: names to addrs
+    - `$ORACLE_HOME/network/admin/listener.ora`: listener behavior
+    - `$ORACLE_HOME/sqldeveloper`: DB protection blacklist
+    - Default Password: `DBSNMP/dbsnmp`
+- https://docs.oracle.com/cd/E11882_01/server.112/e41085/sqlqraa001.htm#SQLQR985
+
+Oracle's version of SQL.
+
+```bash
+# SID Brute-forcing via nmap
+sudo nmap -p1521 -sV --script oracle-sid-brute <TARGET>
+
+### ODAT
+# TNS Setup for Enumeration
+wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
+wget https://download.oracle.com/otn_software/linux/instantclient/214000/instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
+sudo mkdir -p /opt/oracle
+sudo unzip -d /opt/oracle instantclient-basic-linux.x64-21.4.0.0.0dbru.zip
+sudo unzip -d /opt/oracle instantclient-sqlplus-linux.x64-21.4.0.0.0dbru.zip
+export LD_LIBRARY_PATH=/opt/oracle/instantclient_21_4:$LD_LIBRARY_PATH
+export PATH=$LD_LIBRARY_PATH:$PATH
+source ~/.bashrc
+cd ~
+git clone https://github.com/quentinhardy/odat.git
+cd odat/
+pip install --break-system-packages python-libnmap
+git submodule init
+git submodule update
+pip3 install --break-system-packages cx_Oracle
+sudo apt install -y python3-scapy
+sudo pip3 install --root-user-action colorlog termcolor passlib python-libnmap
+sudo apt install -y build-essential libgmp-dev
+pip3 install --break-system-packages pycryptodome
+
+# Enumeration
+odat.py all -d <SID> -s <TARGET>
+
+### Connect
+# Install: https://askubuntu.com/a/207145
+sqlplus <USER>/<PASSWORD>@<TARGET>/<SID>
+sqlplus <USER>/<PASSWORD>@<TARGET>/<SID> as sysdba
+# https://stackoverflow.com/questions/27717312/sqlplus-error-while-loading-shared-libraries-libsqlplus-so-cannot-open-shared
+# If you come across the following error sqlplus:
+# error while loading shared libraries: libsqlplus.so: cannot open shared object file: No such file or directory, 
+sudo sh -c "echo /usr/lib/oracle/12.2/client64/lib > /etc/ld.so.conf.d/oracle-instantclient.conf" ; sudo ldconfig
+
+# SQL Commands
+select table_name from all_tables ;
+select * from user_role_privs ;
+select name, password from sys.user$ ;
+
+### Upload webshell (if webserver)
+# Linux	/var/www/html
+# Windows	C:\inetpub\wwwroot
+echo "Oracle File Upload Test" > testing.txt
+odat.py utlfile -d <SID> -U <USER> -P <PASSWORD> -s <TARGET> --sysdba --putFile <UPLOAD_DIR> testing.txt ./testing
+curl -Lo- http://<TARGET>/testing.txt
+```
+
+## IPMI
+
+- `UDP 623`: normal
+- Default Passwords:
+    - Dell iDRAC:	`root:calvin`
+    - HP iLO: `Administrator:[randomized 8-character string consisting of numbers and uppercase letters]
+    - Supermicro IPMI: `ADMIN:ADMIN`
+
+A hardware control protocol that gives "virtual" physical access to a machine.
+
+{{% details "Dangerous Settings" %}}
+
+- Server sends the salted hash of the user's password to the user before authentication
+```bash
+
+```
+
+{{% /details %}}
+
+```bash
+### Enumeration via nmap
+sudo nmap -sU -p623 --script ipmi-version
+
+### Metasploit Scanner
+setg RHOSTS <TARGET>
+# https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_version/
+use auxiliary/scanner/ipmi/ipmi_version
+run
+# https://www.rapid7.com/db/modules/auxiliary/scanner/ipmi/ipmi_dumphashes/
+use auxiliary/scanner/ipmi/ipmi_dumphashes
+run
+
+### Crack HP iLO format
+hashcat -m 7300 ipmi_hash.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u
+hashcat -m 7300 -w 3 -O "<HASH>" /usr/share/wordlists/rockyou.txt
 ```
 
 # Exploitation

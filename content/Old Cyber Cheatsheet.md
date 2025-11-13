@@ -46,10 +46,10 @@ RustScan **(`-sT` or TCP full-connect only!)** finds targets and open ports quic
 
 ```bash
 # Just top 100
-sudo rustscan --scan-order "Random" -a <TARGET> -- -oA $(date +%Y-%m-%d_%H%M)_rustscan --top-ports 100
+sudo rustscan --scan-order "Random" -a <TARGET> -- -oA rustscan --top-ports 100
 
 # Noisy but quick; -A = -sC -sV -O --traceroute
-sudo rustscan --no-banner -u $(ulimit -Hn) -b 65535 -t 2000 --scan-order "Random" -r 1-65535 -a <TARGET> -- -oA $(date +%Y-%m-%d_%H%M)_rustscan -A
+sudo rustscan --no-banner -u $(ulimit -Hn) -b 65535 -t 2000 --scan-order "Random" -r 1-65535 -a <TARGET> -- -oA rustscan -A
 ```
 
 ## 🗺️ NMAP: `-P*`
@@ -226,7 +226,7 @@ These scans are used to bypass simple, stateless firewalls or an IDS that is onl
 UDP scanning is slower and less reliable than TCP scanning due to the connectionless nature of UDP.
 
 ```bash
-sudo nmap -sU --top-ports 20 -v -oA $(date +%Y-%m-%d_%H%M)_udp_scan <TARGET>  # UDP is slow and unreliable
+sudo nmap -sU --top-ports 20 -v -oA udp_scan <TARGET>  # UDP is slow and unreliable
 ```
 
 - **`Open`** - Response from the service (requires proper service request)
@@ -252,7 +252,7 @@ The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts
 - Search for scripts: `grep "ftp" /usr/share/nmap/scripts/script.db`
 
 ```bash
-nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' -oA $(date +%Y-%m-%d_%H%M)_http_put <TARGET>
+nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' -oA http_put <TARGET>
 ```
 
 ##### 📂 Script Categories
@@ -288,56 +288,56 @@ nmap --script-updatedb
 
 ```bash
 # Check for anonymous FTP login
-sudo nmap -Pn --script ftp-anon -oA $(date +%Y-%m-%d_%H%M)_ftp_anon <TARGET>
+sudo nmap -Pn --script ftp-anon -oA ftp_anon <TARGET>
 
 # Scan SMB ports for information and vulnerabilities
-sudo nmap -n -Pn -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users -oA $(date +%Y-%m-%d_%H%M)_smb_enum <TARGET>
+sudo nmap -n -Pn -p 137,139,445 --script nbstat,smb-os-discovery,smb-enum-shares,smb-enum-users -oA smb_enum <TARGET>
 
 # Advanced Scans
-sudo nmap -sS -p53 <NETBLOCK> -oA $(date +%Y-%m-%d_%H%M)_dns_tcp
-sudo nmap -sU -p53 -oA $(date +%Y-%m-%d_%H%M)_dns_udp <NETBLOCK>
+sudo nmap -sS -p53 <NETBLOCK> -oA dns_tcp
+sudo nmap -sU -p53 -oA dns_udp <NETBLOCK>
 sudo nmap -n -Pn -sS -sV \
   --max-retries 1 \
   --host-timeout 45s \
   --initial-rtt-timeout 300ms \
   --max-rtt-timeout 1000ms \
   -p 21,22,23,25,53,80,110,135,139,443,445,3389 \
-  -oA $(date +%Y-%m-%d_%H%M)_comprehensive_scan
+  -oA comprehensive_scan
   <TARGET>
 
 # whois
-nmap -n -Pn -sn --script whois-domain oA $(date +%Y-%m-%d_%H%M)_whois <TARGET_DOMAIN>
+nmap -n -Pn -sn --script whois-domain oA whois <TARGET_DOMAIN>
 
 # Attempts to list available SMB shares on the target
-nmap -p 445 --script smb-enum-shares -oA $(date +%Y-%m-%d_%H%M)_smb_shares <TARGET>
+nmap -p 445 --script smb-enum-shares -oA smb_shares <TARGET>
 ```
 
 #### 🔍 Additional Service Scans
 ```bash
 # DNS service discovery
-sudo nmap -sU -Pn -n -p 53 --script=dns-recursion,dns-service-discovery -oA $(date +%Y-%m-%d_%H%M)_dns_scripts <TARGET>
+sudo nmap -sU -Pn -n -p 53 --script=dns-recursion,dns-service-discovery -oA dns_scripts <TARGET>
 
 # NTP information gathering
-sudo nmap -sU -Pn -n -p 123 --script=ntp-info -oA $(date +%Y-%m-%d_%H%M)_ntp_info <TARGET>
+sudo nmap -sU -Pn -n -p 123 --script=ntp-info -oA ntp_info <TARGET>
 
 # SNMP enumeration
-sudo nmap -sU -Pn -n -p 161 --script=snmp-info <TARGET> -oA $(date +%Y-%m-%d_%H%M)_snmp_info
-sudo nmap -sU -Pn -n -p 161 --script=snmp-brute -oA $(date +%Y-%m-%d_%H%M)_snmp_brute <TARGET>
+sudo nmap -sU -Pn -n -p 161 --script=snmp-info <TARGET> -oA snmp_info
+sudo nmap -sU -Pn -n -p 161 --script=snmp-brute -oA snmp_brute <TARGET>
 
 # NetBIOS name service
-sudo nmap -sU -Pn -n -p 137 --script=nbstat -oA $(date +%Y-%m-%d_%H%M)_nbstat <TARGET>
+sudo nmap -sU -Pn -n -p 137 --script=nbstat -oA nbstat <TARGET>
 
 # DHCP discovery
-sudo nmap -sU -Pn -n -p 67 --script=dhcp-discover -oA $(date +%Y-%m-%d_%H%M)_dhcp_discover <TARGET>
+sudo nmap -sU -Pn -n -p 67 --script=dhcp-discover -oA dhcp_discover <TARGET>
 
 # TFTP enumeration
-sudo nmap -sU -Pn -n -p 69 --script=tftp-enum -oA $(date +%Y-%m-%d_%H%M)_tftp_enum <TARGET>
+sudo nmap -sU -Pn -n -p 69 --script=tftp-enum -oA tftp_enum <TARGET>
 
 # SSDP discovery
-sudo nmap -sU -Pn -n -p 1900 --script=ssdp-discover -oA $(date +%Y-%m-%d_%H%M)_ssdp_discover <TARGET>
+sudo nmap -sU -Pn -n -p 1900 --script=ssdp-discover -oA ssdp_discover <TARGET>
 
 # IKE version detection
-sudo nmap -sU -Pn -n -p 500 --script=ike-version -oA $(date +%Y-%m-%d_%H%M)_ike_version <TARGET>
+sudo nmap -sU -Pn -n -p 500 --script=ike-version -oA ike_version <TARGET>
 ```
 
 ### 🔍 `ffuf` Fuzzing
@@ -460,11 +460,11 @@ get <FILE>           # Download file
 recurse              # Toggle directory recursion
 
 # SMB enumeration:
-sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA $(date +%Y-%m-%d_%H%M)_smb_domains <TARGET>
+sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA smb_domains <TARGET>
 
 # LDAP-based enumeration
 # Useful when SMB queries are blocked or hardened.
-sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' -oA $(date +%Y-%m-%d_%H%M)_ldap_search <TARGET>
+sudo nmap -p 389 --script ldap-search --script-args 'ldap.search.base="",ldap.search.filter="(objectClass=*)",ldap.search.attributes="namingContexts"' -oA ldap_search <TARGET>
 
 # DNS / Start of Authority
 dig @<TARGET> SOA > dns_soa.txt
@@ -2200,7 +2200,7 @@ hashcat -m 1800 hashes.txt /usr/share/wordlists/rockyou.txt --outfile=hashcat_cr
 
 ```bash
 # Enhanced nmap scan for MySQL service
-nmap -Pn -sV -p 3306 -A -oA $(date +%Y-%m-%d_%H%M)_mysql_enum <TARGET>  # Better service enumeration
+nmap -Pn -sV -p 3306 -A -oA mysql_enum <TARGET>  # Better service enumeration
 
 # Connect to MySQL/MariaDB with mycli (enhanced MySQL client)
 mycli -u root -h <TARGET>
