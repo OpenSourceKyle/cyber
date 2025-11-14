@@ -3,7 +3,7 @@
 " F5: Insert timestamp
 
 " Define template variables
-let g:target_template = "=================================\nTARGET_IP_ADDRESS -- domain.com -- win/lin x32/x64\n=================================\nvpn-connect\necho 'export TARGET=TARGET_IP_ADDRESS' >> ~/.zshrc && source ~/.zshrc\necho \"\$TARGET TARGET\" | sudo tee -a /etc/hosts"
+let g:target_template = "=================================\nTARGET_IP_ADDRESS -- domain.com -- win/lin x32/x64\n=================================\nvpn-connect\nchsh -s $(which zsh)\necho 'export TARGET=TARGET_IP_ADDRESS' >> ~/.zshrc && source ~/.zshrc\necho \"\$TARGET TARGET\" | sudo tee -a /etc/hosts"
 let g:timestamp_delimiter = " -- "
 
 " F4 mappings for target template

@@ -1,48 +1,103 @@
-# This .gitignore is appropriate for repositories deployed to GitHub Pages and using
-# a Gemfile as specified at https://github.com/github/pages-gem#conventional
+# =============================================================================
+# Jekyll / GitHub Pages
+# =============================================================================
+# This .gitignore is appropriate for repositories deployed to GitHub Pages and
+# using a Gemfile as specified at https://github.com/github/pages-gem#conventional
 
-# Basic Jekyll gitignores (synchronize to Jekyll.gitignore)
+# Jekyll build artifacts
 _site/
 .sass-cache/
 .jekyll-cache/
 .jekyll-metadata
 
-# Additional Ruby/bundler ignore for when you run: bundle install
+# Ruby/Bundler
 /vendor
-
-# Specific ignore for GitHub Pages
-# GitHub Pages will always use its own deployed version of pages-gem 
-# This means GitHub Pages will NOT use your Gemfile.lock and therefore it is
-# counterproductive to check this file into the repository.
-# Details at https://github.com/github/pages-gem/issues/768
 Gemfile.lock
 
-# HUGO
+# Note: GitHub Pages will always use its own deployed version of pages-gem.
+# This means GitHub Pages will NOT use your Gemfile.lock and therefore it is
+# counterproductive to check this file into the repository.
+# Details: https://github.com/github/pages-gem/issues/768
+
+
+# =============================================================================
+# Hugo
+# =============================================================================
 
 /public
 resources/
-node_modules/
-package-lock.json
 .hugo_build.lock
+
+# Go modules (if using Hugo with Go)
 go.mod
 go.sum
 
-### EXTRAS
+# Node.js (if using Hugo with npm)
+node_modules/
+package-lock.json
+
+
+# =============================================================================
+# Development Tools & Editors
+# =============================================================================
+
+# Obsidian
 .obsidian/
-*.ovpn
+
+# VS Code
+.vscode/
+
+# Python virtual environments
+.venv/
+
+# Vim swap files
+*.swp
+
+# Temporary files
+*.tmp
+
+
+# =============================================================================
+# Infrastructure & Automation
+# =============================================================================
+
+# Vagrant
 .vagrant/
+
+# Ansible
 .ansible
-.swp
-*creds*
-*vault*
-all
-*.md.backup
 hosts
 artifacts/
-*.log
 .yamllint
-.venv/
-.vscode/
-*.tmp
-api.*
+
+
+# =============================================================================
+# Security & Credentials
+# =============================================================================
+
+# Credentials and secrets
+*creds*
+*vault*
 *.keys
+*.ovpn
+
+# API keys
+api.*
+
+
+# =============================================================================
+# Build Artifacts & Logs
+# =============================================================================
+
+*.log
+*.md.backup
+all
+
+
+# =============================================================================
+# Content Restrictions
+# =============================================================================
+# Per https://help.hackthebox.com/en/articles/5188925-streaming-writeups-walkthrough-guidelines
+# Only free or Level 0 modules in Academy can be published
+
+Academy/

