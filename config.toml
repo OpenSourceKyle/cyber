@@ -14,6 +14,11 @@ ignoreFiles = [
   # Allow HTML and markdown rendering in shortcodes (required for tables in details shortcode)
   unsafe = true
 
+[markup.tableOfContents]
+  # Include H1 headers in TOC (default is 2, which excludes H1)
+  startLevel = 1
+  endLevel = 6
+
 [params]
 defaultTheme = "auto"
 ShowToc = true
