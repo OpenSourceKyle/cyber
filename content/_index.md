@@ -81,17 +81,65 @@ type = "home"
     - https://web.archive.org/web/20240315102711/https://packetlife.net/media/library/23/common-ports.pdf
     - https://nullsec.us/top-1-000-tcp-and-udp-ports-nmap-default/
 
+## Search Engine Dorking
+
+- https://www.exploit-db.com/google-hacking-database
+- Cached Website: https://web.archive.org/
+
+```bash
+site:
+inurl:
+filetype:
+intitle:
+intext:
+inbody:
+cache:
+link:
+related:
+info:
+define:
+numrange:
+allintext:
+allinurl:
+allintitle:
+
+# Operators
+AND
+OR
+NOT
+*
+..
+" "
+-
++
+
+### EXAMPLES
+# Finding Login Pages:
+site:example.com inurl:login
+site:example.com (inurl:login OR inurl:admin)
+# Identifying Exposed Files:
+site:example.com filetype:pdf
+site:example.com (filetype:xls OR filetype:docx)
+# Uncovering Configuration Files:
+site:example.com inurl:config.php
+# (searches for extensions commonly used for configuration files)
+site:example.com (ext:conf OR ext:cnf)
+# Locating Database Backups:
+site:example.com inurl:backup
+site:example.com filetype:sql
+```
+
 ## Infrastructure
 
 ### Subdomains
 
-- https://crt.sh/
+- Certificate Transparency: https://crt.sh/
 - https://domain.glass/
 - (PAID) https://buckets.grayhatwarfare.com/
 
 ```bash
 # Domain => Subdomains via Cert Registry
-curl -s https://crt.sh/\?q\=<DOMAIN>\&output\=json | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u | tee subdomainlist.txt
+curl -s "https://crt.sh/?q=<DOMAIN>&output=json" | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u | tee subdomainlist.txt
 # Full Info 
 for i in $(cat subdomainlist.txt) ; do host $i | tee -a hostinfo.txt ; done
 # (IPv4) Domain Name => IP Address
@@ -226,6 +274,8 @@ nmap --script-updatedb
     - https://en.wikipedia.org/wiki/List_of_HTTP_status_codes#Standard_codes
 - Web Page Scanner:
     - https://github.com/RedSiege/EyeWitness
+- `/.well-known/` URIs:
+    - https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml
 
 ```bash
 # HTTP Headers + robots.txt
@@ -234,18 +284,32 @@ curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
 
 ===
 
+# Checks for WAF (wbapp firewall)
+wafw00f <TARGET>
+
 # Enum web server + version + OS + frameworks + libraries
 whatweb --aggression 3 http://<TARGET> --log-brief=whatweb_scan.txt
 
+# Fingerprint web server
+nikto -o nikto_fingerprint_scan.txt -Tuning b -h http://<TARGET>
+
 # Enum web server vulns
-nikto -o nikto_scan.txt -h http://<TARGET>
+nikto -o nikto_vuln_scan.txt -h http://<TARGET>
 
 # Enum web app logic & vulns
 wapiti -f txt -o wapiti_scan.txt --url http://<TARGET>
 
+# vHost Brute-force
+gobuster --quiet --threads 64 --output gobuster_vhost_top5000 vhost -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain --exclude-length 250-320 --domain <DOMAIN> -u "http://<IP_ADDR>"  # uses IP addr
+
+# Webpage Crawler
+pip3 install --break-system-packages scrapy
+wget -O ReconSpider.zip https://academy.hackthebox.com/storage/modules/144/ReconSpider.v1.2.zip && unzip ReconSpider.zip
+python3 ReconSpider.py <URL> && cat results.json
+# !!! CHECK "results.json" !!!
+
 ===
 
-# NOTE: bigger list 
 # /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
 
 # Directory brute-force with a common wordlist
@@ -256,6 +320,17 @@ gobuster --quiet --threads 64 --output gobuster_dir_medium dir ---follow-redirec
 
 ### FEROXBUSTER: faster and recursive
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common -u http://<TARGET>
+
+===
+
+# AUTOMATED Recon
+git clone https://github.com/thewhiteh4t/FinalRecon.git
+cd FinalRecon
+chmod +x ./finalrecon.py
+python3 -m venv venv
+source venv/bin/activate
+pip3 install -r requirements.txt
+./finalrecon.py -nb -r -cd final_recon_scan -w /usr/share/wordlists/dirb/common.txt --headers --crawl --ps --dns --sub --dir --url http://<URL>
 ```
 
 # Vulnerability Assessment/Analysis

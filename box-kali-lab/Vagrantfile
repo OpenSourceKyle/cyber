@@ -27,9 +27,9 @@ Vagrant.configure("2") do |config|
     rsync__exclude: [".git/", ".venv/", ".vagrant/"]
 
   # Mount Obsidian config directory to sync E2EE key and enable vault sync
-  config.vm.synced_folder "/home/obb/.config/obsidian", "/home/vagrant/.config/obsidian",
-    type: "rsync",
-    rsync__exclude: ["SingletonLock", "SingletonCookie"]
+  #config.vm.synced_folder "/home/obb/.config/obsidian", "/home/vagrant/.config/obsidian",
+  #  type: "rsync",
+  #  rsync__exclude: ["SingletonLock", "SingletonCookie"]
 
   # Provision guest with Ansible from host
   config.vm.provision "ansible" do |ansible|

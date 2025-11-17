@@ -24,7 +24,28 @@ jobs:
       # 2. Update all Git Submodules
       - name: Update Git Submodules
         run: |
-          git submodule update --remote --merge
+          # Initialize submodules if needed
+          git submodule update --init --recursive
+          
+          # Update each submodule to the latest remote commit
+          # Use --rebase instead of --merge to avoid unrelated history issues
+          # If that fails, reset to remote (handles force-pushed histories)
+          if ! git submodule update --remote --rebase; then
+            echo "Rebase failed, resetting submodules to remote state..."
+            git submodule foreach '
+              echo "Resetting submodule: $name"
+              git fetch origin || true
+              # Try to determine the branch, default to main
+              BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
+              # Reset to remote branch (handles unrelated histories)
+              git reset --hard "origin/$BRANCH" 2>/dev/null || \
+              git reset --hard origin/main 2>/dev/null || \
+              git reset --hard origin/master 2>/dev/null || true
+            '
+            # Update parent repo's submodule reference to point to the new commit
+            # After reset, we need to add the submodule to update the reference
+            git add .themes/hugo-theme-relearn || true
+          fi
 
       # 3. Run the artifact download script
       - name: Update Artifacts
