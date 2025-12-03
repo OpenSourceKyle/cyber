@@ -103,8 +103,12 @@ vpn-connect() {
 # Add hashcat-utils binaries
 export PATH=$PATH:/usr/lib/hashcat-utils
 
+# Enable colors for terminal applications
+export TERM=xterm-256color
+
 # Aliases
 alias ll='ls -la --color=auto'
+alias msfconsole='sudo msfconsole -q'
 
 # --- Open Zellij (tmux alt) by default ---
 

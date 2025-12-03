@@ -11,3 +11,23 @@
     - desktop
     - development
     - security_tools
+
+  tasks:
+    - name: Install plocate package
+      ansible.builtin.apt:
+        name: plocate
+        state: present
+        update_cache: false
+      become: true
+
+    - name: Enable and start plocate-updatedb.timer service
+      ansible.builtin.systemd:
+        name: plocate-updatedb.timer
+        enabled: true
+        state: started
+      become: true
+
+    - name: Run updatedb to create initial locate database
+      ansible.builtin.command: updatedb
+      become: true
+      changed_when: false

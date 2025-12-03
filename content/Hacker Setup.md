@@ -96,4 +96,38 @@ echo -e "nameserver <DNS_SERVER>" | sudo tee /etc/resolv.conf && \
 sudo chattr +i /etc/resolv.conf
 
 dig +short <TARGET>
+
+# PowerShell on Kali
+sudo apt update && sudo apt install gss-ntlmssp
+Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+# === Core Modules for Pentesting on Kali ===
+
+# --- Remote Management ---
+# Enables native PowerShell Remoting (Invoke-Command, New-PSSession) from Linux.
+Install-Module -Name PSWSMan -Scope CurrentUser -Force
+
+# --- Active Directory & Enumeration ---
+# The go-to suite for AD enumeration. Contains PowerView.
+Install-Module -Name PowerSploit -Scope CurrentUser -Force
+
+# Automated AD reconnaissance script that generates a comprehensive report.
+Install-Module -Name ADRecon -Scope CurrentUser -Force
+
+# --- Post-Exploitation & Payloads ---
+# Classic post-exploitation framework with reverse shells, keyloggers, etc.
+Install-Module -Name Nishang -Scope CurrentUser -Force
+
+# The "Netcat of PowerShell" for reverse/bind shells and file transfers.
+Install-Module -Name powercat -Scope CurrentUser -Force
+
+# --- Console Enhancement (Quality of Life) ---
+# Improves the PowerShell command-line experience with better history, syntax highlighting, etc.
+Install-Module -Name PSReadLine -Scope CurrentUser -Force
+
+# A powerful theme engine for creating an informative and customized prompt.
+Install-Module -Name oh-my-posh -Scope CurrentUser -Force
+
+# --- Update All Modules ---
+# After installation, you can keep them all up to date with this single command.
+Update-Module -Scope CurrentUser
 ```

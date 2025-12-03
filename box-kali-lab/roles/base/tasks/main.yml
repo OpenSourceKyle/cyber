@@ -43,7 +43,10 @@
       - enum4linux-ng
       - jq
       - golang-go
-      - scrapy
+      - python3-scrapy
+      - ncat
+      - powershell
+      - gss-ntlmssp
     state: present
     install_recommends: false
     update_cache: false
