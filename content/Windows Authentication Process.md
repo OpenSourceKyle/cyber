@@ -58,11 +58,13 @@ These modules live inside `LSASS` to handle specific tasks.
 
 **Credential Manager (The Vault)**
 *   **Role:** Stores saved passwords for RDP, Websites, and Network Shares.
-*   **File Path:**
-```powershell
-C:\Users\[Username]\AppData\Local\Microsoft\Vault\
-C:\Users\[Username]\AppData\Local\Microsoft\Credentials\
-```
+*   **`Policy.vpol` in File Path:**
+- `%UserProfile%\AppData\Local\Microsoft\Vault\`
+- `%UserProfile%\AppData\Local\Microsoft\Credentials\`
+- `%UserProfile%\AppData\Roaming\Microsoft\Vault\`
+- `%ProgramData%\Microsoft\Vault\`
+- `%SystemRoot%\System32\config\systemprofile\AppData\Roaming\Microsoft\Vault\`
+
 *   **Resource:** [Microsoft: Credential Manager](https://learn.microsoft.com/en-us/windows/win32/secauthn/credential-manager)
 
 ![[win_credential_manager.gif]]

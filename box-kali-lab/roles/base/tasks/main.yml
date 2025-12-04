@@ -45,7 +45,6 @@
       - golang-go
       - python3-scrapy
       - ncat
-      - powershell
       - gss-ntlmssp
     state: present
     install_recommends: false
