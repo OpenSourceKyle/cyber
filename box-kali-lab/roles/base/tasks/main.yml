@@ -46,6 +46,7 @@
       - python3-scrapy
       - ncat
       - gss-ntlmssp
+      - krb5-user
     state: present
     install_recommends: false
     update_cache: false

