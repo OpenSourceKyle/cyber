@@ -1,4 +1,5 @@
-title = "OLD Cyber Cheatsheet"
++++
+title = "Version 1"
 type = "home"
 +++
 
@@ -420,6 +421,12 @@ dig @<DNS_SERVER> +noedns +nocookie +norecurse <TARGET> > dns_legacy.txt
 # EDNS breaks on Win, norecurse usu for internal networks
 ```
 
+### 🌐 Subdomains
+
+```bash
+gobuster --quiet --threads 64 --output gobuster_dns_top5000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -d <DOMAIN>
+```
+
 ## 📁 FTP
 
 ```bash
@@ -679,12 +686,6 @@ gobuster --quiet --threads 64 --output gobuster_dir_medium dir ---follow-redirec
 
 ### FEROXBUSTER: faster and recursive
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common -u http://<TARGET>
-```
-
-### 🌐 Subdomains
-
-```bash
-gobuster --quiet --threads 64 --output gobuster_dns_top5000 dns -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt -d <DOMAIN>
 ```
 
 ### 🌐 Virtual Hosts

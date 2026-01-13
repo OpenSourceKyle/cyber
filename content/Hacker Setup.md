@@ -1,7 +1,9 @@
 +++
-title = "Hacker Setup Notes"
+title = "Notes - Hacker Setup"
 type = "home"
 +++
+
+**NOTE: This is just a scratchpad. Don't take it too seriously...**
 
 # TODO
 
@@ -82,7 +84,7 @@ xrandr --output Virtual-1 --mode 1900x987
 xrandr --output Virtual-1 --mode 1920x1080
 
 # run sudo command with log output as unpriv user
-sudo nohup openvpn --config /vagrant/crappycodewizard.ovpn > >(tee nohup.log) 2>&1 &  
+sudo nohup openvpn --config /vagrant/*.ovpn > >(tee nohup.log) 2>&1 &  
 
 # Scrape PDFs to Text
 pdftotext -layout *.pdf - | grep -v "Penetration Testing Professional" > info.txt
