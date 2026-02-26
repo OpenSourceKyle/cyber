@@ -7,6 +7,15 @@ type = "home"
 
 # TODO
 
+## Review
+
+- REDO certain sections
+    - Active Directory
+    - SQL Injection
+    - `sqlmap`
+    - XSS
+    - File Inclusion
+
 ## Kali
 
 - make zsh hook or something that background scan commands, saves output to unique file in ~/kali_logs (maybe make this exportable $HACKER_LOG)
@@ -33,25 +42,38 @@ type = "home"
 
 ## Website:
 
+```bash
+ \rm -rf public/ resources/ /tmp/random && hugo server --noHTTPCache -d /tmp/random
+```
+
 - ~~add Hugo shortcode to `relref` just a header section of a page like "See [LINK]" but it's an expandable block of the sourced information to prevent duplication but allow easy access of contextually relevant information~~
 - scrollable tables to not overflow in mobile view
 ## Notes
 
-- make bloodhound its own page
-- make responder and web traffic capture as pre-actions (before any active scanning)
-- make checklist for sections
-    - web enum
-    - AD
-        - especially workflow process to compromise a domain (users, pass, machines, trust, etc.)
-        - domain user and computer attributes, group membership, Group Policy Objects, permissions, ACLs, trusts
-        - `adsisearcher` instead of PS module `ActiveDirectory`
-    - DNS
-    - NMAP (or ARP) for host discovery
-    - SMB (enum4linux-ng, anon/null sessions)
+- embed ffuf and burp/zap into http page under section 4
+    - make web checklist
+- add commands notes from [[Persisting Active Directory]]
+    - embed mimikatz commands into active-directory page isntead of duplicated commands
+- add tmux cheatatsheets
+- create Golden and Silver ticket explanations in `active-directory` or in `auth proc - kerberos file`
+- add `secretsdump.py` and `nxe --ntds`
+- ~~embed Network Info http://127.0.0.1:1313/docs/7---lateral-movement/lateral-movement/ section into the AD Domain Enum~~
+- ~~make bloodhound its own page~~
+- add in setup notes for tools that need to be git clone or downloaded (check the kali-linux Ansible playbooks) in order to make sure notes are useful for all VMs
+- ~~make responder and web traffic capture as pre-actions (before any active scanning)~~
+- ~~make checklist for sections~~
+    - ~~web enum~~
+    - ~~AD~~
+        - ~~especially workflow process to compromise a domain (users, pass, machines, trust, etc.)~~
+        - ~~domain user and computer attributes, group membership, Group Policy Objects, permissions, ACLs, trusts~~
+        - ~~`adsisearcher` instead of PS module `ActiveDirectory`~~
+    - ~~DNS~~
+    - ~~NMAP (or ARP) for host discovery~~
+    - ~~SMB (enum4linux-ng, anon/null sessions)~~
 - **fix `mirror.yml` for website**
 - TASTY BINARIES?: https://github.com/Flangvik/SharpCollection?tab=readme-ov-file
-- SAMPLE PENTEST ENGAGEMENT FLOW: https://archive.ph/i6AeU
-- split out Hydra from password into its own section?
+- ~~SAMPLE PENTEST ENGAGEMENT FLOW: https://archive.ph/i6AeU~~
+- ~~split out Hydra from password into its own section?~~
 - add `dnstt` to `lateral-movement` section
 - make cheatsheet guide:
     - scan IP or block
@@ -134,13 +156,6 @@ pdftotext -layout *.pdf - | grep -v "Penetration Testing Professional" > info.tx
 
 # Vagrant Tunneling
 vagrant ssh -- -N -L <LPORT>:<TARGET_IP>:<TARGET_PORT>
-
-# DNS Server Reconfig
-sudo rm -f /etc/resolv.conf && \
-echo -e "nameserver <DNS_SERVER>" | sudo tee /etc/resolv.conf && \
-sudo chattr +i /etc/resolv.conf
-
-dig +short <TARGET>
 
 # PowerShell on Kali
 sudo apt update && sudo apt install gss-ntlmssp

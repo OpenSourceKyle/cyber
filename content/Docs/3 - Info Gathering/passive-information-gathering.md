@@ -1,13 +1,6 @@
 +++
-title = "Information Gathering"
+title = "Passive Information Gathering"
 +++
-
-- Ports:
-    - https://www.stationx.net/common-ports-cheat-sheet/
-    - https://web.archive.org/web/20240315102711/https://packetlife.net/media/library/23/common-ports.pdf
-    - https://nullsec.us/top-1-000-tcp-and-udp-ports-nmap-default/
-- OS Identification via:
-    - TTL: https://subinsb.com/default-device-ttl-values/
 
 # Enumeration
 
@@ -30,7 +23,7 @@ Primary source of information will be:
 | **5** | **Privileges**          | **Identify Permissions:** Determine the privileges of each service's user account and look for overlooked or excessive permissions. |
 | **6** | **OS Setup**            | **Internal Recon:** After gaining access, gather information on the OS configuration, security posture, and admin practices.        |
 
-# External Recon (Passive OSINT)
+# External Recon (OSINT)
 
 | **Data Point**       | **Description**                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -65,7 +58,7 @@ Great to validate and discover new information, especially from IP and ASN searc
 
 - {{< embed-section page="Docs/3 - Info Gathering/search-engine-dorking" header="examples" >}}
 
-- {{< embed-section page="Docs/6 - Post-Exploitation/active-directory" header="user-enumeration-kerbrute" >}}
+- {{< embed-section page="Docs/7 - Lateral Movement/active-directory" header="user-enumeration" >}}
 
 ## via Social Media
 
@@ -83,11 +76,11 @@ Check various sites, especially for different types of IT admins, to skim inform
 - Leaked Creds: https://github.com/trufflesecurity/truffleHog
 - Public (Data) Buckets: https://buckets.grayhatwarfare.com/
 
-# Internal Recon (Passive)
+# Internal Recon
 
-Passively, sampling the traffic can be a great way to understand the network insofar as hosts, services, and maybe even sometimes credentials!
+Passively, sampling the traffic can be a great way to understand the network insofar as hosts, services, and maybe even sometimes credentials
 
-{{< embed-section page="Docs/5 - Exploitation/protocol-poisoners" header="responder-linux" >}}
+{{< embed-section page="Docs/5 - Exploitation/protocol-poisoners" >}}
 
 ```bash
 # Sample the network traffic

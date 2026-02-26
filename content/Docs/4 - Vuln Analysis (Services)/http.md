@@ -1,6 +1,12 @@
 +++
-title = "Web"
+title = "HTTP"
 +++
+
+- `TCP 80`: HTTP unencrypted
+- `TCP 443`: HTTPS encrypted
+- `PORT` (Web is oftentimes on other ports, especially internal proxies or admin pages on `8080` or `8433`)
+
+{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="web" >}}
 
 - OWASP Top 10:
     - https://owasp.org/www-project-top-ten/
@@ -11,6 +17,9 @@ title = "Web"
 - `/.well-known/` URIs:
     - https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml
 - User-Agent: https://useragents.io/explore
+- Default Web Roots:
+    - Linux: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-linux.txt
+    - Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
 
 ```bash
 # HTTP Headers + robots.txt
@@ -53,7 +62,7 @@ gobuster dir --quiet --threads 64 --output gobuster_dir_common --follow-redirect
 # w/ file extensions
 gobuster dir --quiet --threads 64 --output gobuster_dir_medium ---follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --extensions php,html,txt,bak,zip --url http://<TARGET>
 
-### ⚡ FEROXBUSTER: faster and recursive
+### FEROXBUSTER: faster and recursive
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common --scan-dir-listings -u http://<TARGET>
 
 ---

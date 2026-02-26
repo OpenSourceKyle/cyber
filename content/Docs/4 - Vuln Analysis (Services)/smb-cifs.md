@@ -11,6 +11,8 @@ title = "SMB/CIFS"
     - `IPC$` (RPC)
     - `PRINT$`
 
+{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="smb" >}}
+
 {{% details "Dangerous Settings" %}}
 
 |**Setting**|**Description**|

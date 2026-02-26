@@ -20,6 +20,65 @@ ipconfig /all
 netstat -r
 ```
 
+## Access Domain Names
+
+For a box that is not joined to the domain, but has domain access, add the DC (or DNS server) to resolve DNS names.
+
+**Split DNS Resolution (w/ VPN)**
+```bash
+# 1. Enable dnsmasq plugin (Global Config)
+sudo cp /etc/NetworkManager/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf.bak
+sudo sed -i '/\[main\]/a dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf
+
+# 2. Create the Domain Rule (Persistent)
+# Syntax: server=/domain.com/10.10.10.10
+echo "server=/<FQDN>/<DNS_SERVER>" | sudo tee /etc/NetworkManager/dnsmasq.d/split_dns.conf
+
+# 3. Restart NetworkManager to apply the plugin change
+sudo systemctl restart NetworkManager
+
+# 4. Configure the VPN Connection
+# Replace <CONNECTION_NAME> with your VPN profile name (e.g., 'tun0' or 'lab_vpn')
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns ""
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.never-default yes
+
+# 5. Reconnect VPN
+sudo nmcli connection down "<CONNECTION_NAME>"
+sudo nmcli connection up "<CONNECTION_NAME>"
+```
+
+**All DNS Resolution (no Internet access)**
+```bash
+# Configure the VPN connection to strictly use the Target DNS
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns "<DNS_SERVER>"
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
+
+# Reconnect to apply
+sudo nmcli connection down "<CONNECTION_NAME>"
+sudo nmcli connection up "<CONNECTION_NAME>"
+```
+
+**Verify**
+```bash
+nslookup <TARGET>
+```
+
+## Domain Information
+
+```bash
+# Get Domain Info
+net config workstation
+ipconfig /all
+echo %USERDOMAIN%
+$env:USERDOMAIN
+echo %LOGONSERVER%
+$env:LOGONSERVER
+(Get-WmiObject Win32_ComputerSystem).Domain
+(Get-CimInstance Win32_ComputerSystem).Domain   # PowerShell (modern; no WMI)
+systeminfo
+```
+
 # Tunneling (Port Forwarding)
 
 ## SSH
@@ -97,14 +156,27 @@ netsh.exe interface portproxy show v4tov4
 
 ## SOCKS
 
-- Remember that only proper TCP traffic works with SOCKS (e.g. **NOT** certain scans like `nmap -sS` sends malformed packets or ICMP ping), use `nmap -sT`
+| **Feature**             | **SOCKS4**                        | **SOCKS5**                            |
+| ----------------------- | --------------------------------- | ------------------------------------- |
+| **Transport Protocols** | TCP only                          | **TCP & UDP**                         |
+| **Addressing**          | IPv4 Only                         | **IPv4 & IPv6**                       |
+| **DNS Resolution**      | Client-side (vulnerable to leaks) | **Remote/Proxy-side** (via SOCKS5/4a) |
+| **Authentication**      | None (Ident-based only)           | **Username/Password**, GSS-API        |
+| **Nmap Compatibility**  | Native `--proxy` (very stable)    | Better via `proxychains`              |
+| **SSH (`-D`) Default**  | Supported (manual flag)           | **Default**                           |
+| **Chisel Default**      | Not standard                      | **Native / Built-in**                 |
+
+- Remember that only proper TCP traffic works with SOCKS (e.g. **NOT** certain scans like `nmap -sS` sends malformed packets or ICMP ping), use `nmap -sT --proxy`
 
 ```bash
-proxychains <COMMAND>
+proxychains -q -f <CONFIG_FILE> <COMMAND>
 
 proxychains msfconsole
 
-proxychains nmap -n -Pn -sT -sV -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
+# USE nmap's builtin --proxy option
+nmap -sT -Pn -n --proxy http://127.0.0.1:9050 <TARGET>
+# --unprivileged avoids raw sockets and "bad" packets
+nmap -n -Pn -sT -sV --unprivileged --proxy http://127.0.0.1:8080 -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
 ```
 
 ### Step 0: Pre-Requisites
@@ -114,12 +186,29 @@ proxychains nmap -n -Pn -sT -sV -p21,22,23,53,80,135,139,389,443,445,1433,3389,5
 # NOTE: disable strict_chain to for robustness
 ls -la /etc/proxychains*.conf
 
+quiet_mode
+proxy_dns
 [ProxyList]
 dynamic_chain
 #strict_chain
-socks5  127.0.0.1 1080  # For Chisel
-socks4  127.0.0.1 9050  # For an SSH -D proxy
+socks5  127.0.0.1 1080  # Chisel
+socks4  127.0.0.1 9050  # SSH -D proxy or nmap
 ```
+
+#### Metasploit
+
+```bash
+# Set global proxy for Metasploit
+setg PROXIES socks5:127.0.0.1:1080  # SOCKS5
+setg PROXIES HTTP:127.0.0.1:8080  # HTTP
+
+# Clear proxy for current module only
+set Proxies ""
+
+# Accept reverse connections directly (don't let it thru the SOCKS proxy)
+setg ReverseAllowProxy true
+```
+
 ### via SSH
 
 ```bash

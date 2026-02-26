@@ -3,8 +3,11 @@ title = "Hydra"
 +++
 
 - https://hydra.cc/docs/intro/
+- https://brandonrussell.io/OSCP-Notes/My%20Hydra%20Cheatsheet.html
 
-Hydra is a parallelized login cracker that supports numerous protocols to attack. It is very fast and flexible, and new modules are easy to add.
+Hydra is a parallelized login cracker that supports numerous protocols to attack quickly and flexibly, and new modules are easy to add.
+
+**NOTE: use `netexec` for Windows AD environments instead**
 
 ## Core Flags
 
@@ -17,15 +20,23 @@ Hydra is a parallelized login cracker that supports numerous protocols to attack
 -p <PASSWORD> : Single password
 -P <WORDLIST> : Password wordlist file
 -o <OUTPUT> : Output file
+-s <PORT> : Port if nonstandard
+-M <TARGET_FILE> : Targets list file
 ```
 
+```bash
+hydra -x -h
+
+# Generate and test passwords ranging from 6 to 8 characters of an alphanumeric set
+-x 6:8:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+```
 ## Protocol-Specific Examples
 
 ### SSH / FTP / RDP / SMB
 
 ```bash
 # SSH brute-force; -t 4 is recommended for SSH (ONLINE - use small wordlist)
-hydra -t 4 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt ssh://<TARGET>:<PORT> -f -V -o hydra_ssh_login.txt
+hydra -t 4 -l <USER> -P <WORDLIST> -f -V ssh://<TARGET>
 
 # FTP brute-force
 hydra -l <USER> -P <WORDLIST> -f -V ftp://<TARGET>
@@ -37,19 +48,38 @@ hydra -l <USER> -P <WORDLIST> -f -V rdp://<TARGET>
 hydra -l <USER> -P <WORDLIST> -f -V smb://<TARGET>
 ```
 
-## Web Forms (HTTP-POST)
+## Web Forms
 
-**Syntax:** `"/path:body:F=FailureString"`
-- Use `^USER^` and `^PASS^` as placeholders
-- Check Burp Suite for body structure
-- `F=FailureString` specifies the failure response text to detect failed logins
+### HTTP-POST
+
+**Syntax:** `"/PATH:BODY:CONDITION=STRING"`
+- Use browser F12 > Network > DevTools, web proxy, or `-d` to capture the actual POST request. Look for the form action URL and input field names.
+- Use `^USER^` and `^PASS^` as placeholders in `BODY`
+- Condition String: `hydra -U http-post-form`
+    - **Important**: you can only define S= *OR* F= - not both 
+    - `F=<FAILURE_STRING>` (default) specifies the failure response text to detect failed logins
+        - **too many false positives means bad failure string**
+    - `S=<SUCCESS_STRING>
+        - `S=302` means a successful login due to an HTTP 302 page forward redirect
+
+**Check with `-dt1` for condition strings**
+```bash
+# S=302 for login redirects (and no login error)
+hydra -l <USER> -P <WORDLIST> -f <TARGET> http-post-form "/<PAGE>:<USERNAME_LABEL>=^USER^&<PASSWORD_LABEL>=^PASS^:S=302" -V
+# F=X for bad logins give an error
+hydra -l <USER> -P <WORDLIST> -f <TARGET> http-post-form "/<PAGE>:<USERNAME_LABEL>=^USER^&<PASSWORD_LABEL>=^PASS^:F=invalid" -V
+```
+
+### HTTP Basic Auth
+
+A basic form of authentication, usually when a web resource is restricted, a pop-up window will appear asking for username and password. From a HTTP header perspective it is the base64 version of `<USERNAME>:<PASSWORD>` like:
 
 ```bash
-# Web Login brute-force (ONLINE - use small wordlist to avoid lockouts)
-hydra -t 16 -l <USER> -P /usr/share/seclists/Passwords/Common-Credentials/10-million-password-list-top-1000.txt <TARGET> http-post-form "/login:username=^USER^&password=^PASS^:F=incorrect" -VF -o hydra_web_login.txt
+Authorization: Basic YWxpY2U6c2VjcmV0MTIz
+```
 
-# Generic web form
-hydra -l <USER> -P <WORDLIST> <TARGET> http-post-form "/login.php:user=^USER^&pass=^PASS^:F=Invalid password" -V -f
+```bash
+hydra -l <USER> -P <WORDLIST> -f <TARGET> http-get -V
 ```
 
 ### WordPress Specific

