@@ -16,6 +16,7 @@ git clone --recursive https://github.com/opensourcekyle/cyber.git
 
 ```bash
 rm -rf .themes
+git rm -r .themes
 git submodule add https://github.com/McShelby/hugo-theme-relearn.git .themes/hugo-theme-relearn
 ```
 
