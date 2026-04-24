@@ -9,12 +9,15 @@ type = "home"
 
 ## Review
 
-- REDO certain sections
+Be strategic... only review sections on exam
+
+- DOUBLE CHECK: REDO certain sections
     - Active Directory
     - SQL Injection
     - `sqlmap`
     - XSS
     - File Inclusion
+    - File Upload
 
 ## Kali
 
@@ -24,6 +27,7 @@ type = "home"
 - set **some msfvenom** options automagically like LHOST (tun0 or listening port) and any other VARS? maybe random autoport
 - vim highlighter for targets and split screen to have targets on top (maybe better thing exists without vim base)
 - create shell function to get tun0 callback IP easily
+- PowerShell: https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-linux?view=powershell-7.5
 
 ## Windows
 
@@ -40,7 +44,7 @@ type = "home"
 - set default display resolution: 1920x1080
 - add automatic VPN configs files
 
-## Website:
+## Website
 
 ```bash
  \rm -rf public/ resources/ /tmp/random && hugo server --noHTTPCache -d /tmp/random
@@ -50,6 +54,10 @@ type = "home"
 - scrollable tables to not overflow in mobile view
 ## Notes
 
+- use REPORTING pentest template and make that into a Obsidian template (replace current one)
+- add good download locations for file-transfer (or embed-section `common-location-paths`)
+- move or reorg assessment vs access info for files like SSH and RDP
+- Include mitigations into notes
 - embed ffuf and burp/zap into http page under section 4
     - make web checklist
 - add commands notes from [[Persisting Active Directory]]

@@ -2,6 +2,7 @@
 {{- $pagePath := .Get "page" -}}
 {{- $headerParam := .Get "header" -}}
 {{- $customTitle := .Get "title" -}}
+{{- $expanded := .Get "expanded" | default "true" -}}
 {{- $embeddedContent := "" -}}
 {{- $headerNames := slice -}}
 
@@ -190,7 +191,7 @@
         {{- partial "shortcodes/notice.html" (dict
             "page"     $.Page
             "content"  ($embeddedContentWithSource | safeHTML)
-            "expanded" false
+            "expanded" $expanded
             "params"   (dict)
             "style"    "info"
             "icon"     "fa-info-circle"

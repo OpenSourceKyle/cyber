@@ -76,3 +76,40 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 ./finalrecon.py -nb -r -cd final_recon_scan -w /usr/share/wordlists/dirb/common.txt --headers --crawl --ps --dns --sub --dir --url http://<URL>
 ```
+
+
+# TODO: cull down AI slop below
+
+## URL Encoding
+
+Do not waste time looking up hex tables manually. Let your CLI do the work.
+
+```bash
+# 1. Curl Auto-Encoding (GET Requests)
+# -G converts --data into a GET query string. --data-urlencode handles the special chars.
+curl -G -i "http://<TARGET>/cgi/welcome.bat" --data-urlencode "cmd=C:\windows\system32\whoami.exe & id"
+
+# 2. Python One-Liner (For generating payloads for Burp/Browser)
+python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" 'cat /etc/passwd & id'
+
+# 3. The "Slicker Way" (Add this to your ~/.zshrc or ~/.bashrc)
+alias urlencode='python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))"'
+# Usage: urlencode "payload&goes=here"
+```
+
+URL Encoding (Percent-Encoding) is not an obfuscation technique; it is a mechanical requirement of the HTTP protocol. You must encode characters to stop the Web Server from confusing your **Payload Data** with **HTTP Syntax**.
+
+| Character | HTTP Syntax Meaning | Why it breaks exploits if unencoded |
+| :--- | :--- | :--- |
+| **`&`** | Parameter Separator | Server splits your payload. `?cmd=id & whoami` becomes Param 1: `cmd=id`, Param 2: `whoami`. |
+| **`#`** | URL Fragment | Browser stops sending data after `#`. The backend never sees it. |
+| **`+`** / **` `** | Space | Raw spaces break the HTTP header structure (`GET /page HTTP/1.1`). |
+| **`?`** | Query String Start | Truncates or confuses path traversal payloads. |
+
+**The CGI / Command Injection Rule:** 
+When exploiting CGI scripts (`.sh`, `.bat`, `.cgi`), the web server unwraps the URL and hands the raw string directly to the OS shell (`/bin/bash` or `cmd.exe`). If you do not URL-encode your shell operators (`&`, `|`, `;`), the web server strips them out during the HTTP parsing phase, and the OS shell never executes them.
+
+*   **Double Encoding (WAF Bypass):** If a WAF blocks `%5C` (`\`), encode the `%` symbol itself (`%` = `%25`). The payload becomes `%255C`. The WAF sees `%255C` (Allowed), passes it to the backend, which decodes it once to `%5C`, and the application decodes it again to `\`.
+*   **Space Variants:** 
+    *   In the **URL Path** (`GET /path%20here`), use `%20`.
+    *   In the **Query String / Body** (`?cmd=id+whoami`), `+` is historically interpreted as a space (`application/x-www-form-urlencoded`), but `%20` is universally safer to avoid parsing desyncs. Default to `%20`.

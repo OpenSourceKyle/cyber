@@ -22,7 +22,7 @@ git submodule add https://github.com/McShelby/hugo-theme-relearn.git .themes/hug
 ### Build Website
 
 ```bash
- \rm -rf public/ resources/ /tmp/random && hugo server --noHTTPCache -d /tmp/random
+hugo server --noHTTPCache -d /tmp/random
 ```
 
 ### Adding Front Matter to Lab Files (pre-commit hook)

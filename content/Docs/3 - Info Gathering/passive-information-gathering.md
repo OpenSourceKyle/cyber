@@ -25,6 +25,14 @@ Primary source of information will be:
 
 # External Recon (OSINT)
 
+- Public DNS and domain ownership records
+- Email Addresses
+    - You can then use these to check if any have been involved in a breach or use Google Dorks to search for them on sites like Pastebin
+- Subdomains
+- Third-party vendors
+- Similar domains
+- Public cloud resources
+
 | **Data Point**       | **Description**                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `IP Space`           | Valid ASN for our target, netblocks in use for the organization's public-facing infrastructure, cloud presence and the hosting providers, DNS record entries, etc.                                                                                                                                                                                                                                                                              |

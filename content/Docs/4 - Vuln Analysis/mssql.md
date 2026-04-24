@@ -87,6 +87,7 @@ EXECUTE sp_OADestroy @OLE
 
 ```sql
 enable_xp_cmdshell
+-- These are the same as the above single command
 EXECUTE sp_configure 'show advanced options', 1
 RECONFIGURE
 EXECUTE sp_configure 'xp_cmdshell', 1

@@ -48,6 +48,7 @@
       - gss-ntlmssp
       - krb5-user
       - evolution
+      - metasploit-framework
     state: present
     install_recommends: false
     update_cache: false

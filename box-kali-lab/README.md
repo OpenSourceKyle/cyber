@@ -30,7 +30,7 @@ An automated Kali Linux, pentesting-focused lab environment provisioned with Ans
 The project includes helper scripts for managing VM snapshots:
 
 - `0_run_attack_box.sh` - Starts the VM and opens an SSH session. Requires the gold image snapshot to exist.
-- `1_create_gold_image.sh` - Creates a gold image snapshot after provisioning. **Run this first** to save a clean state after initial setup.
+- `1_create_gold_image.sh` - Creates a gold image snapshot after provisioning. **Run this first** to save a clean state after initial setup. Run `vagrant box update` to update Kali base box.
 - `2_restore_to_gold.sh` - Restores the VM to the gold image snapshot, discarding all current changes.
 - `3_retake_gold.sh` - Retakes the gold image snapshot from the current VM state, useful for updating the baseline.
 
