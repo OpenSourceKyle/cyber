@@ -11,12 +11,15 @@ Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm):
 
 ```bash
 sudo apt install -y tmux
+mkdir -p ~/my_data/
 cat > ~/.tmux.conf <<'EOF'
 set -g history-limit 50000
-run-shell 'mkdir -p ~/.tmux/logs'
-set-hook -g after-new-session 'pipe-pane -o "cat >> ~/.tmux/logs/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
-set-hook -g after-new-window 'pipe-pane -o "cat >> ~/.tmux/logs/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
-set-hook -g after-split-window 'pipe-pane -o "cat >> ~/.tmux/logs/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
+set -g mouse on
+set -g @logs_dir "$HOME/my_data/tmux_logs"
+run-shell 'mkdir -p "#{@logs_dir}"'
+set-hook -g after-new-session 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
+set-hook -g after-new-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
+set-hook -g after-split-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-sessionist'
@@ -30,11 +33,13 @@ tmux start-server
 tmux new-session -d
 $TMUX_PLUGIN_MANAGER_PATH/tpm/bin/install_plugins
 tmux kill-server
+printf '\n[ -z "$TMUX" ] && exec tmux\n' >> ~/.bashrc
+printf '\n[ -z "$TMUX" ] && exec tmux\n' >> ~/.zshrc
 ```
 
 ## Tmux Core Hotkeys
 
-*Default Prefix: `Super` key (`CTRL+B`)*
+*Default Prefix: `CTRL+B`*
 
 | Action | Hotkey | Description |
 | :--- | :--- | :--- |
@@ -50,6 +55,6 @@ tmux kill-server
 
 | Action | Hotkey | Description |
 | :--- | :--- | :--- |
-| **Toggle Logging** | `Super` + `Shift` + `P` | Starts/stops logging the current pane to a file. |
-| **Retroactive Log** | `Super` + `Alt` + `Shift` + `P` | Saves the entire pane history (up to `history-limit`) if you forgot to start logging initially. |
-| **Pane Capture** | `Super` + `Alt` + `P` | Saves only the *currently visible* screen. Solves copy/paste formatting messes when panes are split. |
+| **Toggle Logging** | `Prefix` + `Shift` + `P` | Starts/stops logging the current pane to a file. |
+| **Retroactive Log** | `Prefix` + `Alt` + `Shift` + `P` | Saves the entire pane history (up to `history-limit`) if you forgot to start logging initially. |
+| **Pane Capture** | `Prefix` + `Alt` + `P` | Saves only the *currently visible* screen. Solves copy/paste formatting messes when panes are split. |

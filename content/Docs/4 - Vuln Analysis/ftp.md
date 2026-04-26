@@ -53,6 +53,6 @@ put <FILENAME>
 mirror .
 
 # Download ALL files
-mkdir ftp_files
+mkdir ftp_files && cd ftp_files
 wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
 ```

@@ -54,6 +54,7 @@ Be strategic... only review sections on exam
 - scrollable tables to not overflow in mobile view
 ## Notes
 
+- study a few IppSec videos to polish process
 - use REPORTING pentest template and make that into a Obsidian template (replace current one)
 - add good download locations for file-transfer (or embed-section `common-location-paths`)
 - move or reorg assessment vs access info for files like SSH and RDP

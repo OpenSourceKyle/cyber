@@ -1,5 +1,5 @@
 +++
-title = "SMB/CIFS"
+title = "SMB/CIFS/RPC"
 +++
 
 - `TCP 135`: RPC Endpoint Mapper (EPM)
@@ -28,6 +28,8 @@ title = "SMB/CIFS"
 |`magic script = script.sh`|Which script should be executed when the script gets closed?|
 |`magic output = script.out`|Where the output of the magic script needs to be stored?|
 {{% /details %}}
+
+- https://hacktricks.wiki/en/network-services-pentesting/pentesting-rpcbind.html
 
 ```bash
 # ANON: List available SMB shares

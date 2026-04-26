@@ -2,6 +2,9 @@
 title = "Nmap"
 +++
 
+- `nmap` grep: https://github.com/leonjza/awesome-nmap-grep
+
+
 - **`Open`** - received TCP SYN-ACK
 - **`Closed`** - received TCP RST
 - **`Filtered`** - no response
@@ -9,16 +12,40 @@ title = "Nmap"
 - **`Open/Filtered`** - can't tell if the port is open or blocked by a firewall
 - **`Closed/Filtered`** - (with `-sI` IP ID idle scan) can't tell if the port is closed or blocked by a firewall
 
-Filtering out live hosts for `-iL`:
-
 ```bash
-# Quick
-sudo nmap -n -Pn -sS -sV -sC --stats-every 15s -oA scan_nmap_initial <TARGET> -v
-# All Ports
-sudo nmap -n -Pn -sS -p- --min-rate 5000 --stats-every 60s -oA scan_nmap_disc_all_ports <TARGET> -v
-sudo nmap -n -Pn -sS -sV -sC -p <NEW_PORTS> --reason --stats-every 60s -oA scan_nmap_details_all_ports <TARGET> -v
+# Host Discovery
+sudo nmap --open -oA host_discovery_simple.txt -iL scope.txt 
+
+# NOTE: this is optimized for labs:
+# -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
+sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
 
 ---
+
+awk '/Up$/{print $2}' host_discovery.txt > live_hosts.txt
+```
+
+For "ghost hosts" consider: `-PU137,138,161,53,67,123,500,4500` to scan UDP (though very slow)
+
+- TCP Full-Scan (3-way handshake): https://github.com/bee-san/RustScan
+- TCP Half-Scan (SYN): https://github.com/robertdavidgraham/masscan
+
+```bash
+# All ports (TCP Full Scan)
+rustscan -a live_hosts.txt --ulimit 5000 -- -sC -sV -v --stats-every 30s -oA nmap_rustscan_all_ports
+
+# Massive network (SYN Half Scan)
+sudo masscan --rate 1000 -p1-65535 -iL live_hosts.txt -oL masscan.txt -e <INTERFACE> 
+PORTS=$(awk '/open/ {print $3}' masscan.txt | sort -u | paste -sd, -)
+sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA nmap_masscan_all_ports <TARGET>
+```
+
+```bash
+# UDP
+sudo nmap -sU -sV --top-ports 100 -v -oA nmap_top100_udp <TARGET>
+```
+
+```bash
 
 # Find Live Hosts
 sudo nmap -n -sn --reason -oA host_disc <TARGET>

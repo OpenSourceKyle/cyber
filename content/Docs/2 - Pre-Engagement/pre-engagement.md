@@ -72,6 +72,42 @@ Send `start notification` email including information such as:
 
 At the **end of each day**, we should send a **stop notification** to signal the end of testing
 
+### Email Template
+
+```
+Subject: External Penetration Test - Start of Testing
+From:
+To:
+Cc:
+Date: Mon 6/20/2022 8:29AM
+
+Good Morning,
+
+This email is to notify you that the External Penetration Test against <COMPANY>'s internet-facing network assets has begun. All testing traffic will originate from the following IP address:
+<TARGETS>
+
+While we do not anticipate service disruptions during testing, if any issues arise, please do not hesitate to reach out via the cell phone number or email address in my signature line.
+
+If I am unavailable for any reason, the secondary contact for this engagement will be:
+
+<NAME>
+<TITLE>
+<PHONE>
+<EMAIL>
+
+As discussed during the kickoff call, I will send out a vulnerability notification for any high-risk vulnerabilities uncovered against internet-facing hosts. The assessment will begin with manual and automated information gathering and enumeration scans, then proceed to manual testing and validation of scan results.
+
+
+Thank you, and I look forward to a productive assessment.
+
+Regards,
+<NAME>
+<TITLE> | <COMPANY>
+<PHONE>
+<WEBSITE>
+<EMAIL>
+```
+
 # Baseline Tracking of Technological Assets
 
 Diagrams.net: https://app.diagrams.net/

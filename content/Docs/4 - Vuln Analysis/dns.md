@@ -25,6 +25,11 @@ title = "DNS"
 {{% /details %}}
 
 ```bash
+# Add subdomains or vHosts
+echo '<IP_ADDR> <DOMAIN>' | sudo tee -a /etc/hosts
+```
+
+```bash
 # Registrar Info
 whois <DOMAIN> | whois.txt
 
@@ -35,9 +40,9 @@ dig @<DNS_SERVER> ns <DOMAIN>
 dig @<DNS_SERVER> -x <IP_ADDRESS>
 
 # OLD: version / all records / zone transfer
-dig @<DNS_SERVER> +short CH TXT version.bind <DOMAIN>
-dig @<DNS_SERVER> +short ANY <DOMAIN>
-dig @<DNS_SERVER> +short AXFR <DOMAIN>
+dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
+dig @<DNS_SERVER> ANY <DOMAIN>
+dig @<DNS_SERVER> AXFR <DOMAIN>
 
 # --- Record Types ---
 # ANY: return all records -- sometimes doesnt work!
