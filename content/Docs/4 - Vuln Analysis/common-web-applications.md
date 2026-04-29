@@ -63,6 +63,9 @@ curl -s <TARGET> | grep -i -e WordPress -e themes -e plugins
 ```
 
 **WPScan**
+
+- API Token: https://wpscan.com/profile/
+
 ```bash
 # Generic enumeration
 sudo wpscan -t 20 --api-token <API_TOKEN> --url <TARGET> --enumerate

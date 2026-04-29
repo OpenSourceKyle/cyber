@@ -30,8 +30,8 @@ Capture the exact request via:
 - **browser Web Developers Tools as a cURL command, then change `curl` to `sqlmap` and add any additional options like `--forms`**
 
 ```bash
-# WEB PROXY: Capture request > Save > 'req.txt'
-sqlmap --batch -r req.txt
+# WEB PROXY: Capture request > Save > 'request.txt'
+sqlmap --batch -r request.txt
 
 ---
 

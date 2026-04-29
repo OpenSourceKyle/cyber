@@ -83,7 +83,9 @@ ffuf -ic -recursion -recursion-depth 1 -w /usr/share/wordlists/seclists/Discover
 ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u http://FUZZ.<DOMAIN>
 ```
 
-### vHost search (just changes HTTP header)
+### vHost Brute-Force
+
+Just changes HTTP header
 
 ```bash
 # NOTE: filter out by response size since an HTTP response of 200 OK will always be received

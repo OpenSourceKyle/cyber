@@ -43,27 +43,26 @@ nikto -o nikto_vuln_scan.txt -h http://<TARGET>
 # Enum web app logic & vulns
 wapiti -f txt -o wapiti_scan.txt --url http://<TARGET>
 
-# vHost Brute-force
-gobuster --quiet --threads 64 --output gobuster_vhost_top5000 vhost -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt --append-domain --exclude-length 250-320 --domain <DOMAIN> -u "http://<IP_ADDR>"  # uses IP addr
-
 # Webpage Crawler
 pip3 install --break-system-packages scrapy
 wget -O ReconSpider.zip https://academy.hackthebox.com/storage/modules/144/ReconSpider.v1.2.zip && unzip ReconSpider.zip
 python3 ReconSpider.py <URL> && cat results.json
 # !!! CHECK "results.json" !!!
+```
 
----
+{{< embed-section page="Docs/9 - Notes/ffuf" header="vhost-brute-force" >}}
 
-# /usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
+### Directory Brute-Forcing
 
-# Directory brute-force with a common wordlist
-gobuster dir --quiet --threads 64 --output gobuster_dir_common --follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --url http://<TARGET>
+```bash
+# OTHER LARGER DIR LIST
+/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
 
-# w/ file extensions
-gobuster dir --quiet --threads 64 --output gobuster_dir_medium ---follow-redirect --wordlist /usr/share/seclists/Discovery/Web-Content/common.txt --extensions php,html,txt,bak,zip --url http://<TARGET>
-
-### FEROXBUSTER: faster and recursive
+# Directory Bruteforce
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common --scan-dir-listings -u http://<TARGET>
+
+# Bruteforce File Extensions (-x)
+feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_extensions --scan-dir-listings -x php,html,txt,bak,zip -u http://<TARGET>
 
 ---
 
@@ -81,8 +80,6 @@ pip3 install -r requirements.txt
 # TODO: cull down AI slop below
 
 ## URL Encoding
-
-Do not waste time looking up hex tables manually. Let your CLI do the work.
 
 ```bash
 # 1. Curl Auto-Encoding (GET Requests)
