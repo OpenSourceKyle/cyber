@@ -9,7 +9,7 @@ type = "home"
 
 Kerberos is a ticket-based authentication protocol. It relies on a trusted third party, the **Key Distribution Center (KDC)**, which resides on the Domain Controller (DC).
 
-![Kerberos Authentication Process](/images/AD-auth-process.png)
+{{< figure src="/images/AD-auth-process.png" alt="Kerberos Authentication Process" >}}
 
 1.  **AS-REQ (Authentication Service Request):** User encrypts a timestamp with their password hash and sends it to the KDC.
 2.  **AS-REP (Authentication Service Reply):** KDC validates the hash. If correct, issues a **TGT (Ticket Granting Ticket)**. The TGT is valid for a specific time (default 10 hours) and is signed by the **KRBTGT** account.

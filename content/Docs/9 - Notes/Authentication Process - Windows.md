@@ -3,7 +3,7 @@ title = "Authentication Process - Windows"
 type = "home"
 +++
 
-![Authentication Process - Windows](/images/win_auth_process.png)
+{{< figure src="/images/win_auth_process.png" alt="Authentication Process - Windows" >}}
 
 ### 1. Key Processes & Architecture
 
@@ -67,4 +67,4 @@ These modules live inside `LSASS` to handle specific tasks.
 
 *   **Resource:** [Microsoft: Credential Manager](https://learn.microsoft.com/en-us/windows/win32/secauthn/credential-manager)
 
-![Windows Credential Manager](/images/win_credential_manager.gif)
+{{< figure src="/images/win_credential_manager.gif" alt="Windows Credential Manager" >}}
