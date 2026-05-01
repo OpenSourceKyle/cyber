@@ -10,6 +10,20 @@ Hashcat is a fast password recovery tool that supports multiple attack modes and
 - Cheat Sheet: <https://pentesting.site/cheat-sheets/hashcat/>
 - Rule-Based Attack: <https://hashcat.net/wiki/doku.php?id=rule_based_attack>
 
+## Important Notes
+
+- **Hash Mode**: Always specify the correct `-m` mode for your hash type. Use `hashid` or check the hash format to determine the mode.
+- **Wordlists**: Common wordlists include `rockyou.txt`, `SecLists`, and custom wordlists generated from OSINT.
+- **Rules**: Start with `best64.rule` for quick results, then move to more comprehensive rules if needed.
+- **Performance**: Use `-w 3` or `-w 4` for faster cracking (uses more resources). Use `-O` for optimized kernels (may limit password length).
+- **GPU Acceleration**: Hashcat automatically uses GPU if available. Ensure proper drivers are installed.
+- **Resume Sessions**: Hashcat saves progress automatically. Use `--restore` to resume interrupted sessions.
+- **Output**: Cracked passwords are saved to
+    - `~/.hashcat/hashcat.potfile`
+    - `~/.local/share/hashcat/hashcat.potfile`
+- **Username**: Sometimes it strips the name from hits... to show username and passwords run:
+    - `hashcat --username --show <CRACKME>`
+
 ## Basic Usage
 
 ```bash
@@ -234,12 +248,3 @@ impacket-secretsdump -sam sam.save -security security.save -system system.save L
 hashcat -m 1000 <HASHES> <WORDLIST>
 ```
 
-## Important Notes
-
-- **Hash Mode**: Always specify the correct `-m` mode for your hash type. Use `hashid` or check the hash format to determine the mode.
-- **Wordlists**: Common wordlists include `rockyou.txt`, `SecLists`, and custom wordlists generated from OSINT.
-- **Rules**: Start with `best64.rule` for quick results, then move to more comprehensive rules if needed.
-- **Performance**: Use `-w 3` or `-w 4` for faster cracking (uses more resources). Use `-O` for optimized kernels (may limit password length).
-- **GPU Acceleration**: Hashcat automatically uses GPU if available. Ensure proper drivers are installed.
-- **Resume Sessions**: Hashcat saves progress automatically. Use `--restore` to resume interrupted sessions.
-- **Output**: Cracked passwords are saved to `~/.hashcat/hashcat.potfile` by default.

