@@ -10,7 +10,7 @@ title = "tmux"
 Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm):
 
 ```bash
-sudo apt install -y tmux
+sudo apt install -y tmux xclip
 mkdir -p ~/my_data/
 cat > ~/.tmux.conf <<'EOF'
 set -g history-limit 50000
@@ -20,11 +20,24 @@ run-shell 'mkdir -p "#{@logs_dir}"'
 set-hook -g after-new-session 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
 set-hook -g after-new-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
 set-hook -g after-split-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
+set-hook -g session-created 'run-shell "tmux list-panes -s -F \"#{pane_id}\" | xargs -I{} tmux pipe-pane -t {} -o \"cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-restored-{}.log\""'
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-sessionist'
 set -g @plugin 'tmux-plugins/tmux-pain-control'
 set -g @plugin 'tmux-plugins/tmux-resurrect'
+set -g @plugin 'tmux-plugins/tmux-continuum'
+set -g @plugin 'tmux-plugins/tmux-yank'
+set -g @plugin 'sainnhe/tmux-fzf'
+set -g @plugin 'christoomey/vim-tmux-navigator'
+set -g @plugin 'catppuccin/tmux'
+set -g @continuum-restore 'on'
+set -g @continuum-save-interval '15'
+set -g @resurrect-capture-pane-contents 'on'
+set -g @resurrect-strategy-vim 'session'
+set -g @catppuccin_flavour 'mocha'
+set -g @catppuccin_window_status_style "rounded"
+set -g status-right "#{E:@catppuccin_status_session} #{E:@catppuccin_status_host}"
 run '~/.tmux/plugins/tpm/tpm'
 EOF
 [ ! -d ~/.tmux/plugins/tpm ] && git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm

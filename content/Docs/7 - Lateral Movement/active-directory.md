@@ -615,7 +615,7 @@ One must have 1 of the following:
 
 Create a fake SPN to Kerberoast a user. This will require proper enumeration and a vector to have the right privileges.
 
-{{< embed-section page="Docs/6 - Post-Exploitation/nice-commands" header="change-user-password-via-powerview" >}}
+{{< embed-section page="Docs/6 - Post-Exploitation/nice-commands" header="via-powerview" >}}
 
 ```powershell
 # Authenticate

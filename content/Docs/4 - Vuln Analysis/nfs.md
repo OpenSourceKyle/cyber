@@ -22,7 +22,9 @@ Similiar to SMB.
 
 ```bash
 # Show shared dirs
+df
 exportfs -sv
+
 # Show NFS Shares on server
 showmount -e <TARGET>
 

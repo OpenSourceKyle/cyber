@@ -1,5 +1,5 @@
 +++
-title = "Troubleshooting & Snippets"
+title = "0) Troubleshooting & Snippets"
 +++
 
 Random fixes, one-liners, and useful commands for lab machines and general fuckery.

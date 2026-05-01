@@ -3,9 +3,14 @@ title = "Netexec"
 +++
 
 - https://www.netexec.wiki/getting-started/selecting-and-using-a-protocol
-- Logs: `~/.nxc/logs/`
+    - Logs: `~/.nxc/logs/`
+- Cheatsheet: https://gist.github.com/strikoder/99635df00444bbf5fc90ca83ec8051a0
 
-Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks that helps automate assessing the security of large networks in AD environments. Netexec uses `secretsdump` libraries under its hood, so it is the preferred tool for network enumeration (though `secretsdump` is still great for offline hash extraction or targeted actions).
+**NOTES:**
+- by default, `netxec` attempts to authenticate with passwords or hashes at the domain level... use `--local-auth` to force local authentication, since sometimes passwords and usually hashes are different at these levels
+- `(Pwn3d!)` for valid creds means an Administrator account
+
+Netexec (formerly CrackMapExec) is a swiss army knife for pentesting networks that helps automate assessing the security of large networks in AD environments. Netexec uses `secretsdump` libraries under its hood, so it is the preferred tool for network enumeration (though `secretsdump` is still great for offline hash extraction or targeted actions)
 
 ## Password Policy Enumeration
 
@@ -46,6 +51,10 @@ nxc smb <TARGET> -u <USER> -p <PASSWORD> --groups "Domain Admins"
 ```bash
 # List available shares
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
+
+# List all files
+nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" -M spider_plus --share "Departments Shares"
+cat /tmp/nxc_spider_plus/*.json | python3 -m json.tool
 ```
 
 ## Password Spraying

@@ -4,6 +4,7 @@ title = "Nmap"
 
 - `nmap` grep: https://github.com/leonjza/awesome-nmap-grep
 
+## Scanning
 
 - **`Open`** - received TCP SYN-ACK
 - **`Closed`** - received TCP RST
@@ -80,13 +81,30 @@ sudo nmap -n -Pn --max-retries=1 --source-port <SRC_PORT> -D RND:5 <TARGET>
 # --dns-server <NAMESERVER>
 ```
 
-### 📜 Nmap Scripting Engine (NSE)
+### Static `nmap`
+
+- https://github.com/andrew-d/static-binaries/tree/master/binaries
+
+A static `nmap` will not be able to perform `-sC`/`--script` nor `-sV` and there might be some issues with `-O` OS detection.
+
+`-sT`, `-sS` (root), and `-sV` should be fine
+
+```bash
+wget https://github.com/andrew-d/static-binaries/raw/refs/heads/master/binaries/linux/x86_64/nmap
+
+scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null nmap <USER>@<TARGET>:/tmp/
+
+chmod +x nmap
+./nmap -n -Pn -sT --stats-every 15s -vvv <TARGET_SUBNET>
+```
+
+### Nmap Scripting Engine (NSE)
 
 The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts for vulnerability detection, service enumeration, and exploitation.
 
 **Reference:** [NSE Usage Guide](https://nmap.org/book/nse-usage.html)
 
-#### 📖 How to Use NSE
+#### How to Use NSE
 
 **Basic Usage:**
 - `-sC` - Run a set of popular, common scripts
@@ -103,7 +121,7 @@ The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts
 nmap -p 80 --script http-put --script-args http-put.url='/dav/shell.php',http-put.file='./shell.php' -oA nmap_http_put <TARGET>
 ```
 
-##### 📂 Script Categories
+##### Script Categories
 
 Location: `/usr/share/nmap/scripts`
 - https://nmap.org/nsedoc/scripts/
@@ -125,7 +143,7 @@ Location: `/usr/share/nmap/scripts`
 | **`version`** | Extends the functionality of Nmap's version detection feature. |
 | **`vuln`** | Checks a target for specific, known vulnerabilities. |
 
-#### 📥 Install New NSE Script
+#### Install New NSE Script
 
 ```bash
 sudo wget --output-file /usr/share/nmap/scripts/<SCRIPT>.nse \

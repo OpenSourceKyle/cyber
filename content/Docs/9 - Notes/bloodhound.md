@@ -5,7 +5,11 @@ title = "BloodHound"
 ## BloodHound
 
 - https://github.com/SpecterOps/BloodHound
-- Queries Cheatsheet: https://hausec.com/2019/09/09/bloodhound-cypher-cheatsheet/
+    - Queries Cheatsheet: https://hausec.com/2019/09/09/bloodhound-cypher-cheatsheet/
+        - https://github.com/SpecterOps/BloodHoundQueryLibrary/tree/main/queries
+- Attack Path: https://morimori-dev.github.io/posts/tech-bloodhound-attack-paths/
+
+**NOTE:** sometimes the outputed zipfile doesn't get properly ingested... trying extracting and uploading the individual JSON files
 
 BloodHound is **THE TOOL** for AD enumeration. "\[L\]everages graph theory to reveal hidden and often unintended relationships across identity and access management systems..." **visually** along with other pre-built queries to find weakness in domain structures.
 
@@ -18,8 +22,9 @@ wget https://github.com/SpecterOps/bloodhound-cli/releases/latest/download/blood
 tar -xvzf bloodhound-cli-linux-amd64.tar.gz
 
 # Start and reset password for BloodHound via Docker
-bloodhound-cli install
-bloodhound-cli resetpwd
+sudo systemctl enable --now docker
+sudo ./bloodhound-cli install
+./bloodhound-cli resetpwd
 ```
 
 **Collecting Info**
@@ -41,7 +46,16 @@ Invoke-Bloodhound -ZipFileName bh_logs.zip -CollectionMethod All -Domain <DOMAIN
 - Upload zipfile to Bloodhound: http://127.0.0.1:8080/ui/login
 - Upload to Bloodhound: http://127.0.0.1:8080/ui/administration/file-ingest
 
-**Analysis and Queries**
+## Analysis and Queries
+
+| **BEST QUERIES**                                  | **Why**                    |
+| ------------------------------------------------- | -------------------------- |
+| Find Shortest Paths to Domain Admins              | Primary attack path        |
+| Find Principals with DCSync Rights                | Instant game over if found |
+| Find Kerberoastable Users                         | Most common foothold       |
+| Shortest Paths to DA from Kerberoastable Users    | Combined path              |
+| Find AS-REP Roastable Users                       | No creds needed            |
+| Find Computers where Domain Users are Local Admin | Easy lateral movement      |
 
 ```bash
 # Search Box >

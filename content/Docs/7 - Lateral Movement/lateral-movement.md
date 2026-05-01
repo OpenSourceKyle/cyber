@@ -83,6 +83,8 @@ systeminfo
 
 ## SSH
 
+- https://www.ssh.com/academy/ssh/tunneling-example
+
 ### Forward
 
 `Local (where SSH is ran from) => Remote (Target)`
@@ -96,6 +98,11 @@ ssh -L <LOCAL_PORT>:<TARGET_IP>:<TARGET_PORT> \
 ```
 
 ### Reverse
+
+**NOTE:** this [requires `GatewayPorts` to be `yes`](https://www.man7.org/linux/man-pages/man5/sshd_config.5.html):
+```bash
+grep 'GatewayPorts' /etc/ssh/sshd_config
+```
 
 ```bash
 ssh -R <REMOTE_IP>:<REMOTE_PORT>:0.0.0.0:<LOCAL_PORT> <USER>@<TARGET> -v
@@ -176,7 +183,7 @@ proxychains msfconsole
 # USE nmap's builtin --proxy option
 nmap -sT -Pn -n --proxy http://127.0.0.1:9050 <TARGET>
 # --unprivileged avoids raw sockets and "bad" packets
-nmap -n -Pn -sT -sV --unprivileged --proxy http://127.0.0.1:8080 -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
+nmap -n -Pn -sT -sV --unprivileged --proxy http://127.0.0.1:9050 -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --stats-every 15s --open -v -oA nmap_subnet_discovery <TARGET_SUBNET>
 ```
 
 ### Step 0: Pre-Requisites
@@ -185,14 +192,19 @@ nmap -n -Pn -sT -sV --unprivileged --proxy http://127.0.0.1:8080 -p21,22,23,53,8
 # Edit ProxyChains Config
 # NOTE: disable strict_chain to for robustness
 ls -la /etc/proxychains*.conf
+cat /etc/proxychains4.conf | grep -v '^#' | grep -v '^\s*$'
 
-quiet_mode
+---
+
+sudo mv -v /etc/proxychains4.conf /etc/proxychains4.conf.BAK
+
+echo "quiet_mode
 proxy_dns
-[ProxyList]
 dynamic_chain
 #strict_chain
+[ProxyList]
 socks5  127.0.0.1 1080  # Chisel
-socks4  127.0.0.1 9050  # SSH -D proxy or nmap
+socks4  127.0.0.1 9050  # SSH -D proxy or nmap" | sudo tee /etc/proxychains4.conf
 ```
 
 #### Metasploit

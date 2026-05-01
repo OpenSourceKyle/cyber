@@ -57,6 +57,9 @@ mget *
 
 # https://www.netexec.wiki/getting-started/selecting-and-using-a-protocol
 # badPwdCount: https://learn.microsoft.com/en-us/windows/win32/adschema/a-badpwdcount
+
+nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol
+
 # User and Groups
 netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
 netexec smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --groups
