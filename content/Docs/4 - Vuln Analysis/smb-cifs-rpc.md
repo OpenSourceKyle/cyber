@@ -11,7 +11,7 @@ title = "SMB/CIFS/RPC"
     - `IPC$` (RPC)
     - `PRINT$`
 
-{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="smb" >}}
+{{< embed-section page="Docs/1 - Meta/old-checklist" header="smb" >}}
 
 {{% details "Dangerous Settings" %}}
 
@@ -95,7 +95,7 @@ queryuser <RID>  # User info
 for i in $(seq 500 1100);do rpcclient -N -U "" <TARGET> -c "queryuser 0x$(printf '%x\n' $i)" | grep "User Name\|user_rid\|group_rid" && echo "";done
 
 # Same with other tools
-samrdump.py <TARGET>
+impacket-samrdump <TARGET>
 smbmap -H <TARGET>
 ```
 

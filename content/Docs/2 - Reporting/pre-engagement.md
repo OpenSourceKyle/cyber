@@ -4,6 +4,9 @@ title = "Pre-Engagement"
 
 # Evidence Collection
 
+- Using SysReptor for Report Writing: https://www.hackthebox.com/blog/certification-templates
+- Writing Triggers: https://www.brunorochamoura.com/posts/cpts-report/
+
 *   **Centralize Project Data:** Maintain one place for scope (IPs/URLs), client contacts, Rules of Engagement (RoE), and a running to-do list.
 *   **Document the Attack Path:** As you move through the network, document the full chain of exploits with raw command output and screenshots.
 *   **Maintain a Credential Log:** Keep a separate, centralized list of all compromised credentials, keys, and secrets.
@@ -37,7 +40,7 @@ mkdir -p {Admin,Deliverables,Evidence/{Findings,Scans/{Vuln,'Service Enum','Web 
     - Folder for keeping your deliverables as you work through them. This will often be your report but can include other items such as supplemental spreadsheets and slide decks, depending on the specific client requirements.
 - `Evidence`
     - Findings
-        - We suggest creating a folder for each finding you plan to include in the report to keep your evidence for each finding in a container to make piecing the walkthrough together easier when you write the report.
+        - Keep a folder for each finding you plan to include in the report to keep your evidence for each finding in a container to make piecing the walkthrough together easier when you write the report.
     - Scans
         - Vulnerability scans
             - Export files from your vulnerability scanner (if applicable for the assessment type) for archiving.

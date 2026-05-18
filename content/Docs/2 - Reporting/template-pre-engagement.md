@@ -1,5 +1,5 @@
 +++
-title = "Penetration Test: Pre-Engagement Template"
+title = "Template: Pre-Engagement"
 +++
 
 - Style Guide: https://bishopfox.com/cybersecurity-style-guide

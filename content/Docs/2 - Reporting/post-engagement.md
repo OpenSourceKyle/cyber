@@ -1,3 +1,4 @@
+
 +++
 title = "Post-Engagement"
 +++
@@ -66,6 +67,17 @@ title = "Post-Engagement"
 *   **Configuration Changes:** List of any settings modified during the test that need reverting.
 *   *(Optional)* **Domain Password Analysis:** Statistics on cracked AD passwords (e.g., via DPAT).
 *   *(Optional)* **OSINT / External Footprint:** Open ports, breached credentials (DeHashed), DNS records.
+
+## Cleanup
+
+Keep notes of:
+
+- Every scan
+- Attack attempt
+- File placed on a system
+- Changes made (accounts created, minor configuration changes, etc.)
+
+Before the engagement closes, we should delete any files we uploaded (tools, shells, payloads, notes) and restore everything to the way we found it. Regardless of if we were able to clean everything up, we should still note down in our report appendices every change, file uploaded, account compromise, and host compromise, along with the methods used
 
 ## Misc Tips/Tricks
 

@@ -11,7 +11,7 @@ title = "0) Scanning"
 
 ## Host Discovery & ARP
 
-{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="host-discovery--arp" >}}
+{{< embed-section page="Docs/1 - Meta/old-checklist" header="host-discovery--arp" >}}
 
 ```bash
 # -p: source port

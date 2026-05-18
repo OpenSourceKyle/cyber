@@ -67,7 +67,7 @@
             {{- $headerTag := printf "h%d" $headerLevel -}}
             
             {{- /* Find the complete header including content and closing tag (handles multiline) */ -}}
-            {{- $fullHeaderPattern := printf `<%s\s+id="%s"[^>]*>.*?</%s>` $headerTag $actualHeaderID $headerTag -}}
+            {{- $fullHeaderPattern := printf `(?s)<%s\s+id="%s"[^>]*>.*?</%s>` $headerTag $actualHeaderID $headerTag -}}
             {{- $fullHeaderMatches := findRE $fullHeaderPattern $content -}}
             
             {{- if $fullHeaderMatches -}}
@@ -76,7 +76,7 @@
                 {{- /* Extract header name from the matched header line - handle nested HTML */ -}}
                 {{- $headerName := "" -}}
                 {{- /* Extract everything between opening and closing tags, then strip HTML */ -}}
-                {{- $namePattern := printf `<%s[^>]*id="%s"[^>]*>(.*?)</%s>` $headerTag $actualHeaderID $headerTag -}}
+                {{- $namePattern := printf `(?s)<%s[^>]*id="%s"[^>]*>(.*?)</%s>` $headerTag $actualHeaderID $headerTag -}}
                 {{- $nameMatches := findRE $namePattern $headerLine -}}
                 {{- if $nameMatches -}}
                     {{- $rawName := replaceRE $namePattern "$1" (index $nameMatches 0) -}}
@@ -145,9 +145,9 @@
         
         {{- /* Fallback: If header names weren't extracted, extract from embedded content */ -}}
         {{- if eq (len $headerNames) 0 -}}
-            {{- $extractedHeaders := findRE `<h[1-6][^>]*>(.*?)</h[1-6]>` $embeddedContent -}}
+            {{- $extractedHeaders := findRE `(?s)<h[1-6][^>]*>(.*?)</h[1-6]>` $embeddedContent -}}
             {{- range $extractedHeaders -}}
-                {{- $rawName := replaceRE `<h[1-6][^>]*>(.*?)</h[1-6]>` "$1" . -}}
+                {{- $rawName := replaceRE `(?s)<h[1-6][^>]*>(.*?)</h[1-6]>` "$1" . -}}
                 {{- $name := replaceRE `<[^>]+>` "" $rawName -}}
                 {{- $name = trim $name " \n\r\t" -}}
                 {{- if ne $name "" -}}

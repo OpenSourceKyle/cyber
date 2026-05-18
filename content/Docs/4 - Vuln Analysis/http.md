@@ -6,7 +6,7 @@ title = "HTTP"
 - `TCP 443`: HTTPS encrypted
 - `PORT` (Web is oftentimes on other ports, especially internal proxies or admin pages on `8080` or `8433`)
 
-{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="web" >}}
+{{< embed-section page="Docs/1 - Meta/old-checklist" header="web" >}}
 
 - OWASP Top 10:
     - https://owasp.org/www-project-top-ten/

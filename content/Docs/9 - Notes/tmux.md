@@ -4,6 +4,7 @@ title = "tmux"
 
 - [Ippsec Tmux Video Tutorial](https://www.youtube.com/watch?v=Lqehvpe_djs)
 - [Ippsec Tmux Cheat Sheet](https://mavericknerd.github.io/knowledgebase/ippsec/tmux/)
+- https://tmuxcheatsheet.com/
 
 ## Install and Setup
 

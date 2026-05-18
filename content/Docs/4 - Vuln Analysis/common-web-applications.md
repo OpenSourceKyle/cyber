@@ -157,7 +157,7 @@ curl -s <TARGET>/docs/ | grep Tomcat
 
 **Find Web Manager Pages `/manager` or `host-manager`**
 ```bash
-feroxbuster dir -w /usr/share/dirbuster/wordlists/directory-list-2.3-small.txt -u <TARGET>
+feroxbuster -w /usr/share/dirbuster/wordlists/directory-list-2.3-small.txt -u <TARGET>
 ```
 
 **Brute-Force Web Manager**

