@@ -1,0 +1,8 @@
+<script>
+  document.querySelectorAll('input[type="checkbox"]').forEach((cb, i) => {
+    cb.removeAttribute('disabled');
+    const key = 'cb_' + location.pathname + '_' + i;
+    cb.checked = localStorage.getItem(key) === 'true';
+    cb.addEventListener('change', () => localStorage.setItem(key, cb.checked));
+  });
+</script>
