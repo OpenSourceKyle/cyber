@@ -139,3 +139,58 @@ title = "Check - Web Enumeration"
         - `/opt/web/`
         - `/home/user/public_html/`
         - `~/www/` or `~/html/`
+
+---
+
+## Foothold Triage
+
+> Quick-strike decision tree once enumeration surfaces something to work with. Triage by finding type.
+
+### Initial Triage
+
+1. [ ] Fingerprint the server, framework, and WAF
+    - [Web Technology Fingerprinting]({{% ref "http.md" %}})
+    - Known CVE for detected version: check ExploitDB first -> done
+    - No known CVE: continue
+
+2. [ ] Directory and file brute force -- catalog all endpoints, login forms, upload points, and API paths
+    - [Directory Brute-Forcing]({{% ref "http.md#directory-brute-forcing" %}})
+    - [ffuf -- File Extension & Directory Search]({{% ref "ffuf.md#example-commands" %}})
+
+3. [ ] Run an automated vulnerability scan against discovered paths
+    - No template match: continue manual triage below
+
+### By Finding Type
+
+4. [ ] Login form
+    - Try default credentials first
+    - [Default Credential Lists]({{% ref "online-credentials-attacks.md#default-creds" %}})
+    - Test for SQL injection auth bypass
+    - [SQL Injection on Login Pages]({{% ref "sql-injection.md" %}})
+
+5. [ ] File upload endpoint
+    - [File Upload Exploitation]({{% ref "file-upload.md" %}})
+    - Test extension bypass -> Content-Type mismatch -> magic bytes -> SVG XXE -> RCE or LFI
+
+6. [ ] Parameters that reflect user input
+    - Template expression (`{{7*7}}`): [SSTI]({{% ref "ssti-xxe.md" %}})
+    - HTML injection (`<script>alert(1)</script>`): [XSS]({{% ref "xss.md" %}})
+    - OS command (`; id`): [Command Injection]({{% ref "command-injection.md" %}})
+    - Path traversal (`../../../etc/passwd`): [File Inclusion / LFI]({{% ref "file-inclusion.md" %}})
+
+7. [ ] XML-accepting endpoint (`Content-Type: application/xml`, SOAP)
+    - [XXE Injection]({{% ref "ssti-xxe.md" %}})
+    - Probe with entity injection -> reflected: classic XXE | no reflection: try OOB exfil
+
+8. [ ] Admin panel
+    - Try default credentials
+    - Test auth bypass headers (`X-Forwarded-For: 127.0.0.1`)
+    - Test for [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}}) on user ID parameters
+
+9. [ ] Parameters referencing file paths (`?page=`, `?file=`, `?path=`)
+    - [File Inclusion / Path Traversal]({{% ref "file-inclusion.md" %}})
+
+10. [ ] Nothing bites -- check for SSRF and hidden API surface
+    - Look for request parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks)
+    - [SSRF]({{% ref "ssrf.md" %}})
+    - Review JavaScript source for hidden endpoints, API keys, GraphQL paths

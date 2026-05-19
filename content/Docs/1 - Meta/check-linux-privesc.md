@@ -2,6 +2,26 @@
 title = "Check - Linux Privilege Escalation"
 +++
 
+### Initial Foothold
+
+1. [ ] Establish identity and orientation: user, hostname, groups
+    - [Manual Survey]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
+
+2. [ ] Map the network: interfaces, routes, hosts file -- note any unexpected subnets
+
+3. [ ] Check if the host is domain-joined (`realm list` or `/etc/krb5.conf`)
+    - If joined: search for keytab files and list Kerberos tickets
+
+4. [ ] Check sudo privileges immediately -- NOPASSWD entries are instant escalation paths
+    - [Checking Sudo Privileges]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
+
+5. [ ] Hunt for credentials in env vars, shell history, and web app config files
+    - [Linux Credential Harvesting]({{% ref "authentication-linux.md" %}})
+
+6. [ ] Check ARP table for other hosts and pivot scope
+
+---
+
 ### Default Methodology
 
 1. [ ] Run Linux PrivEsc automation scripts. Save output to a file and transfer to attack box to examine in a text editor.

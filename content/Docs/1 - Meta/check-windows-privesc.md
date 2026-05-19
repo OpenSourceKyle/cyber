@@ -2,6 +2,26 @@
 title = "Check - Windows Privilege Escalation"
 +++
 
+### Initial Foothold
+
+1. [ ] Establish identity: user, groups, privileges
+    - [Manual Survey]({{% ref "privilege-escalation-windows.md#manual-survey" %}})
+
+2. [ ] Map the network: interfaces, routes, hosts file -- note any unexpected subnets
+
+3. [ ] Check if the host is domain-joined -- if so, run BloodHound immediately
+    - [BloodHound Collection]({{% ref "bloodhound.md" %}})
+
+4. [ ] Check token privileges -- SeImpersonate/SeDebug/SeBackup are instant escalation
+    - [Good Privileges]({{% ref "privilege-escalation-windows.md#good-privileges" %}})
+
+5. [ ] Hunt for credentials in the registry, files, and via LaZagne
+    - [Windows Credential Harvesting]({{% ref "authentication-windows.md#creds-harvesting" %}})
+
+6. [ ] Check ARP table and routes for other hosts and pivot scope
+
+---
+
 ### Webserver
 
 1. [ ] Check web configuration files and source code for vulnerabilities, hardcoded credentials, etc.
