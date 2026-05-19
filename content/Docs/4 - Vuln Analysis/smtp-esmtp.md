@@ -1,5 +1,5 @@
 +++
-title = "SMTP/ESMTP"
+title = "🌐 SMTP/ESMTP: TCP 25/465/587"
 +++
 
 - `TCP 25`: unencrypted

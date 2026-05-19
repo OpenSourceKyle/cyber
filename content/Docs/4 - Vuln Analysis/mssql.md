@@ -1,5 +1,5 @@
 +++
-title = "Win: MSSQL"
+title = "🪟 MSSQL: TCP/UDP 1433"
 +++
 
 - `TCP/UDP 1433`: normal

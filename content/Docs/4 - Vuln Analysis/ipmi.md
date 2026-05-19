@@ -1,5 +1,5 @@
 +++
-title = "IPMI"
+title = "🌐 IPMI: UDP 623"
 +++
 
 - `UDP 623`: normal

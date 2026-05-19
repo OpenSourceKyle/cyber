@@ -2,99 +2,114 @@
 title = "Nmap"
 +++
 
-- `nmap` grep: https://github.com/leonjza/awesome-nmap-grep
+- `nmap` grep commands for filtering: https://github.com/leonjza/awesome-nmap-grep
 
 ## Scanning
 
-- **`Open`** - received TCP SYN-ACK
-- **`Closed`** - received TCP RST
-- **`Filtered`** - no response
-- **`Unfiltered`** - (with `-sA` TCP ACK scans) can't determine the state, but the port is accessible
-- **`Open/Filtered`** - can't tell if the port is open or blocked by a firewall
-- **`Closed/Filtered`** - (with `-sI` IP ID idle scan) can't tell if the port is closed or blocked by a firewall
+| State                 | Description                                                                         |
+| :-------------------- | :---------------------------------------------------------------------------------- |
+| **`Open`**            | Received `TCP SYN-ACK`                                                              |
+| **`Closed`**          | Received `TCP RST`                                                                  |
+| **`Filtered`**        | No response                                                                         |
+| **`Open/Filtered`**   | Can't tell if port is open or blocked by a firewall                                 |
+| **`Closed/Filtered`** | with `-sI` IP ID idle scan -- Can't tell if port is closed or blocked by a firewall |
+| **`Unfiltered`**      | with `-sA` `TCP ACK` scans -- Can't determine state, but port is accessible         |
+
+### Host Discovery
 
 ```bash
-# Host Discovery
-sudo nmap --open -oA host_discovery_simple.txt -iL scope.txt 
+# ARP (default behavior)
+sudo nmap -sn -PR --send-eth -n -v -oA host_discovery_simple.txt -iL scope.txt
 
-# NOTE: this is optimized for labs:
-# -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
+# Basic host discovery
+sudo nmap --open -oA host_discovery_simple.txt -iL scope.txt
+
+# Optimized for labs (-T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1)
 sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
 
----
+# Find live hosts + extract to list
+sudo nmap -n -sn --reason -oA host_disc <TARGET>
+grep 'Status: Up' host_disc.gnmap | awk '{print $2}' | tee live_hosts.txt
 
 awk '/Up$/{print $2}' host_discovery.txt > live_hosts.txt
 ```
 
-For "ghost hosts" consider: `-PU137,138,161,53,67,123,500,4500` to scan UDP (though very slow)
+For "ghost hosts" consider: `-PU137,138,161,53,67,123,500,4500` to discover via UDP (though very slow)
 
-- TCP Full-Scan (3-way handshake): https://github.com/bee-san/RustScan
-- TCP Half-Scan (SYN): https://github.com/robertdavidgraham/masscan
-
-```bash
-# All ports (TCP Full Scan)
-rustscan -a live_hosts.txt --ulimit 5000 -- -sC -sV -v --stats-every 30s -oA nmap_rustscan_all_ports
-
-# Massive network (SYN Half Scan)
-sudo masscan --rate 1000 -p1-65535 -iL live_hosts.txt -oL masscan.txt -e <INTERFACE> 
-PORTS=$(awk '/open/ {print $3}' masscan.txt | sort -u | paste -sd, -)
-sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA nmap_masscan_all_ports <TARGET>
-```
+### Port Scanning
 
 ```bash
-# UDP
-sudo nmap -sU -sV --top-ports 100 -v -oA nmap_top100_udp <TARGET>
-```
-
-```bash
-
-# Find Live Hosts
-sudo nmap -n -sn --reason -oA host_disc <TARGET>
-# Create list
-grep 'Status: Up' host_disc.gnmap | awk '{print $2}' | tee live_hosts.txt
-# Scan normally w/ list
+# Scan live hosts with list (top 1000 ports)
 sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live -iL live_hosts.txt
-# Trace packet (MORE INFO)
-sudo nmap -n -Pn -sS --packet-trace --disable-arp-ping -p <PORT> <TARGET>
 
 # TCP Full-Connect (3-way handshake)
 sudo nmap -n -Pn -sT -sV -sC --reason <TARGET>
 
-# UDP (normally no response)
-sudo nmap -n -Pn -sU -sV -sC --reason --top-ports=100 <TARGET>
+# Trace packet
+sudo nmap -n -Pn -sS --packet-trace --disable-arp-ping -p <PORT> <TARGET>
+```
 
-# Create HTML reports from nmap XML scan
+### All Ports
+
+Full TCP + UDP coverage for thorough host enumeration.
+
+#### TCP
+
+- `rustscan` TCP Full-Scan (3-way handshake): https://github.com/bee-san/RustScan
+- `masscan` TCP Half-Scan (SYN): https://github.com/robertdavidgraham/masscan
+
+```bash
+# RustScan (-sT)
+rustscan -a live_hosts.txt --ulimit 5000 -- -sC -sV -v --stats-every 30s -oA rustscan_all_tcp
+
+# Masscan (-sS) + Nmap: large networks
+sudo masscan --rate 1000 -p1-65535 -iL live_hosts.txt -oL masscan.txt -e <INTERFACE>
+PORTS=$(awk '/open/ {print $3}' masscan.txt | sort -u | paste -sd, -)
+sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA masscan_nmap_all_tcp <TARGET>
+
+# nmap only
+sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp <TARGET>
+```
+
+#### UDP
+
+Top 100 (full -p- UDP is impractically slow)
+
+```bash
+sudo nmap -n -Pn -sU -sV --top-ports 100 -v -oA nmap_all_udp <TARGET>
+```
+
+### Miscellaneous
+
+```bash
+# Create HTML report from nmap XML
 # https://nmap.org/book/output.html
 xsltproc <SCAN_FILE>.xml -o <OUTPUT>.html
 
-# SPAM: scan using multiple IP addresses
+# Decoy scan using multiple source IPs
 sudo nmap -n -Pn --max-retries=1 --source-port <SRC_PORT> -D RND:5 <TARGET>
 
-# --max-retries <ATTEMPTS>
-# -T <AGGRESSION_1_5>
-# --packet-trace
-# --reason
-# --disable-arp-ping
-# --top-ports=<NUM>
-# --script <SCRIPT>
-# -g <SRC_PORT>
-# --dns-server <NAMESERVER>
+# Performance and Behavior Flags
+--max-retries <ATTEMPTS>
+-T <AGGRESSION_1_5>
+--packet-trace
+--reason
+--disable-arp-ping
+--top-ports=<NUM>
+--script <SCRIPT>
+-g <SRC_PORT>
+--dns-server <NAMESERVER>
 ```
 
-### Static `nmap`
+### Statically-compiled `nmap`
 
-- https://github.com/andrew-d/static-binaries/tree/master/binaries
-
-A static `nmap` will not be able to perform `-sC`/`--script` nor `-sV` and there might be some issues with `-O` OS detection.
-
-`-sT`, `-sS` (root), and `-sV` should be fine
+**NOTE:**
+- A static `nmap` will not be able to perform `-sC`/`--script` nor `-sV` and there might be some issues with `-O` OS detection.
+- `-sT` and `-sS` (root-only) work fine
 
 ```bash
-wget https://github.com/andrew-d/static-binaries/raw/refs/heads/master/binaries/linux/x86_64/nmap
+wget https://github.com/andrew-d/static-binaries/raw/refs/heads/master/binaries/linux/x86_64/nmap && chmod +x nmap
 
-scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null nmap <USER>@<TARGET>:/tmp/
-
-chmod +x nmap
 ./nmap -n -Pn -sT --stats-every 15s -vvv <TARGET_SUBNET>
 ```
 

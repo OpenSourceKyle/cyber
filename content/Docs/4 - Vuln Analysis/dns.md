@@ -1,5 +1,5 @@
 +++
-title = "DNS"
+title = "🌐 DNS: UDP/TCP 53"
 +++
 
 - `UDP 53`: normal name queries
@@ -11,8 +11,6 @@ title = "DNS"
     - https://wiki.debian.org/BIND9
 - https://web.archive.org/web/20250329174745/https://securitytrails.com/blog/most-popular-types-dns-attacks
 - Domain Takeover: https://github.com/EdOverflow/can-i-take-over-xyz
-
-{{< embed-section page="Docs/1 - Meta/old-checklist" header="dns" >}}
 
 {{% details "Dangerous Settings" %}}
 

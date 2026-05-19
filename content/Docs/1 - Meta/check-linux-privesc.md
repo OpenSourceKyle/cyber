@@ -4,12 +4,10 @@ title = "Check - Linux Privilege Escalation"
 
 ### Default Methodology
 
-1. Run Linux PrivEsc automation scripts. Save output to a file and transfer to attack box to examine in a text editor.
-    
+1. [ ] Run Linux PrivEsc automation scripts. Save output to a file and transfer to attack box to examine in a text editor.
     - [LinPEAS]({{% ref "privilege-escalation-linux.md#linpeas" %}})
-    - LinEnum
-2. Perform basic box enumeration once a foothold is established.
-    
+
+2. [ ] Perform basic box enumeration once a foothold is established.
     - [First user checks / network checks]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
     - [Checking Sudo Privileges]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
     - [Check OS/Kernel Version]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
@@ -27,74 +25,72 @@ title = "Check - Linux Privilege Escalation"
     - Enumerate services, versions, and binaries
     - Check for accessible configuration files
     - Check for accessible scripts
-3. Enumerate for hardcoded / cleartext credentials on the system (quickly check config files).
-    
+
+3. [ ] Enumerate for hardcoded / cleartext credentials on the system (quickly check config files).
     - **BE ESPECIALLY ATTENTIVE TO OUT-OF-THE-ORDINARY SERVICES**
     - Look for things in `/opt`
     - Look for web config files
     - [Enumeration: Credential Hunting]({{% ref "finding-creds.md" %}})
-4. Look at access rights of the user we gained a foothold with (Sudo/SUID/GUID).
-    
+
+4. [ ] Look at access rights of the user we gained a foothold with (Sudo/SUID/GUID).
     - [Checking for Sudo privileges]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
     - [Checking SUID/GUID Privileges]({{% ref "privilege-escalation-linux.md#file-permissions" %}})
     - Check these rights in GTFOBins
-5. Check for unique files owned by the user or by the group that the user is in.
-    
+
+5. [ ] Check for unique files owned by the user or by the group that the user is in.
     - [Unique Files Owned by User]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
-6. If our user has sudo privileges over a binary not in GTFOBins, try the LD_PRELOAD Privilege Escalation Exploit.
+
+6. [ ] If our user has sudo privileges over a binary not in GTFOBins, try the LD_PRELOAD Privilege Escalation Exploit.
     
-7. If custom binaries exist with the SETUID bit set, try [Shared Object Hacking]({{% ref "privilege-escalation-linux.md#file-permissions" %}}).
+7. [ ] If custom binaries exist with the SETUID bit set, try [Shared Object Hacking]({{% ref "privilege-escalation-linux.md#file-permissions" %}}).
     
-8. Check the groups the user is a part of and see if any of them are privileged groups.
-    
+8. [ ] Check the groups the user is a part of and see if any of them are privileged groups.
     - [Enumerate Existing Groups]({{% ref "privilege-escalation-linux.md#groups" %}})
-    - [LXC / LXD Group Membership]({{% ref "privilege-escalation-linux.md#groups" %}})
-    - [Docker Group Membership]({{% ref "privilege-escalation-linux.md#groups" %}})
-    - [Disk Group Membership]({{% ref "privilege-escalation-linux.md#groups" %}})
-    - [ADM Group Membership]({{% ref "privilege-escalation-linux.md#groups" %}})
-9. Check for PATH abuse (unlikely).
+
+9. [ ] Check for PATH abuse (unlikely).
     
-10. Check for Wildcard abuse in cron jobs or custom scripts.
+10. [ ] Check for Wildcard abuse in cron jobs or custom scripts.
     
-11. Look for services running on internal ports that were not accessible from the outside with netstat.
-    
+11. [ ] Look for services running on internal ports that were not accessible from the outside with netstat.
     - [Checking for Internal Listening Ports/Services]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
-12. Check for additional NICs using commands like `ifconfig` to see if there are other sub networks.
-    
+
+12. [ ] Check for additional NICs using commands like `ifconfig` to see if there are other sub networks.
     - [Enumerate Network Interfaces]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
     - [Enumerate Other Hostnames]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
-13. Look for cronjobs running writable scripts / services running as root or another privileged user.
+
+13. [ ] Look for cronjobs running writable scripts / services running as root or another privileged user.
     
-14. Look for [abusable Linux capabilities]({{% ref "privilege-escalation-linux.md#capabilities" %}}).
+14. [ ] Look for [abusable Linux capabilities]({{% ref "privilege-escalation-linux.md#capabilities" %}}).
     
-15. Look for vulnerable application / service versions.
-    
+15. [ ] Look for vulnerable application / service versions.
     - Vulnerable Services
     - Enumerate Services and Versions
     - Enumerating Binaries
-16. Check for Logrotate exploit.
+
+16. [ ] Check for Logrotate exploit.
     
-17. Check for kernel exploits.
-    
+17. [ ] Check for kernel exploits.
     - Search for exploits on GitHub, ExploitDB, and Metasploit
-18. If Python script exists, check for [Python Library Hijacking]({{% ref "privilege-escalation-python.md" %}}).
+
+18. [ ] If Python script exists, check for [Python Library Hijacking]({{% ref "privilege-escalation-python.md" %}}).
     
-19. Check for vulnerable versions of Netfilter.
+19. [ ] Check for vulnerable versions of Netfilter.
     
-20. Check for hijackable tmux sessions.
+20. [ ] Check for hijackable tmux sessions.
     
-21. If `tcpdump` exists on the machine, try capturing cleartext traffic for credentials.
+21. [ ] If `tcpdump` exists on the machine, try capturing cleartext traffic for credentials.
     
-22. Check for recent exploits and zero days.
+22. [ ] Check for recent exploits and zero days.
+    - Recent Zero Days
+
+23. [ ] Check `/etc/bash.bashrc` for actions taken on login for any user.
     
-    - Recent Zero Days (From CPTS Modules)
-23. Check `/etc/bash.bashrc` for actions taken on login for any user.
-    
-24. Attempt to brute force root user with password file and sucrack.
-    
+24. [ ] Attempt to brute force root user with password file and `sucrack`.
 
 ### Linux Container Privilege Escalation
 
-1. [Linux Containers (LXC/LXD)]({{% ref "privilege-escalation-linux.md#groups" %}})
-2. [Docker Privilege Escalation]({{% ref "privilege-escalation-linux.md#groups" %}})
-3. [Kubernetes Privilege Escalation]({{% ref "privilege-escalation-kubernetes.md" %}})
+1. [ ] [Linux Containers (LXC/LXD)]({{% ref "privilege-escalation-linux.md#groups" %}})
+
+2. [ ] [Docker Privilege Escalation]({{% ref "privilege-escalation-linux.md#groups" %}})
+
+3. [ ] [Kubernetes Privilege Escalation]({{% ref "privilege-escalation-kubernetes.md" %}})

@@ -1,5 +1,5 @@
 +++
-title = "Win: WinRM"
+title = "🪟 WinRM: TCP 5985/5986"
 +++
 
 - `TCP 5985/5986`: via HTTP/HTTPS respectively

@@ -1,5 +1,5 @@
 +++
-title = "IMAP/POP3"
+title = "🌐 IMAP/POP3: TCP 110/143/993/995"
 +++
 
 - `TCP 143/993`: IMAP unc/enc

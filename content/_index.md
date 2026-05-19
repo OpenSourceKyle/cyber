@@ -3,4 +3,4 @@ title = "Cyber"
 type = "home"
 +++
 
-{{< includesection file="Docs/_index.md" level="1" >}}
+{{< includesection file="Docs/1 - Meta/alpha-checklist" level="1" >}}

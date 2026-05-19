@@ -1,5 +1,5 @@
 +++
-title = "Win: RDP"
+title = "🪟 RDP: TCP/UDP 3389"
 +++
 
 - `TCP 3389`: normal

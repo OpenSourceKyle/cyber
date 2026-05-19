@@ -1,5 +1,5 @@
 +++
-title = "Win: WMI"
+title = "🪟 WMI: TCP 135"
 +++
 
 - `TCP 135`: first, initialization

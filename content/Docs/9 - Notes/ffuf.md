@@ -9,7 +9,7 @@ When fuzzing for file extensions, try to discern (or guess by searching for `ind
 **References:**
 - https://github.com/ffuf/ffuf?tab=readme-ov-file#usage
 
-## Basic usage
+## Important Options
 
 ```text
 HTTP OPTIONS:
@@ -42,8 +42,6 @@ EXAMPLE USAGE:
     ffuf -w wordlist.txt -u https://example.org/FUZZ -mc all -fs 42 -c -v
 ```
 
----
-
 ## Wordlists
 
 - Dir/File: `/usr/share/wordlists/seclists/Discovery/Web-Content/directory-list-2.3-small.txt`
@@ -56,20 +54,18 @@ EXAMPLE USAGE:
 
 ## Example Commands
 
-### Find file extension (and learn web technologies)
+### Find file extension
+
+Although not perfect, most base pages will use `index` with the appropriate technology extension
 
 ```bash
 # NOTE: already includes '.' so do not add to -u
 ffuf -ic -w /usr/share/wordlists/seclists/Discovery/Web-Content/web-extensions.txt:FUZZ -u http://<TARGET>/indexFUZZ
 ```
 
-### Search for files
+### Search file extensions
 
-```bash
-ffuf -ic -w /usr/share/wordlists/seclists/Discovery/Web-Content/directory-list-2.3-small.txt:FUZZ -u http://<TARGET>/FUZZ.php
-```
-
-### Search recursively for specified file extensions
+This searches for `.php` files
 
 ```bash
 # NOTE: -v is needed to show full path

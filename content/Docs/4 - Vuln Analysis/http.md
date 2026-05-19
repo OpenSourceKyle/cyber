@@ -1,12 +1,10 @@
 +++
-title = "HTTP"
+title = "🌐 HTTP: TCP 80/443"
 +++
 
 - `TCP 80`: HTTP unencrypted
 - `TCP 443`: HTTPS encrypted
 - `PORT` (Web is oftentimes on other ports, especially internal proxies or admin pages on `8080` or `8433`)
-
-{{< embed-section page="Docs/1 - Meta/old-checklist" header="web" >}}
 
 - OWASP Top 10:
     - https://owasp.org/www-project-top-ten/
@@ -22,9 +20,10 @@ title = "HTTP"
     - Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
 
 ```bash
-# HTTP Headers + robots.txt
+# HTTP Headers + robots.txt + sitemap.xml
 curl -skLI -o curl_http_headers.txt http://<TARGET>
 curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
+curl -skL -o curl_robots.txt http://<TARGET>/sitemap.xml
 
 ---
 
@@ -76,25 +75,34 @@ pip3 install -r requirements.txt
 ./finalrecon.py -nb -r -cd final_recon_scan -w /usr/share/wordlists/dirb/common.txt --headers --crawl --ps --dns --sub --dir --url http://<URL>
 ```
 
-
-# TODO: cull down AI slop below
-
 ## URL Encoding
 
+URL Encoding (Percent-Encoding) it is a mechanical requirement of the HTTP protocol. Encoded characters are needed to stop a web server from confusing **Payload Data** with **HTTP Syntax**.
+
+| Context                                        | Encode?           | Why                                |
+| ---------------------------------------------- | ----------------- | ---------------------------------- |
+| Browser URL bar                                | Auto              | Browser handles it                 |
+| Burp Repeater                                  | Manual            | Burp sends raw by default          |
+| `curl` with `--data-urlencode`                 | Auto              | Curl handles it                    |
+| `curl` with `--data-raw` or inline URL         | Manual            | Sent as-is                         |
+| XSS/SQLi/CMDi payload in URL                   | **Always manual** | Special chars break HTTP parsing   |
+| Python `requests.get(params=)`                 | Auto              | Library handles it                 |
+| Python `requests.get(url=)` with inline params | Manual            | Sent as-is                         |
+| POST body `application/x-www-form-urlencoded`  | **Always**        | That's what the content type means |
+| POST body `application/json`                   | Never             | JSON has its own escaping          |
+| POST body `multipart/form-data`                | Never             | Binary-safe encoding               |
+
+**Rule of thumb:** if a payload contains `& # + ? ; | space < >`:
+- **ENCODE:** if it goes into a URL or form body
+- **VERFIY:** if it encodes automatically, verify with `-v` or Burp proxy
+
 ```bash
-# 1. Curl Auto-Encoding (GET Requests)
-# -G converts --data into a GET query string. --data-urlencode handles the special chars.
-curl -G -i "http://<TARGET>/cgi/welcome.bat" --data-urlencode "cmd=C:\windows\system32\whoami.exe & id"
+# Curl Auto-Encoding for GET requests
+curl --get -i "http://<TARGET>/cgi/welcome.bat" --data-urlencode "cmd=C:\windows\system32\whoami.exe & id"
 
-# 2. Python One-Liner (For generating payloads for Burp/Browser)
-python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" 'cat /etc/passwd & id'
-
-# 3. The "Slicker Way" (Add this to your ~/.zshrc or ~/.bashrc)
-alias urlencode='python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))"'
-# Usage: urlencode "payload&goes=here"
+# Python One-Liner (payload generation)
+python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" 'cat /etc/passwd && id'
 ```
-
-URL Encoding (Percent-Encoding) is not an obfuscation technique; it is a mechanical requirement of the HTTP protocol. You must encode characters to stop the Web Server from confusing your **Payload Data** with **HTTP Syntax**.
 
 | Character | HTTP Syntax Meaning | Why it breaks exploits if unencoded |
 | :--- | :--- | :--- |
@@ -103,7 +111,8 @@ URL Encoding (Percent-Encoding) is not an obfuscation technique; it is a mechani
 | **`+`** / **` `** | Space | Raw spaces break the HTTP header structure (`GET /page HTTP/1.1`). |
 | **`?`** | Query String Start | Truncates or confuses path traversal payloads. |
 
-**The CGI / Command Injection Rule:** 
+### Command Injection Rule
+
 When exploiting CGI scripts (`.sh`, `.bat`, `.cgi`), the web server unwraps the URL and hands the raw string directly to the OS shell (`/bin/bash` or `cmd.exe`). If you do not URL-encode your shell operators (`&`, `|`, `;`), the web server strips them out during the HTTP parsing phase, and the OS shell never executes them.
 
 *   **Double Encoding (WAF Bypass):** If a WAF blocks `%5C` (`\`), encode the `%` symbol itself (`%` = `%25`). The payload becomes `%255C`. The WAF sees `%255C` (Allowed), passes it to the backend, which decodes it once to `%5C`, and the application decodes it again to `\`.

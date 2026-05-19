@@ -1,5 +1,5 @@
 +++
-title = "Oracle TNS"
+title = "🌐 Oracle TNS: TCP 1521"
 +++
 
 - `TCP 1521`: normal

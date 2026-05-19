@@ -1,5 +1,5 @@
 +++
-title = "Nix: SSH"
+title = "🐧 SSH: TCP 22"
 +++
 
 - `TCP 22`: normal

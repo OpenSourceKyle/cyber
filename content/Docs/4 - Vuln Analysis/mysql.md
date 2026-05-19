@@ -1,5 +1,5 @@
 +++
-title = "MySQL"
+title = "🌐 MySQL: TCP 3306"
 +++
 
 - `TCP 3306`: normal

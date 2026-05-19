@@ -21,15 +21,15 @@ nxc -h
 ```
 
 Common protocols include:
--     mssql               own stuff using MSSQL
--     winrm               own stuff using WINRM
--     ldap                own stuff using LDAP
--     smb                 own stuff using SMB
--     ssh                 own stuff using SSH
--     vnc                 own stuff using VNC
--     wmi                 own stuff using WMI
--     ftp                 own stuff using FTP
--     rdp                 own stuff using RDP
+- MSSQL
+- WINRM
+- LDAP
+- SMB
+- SSH
+- VNC
+- WMI
+- FTP
+- RDP
 - And sometimes more...
 
 ## Password Policy Enumeration
@@ -49,8 +49,9 @@ nxc smb <TARGET> -u <USER> -p <PASS> --pass-pol
 ### Enumerate Users
 
 ```bash
-# Enumerate users via SMB (anonymous or authenticated)
-nxc smb <TARGET> --users
+# Enumerate users via SMB (anonymous)
+nxc smb <DC_IP> -u '' -p '' --users
+nxc smb <DC_IP> -u '' -p '' --rid-brute
 
 # Authenticated user enumeration
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
@@ -66,7 +67,7 @@ nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --groups
 nxc smb <TARGET> -u <USER> -p <PASSWORD> --groups "Domain Admins"
 ```
 
-## Share Enumeration
+## Shares Enumeration
 
 ```bash
 # List available shares

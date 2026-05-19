@@ -1,5 +1,5 @@
 +++
-title = "FTP"
+title = "🌐 FTP: TCP 20/21"
 +++
 
 - `TCP 20`: data transfer

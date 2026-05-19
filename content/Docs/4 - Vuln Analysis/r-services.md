@@ -1,5 +1,5 @@
 +++
-title = "Nix: R-services"
+title = "🐧 R-services: TCP 512/513/514"
 +++
 
 - `TCP 512/513/514`: `rexecd`, `rlogind`, `rshd`

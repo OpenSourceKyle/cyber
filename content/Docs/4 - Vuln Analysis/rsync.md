@@ -1,5 +1,5 @@
 +++
-title = "Nix: Rsync"
+title = "🐧 Rsync: TCP 873"
 +++
 
 - `TCP 873`: normal

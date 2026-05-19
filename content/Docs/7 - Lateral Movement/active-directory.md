@@ -1057,8 +1057,6 @@ evil-winrm ... -H <HASH>
 
 # ADCS Attack Reference
 
-{{< embed-section page="Docs/1 - Meta/old-checklist" header="adcs" >}}
-
 - https://specterops.io/blog/2022/06/13/certificates-and-pwnage-and-patches/
 - https://github.com/ly4k/Certipy
 - https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6

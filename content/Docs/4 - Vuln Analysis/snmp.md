@@ -1,5 +1,5 @@
 +++
-title = "SNMP"
+title = "🌐 SNMP: UDP 161/162"
 +++
 
 - `UDP 161`: normal

@@ -1,5 +1,5 @@
 +++
-title = "NFS"
+title = "🌐 NFS: TCP/UDP 111, TCP 2049"
 +++
 
 Similiar to SMB.

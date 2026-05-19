@@ -1,8 +1,8 @@
 +++
-title = "Common Web Applications"
+title = "🌐 Common Web Applications"
 +++
 
-The following sections will detail how to enumerate various web appliations, which could lead to exploitation and access.
+The following sections will detail how to enumerate various web applications, which could lead to exploitation and access.
 
 ## EyeWitness
 

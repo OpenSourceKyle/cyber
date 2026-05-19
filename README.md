@@ -64,6 +64,7 @@ And here is the rest of my content.
 
 - `page` (required): The path to the source page relative to the `content/` directory (e.g., `"Docs/7 - Lateral Movement/active-directory.md"` or just `"my-other-page.md"` if in the same directory)
 - `header` (required): The ID of the header to embed. Hugo automatically generates header IDs from the header text, but you can also specify custom IDs using `{#custom-id}` syntax in Markdown
+- `expanded` (optional, default `"true"`): Whether the embedded section is expanded (open) or collapsed by default. Set to `"false"` to render collapsed.
 
 ### How It Works
 

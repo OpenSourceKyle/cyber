@@ -1,5 +1,5 @@
 +++
-title = "SMB/CIFS/RPC"
+title = "🌐 SMB/CIFS/RPC: TCP 135/139/445"
 +++
 
 - `TCP 135`: RPC Endpoint Mapper (EPM)
@@ -10,8 +10,6 @@ title = "SMB/CIFS/RPC"
     - `ADMIN$` (Windows drive)
     - `IPC$` (RPC)
     - `PRINT$`
-
-{{< embed-section page="Docs/1 - Meta/old-checklist" header="smb" >}}
 
 {{% details "Dangerous Settings" %}}
 
