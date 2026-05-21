@@ -78,7 +78,7 @@ Be strategic... only review sections on exam
         - ~~`adsisearcher` instead of PS module `ActiveDirectory`~~
     - ~~DNS~~
     - ~~NMAP (or ARP) for host discovery~~
-    - ~~SMB (enum4linux-ng, anon/null sessions)~~
+    - ~~SMB (anon/null sessions)~~
 - **fix `mirror.yml` for website**
 - TASTY BINARIES?: https://github.com/Flangvik/SharpCollection?tab=readme-ov-file
 - ~~SAMPLE PENTEST ENGAGEMENT FLOW: https://archive.ph/i6AeU~~

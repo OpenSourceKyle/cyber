@@ -11,7 +11,7 @@ When fuzzing for file extensions, try to discern (or guess by searching for `ind
 
 ## Important Options
 
-```text
+```bash
 HTTP OPTIONS:
   -H               Header "Name: Value", separated by colon. Multiple -H flags are accepted.
   -X               HTTP method to use (default: GET)

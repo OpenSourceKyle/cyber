@@ -20,23 +20,21 @@ title = "🌐 HTTP: TCP 80/443"
     - Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
 
 ```bash
-# HTTP Headers + robots.txt + sitemap.xml
-curl -skLI -o curl_http_headers.txt http://<TARGET>
-curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
-curl -skL -o curl_robots.txt http://<TARGET>/sitemap.xml
-
----
-
-# Checks for WAF (wbapp firewall)
+# WAF detection -- run first; a WAF changes how aggressive everything after this can be
 wafw00f <TARGET>
+
+# Banner grab
+curl -skLI -o curl_http_headers.txt http://<TARGET>
+
+# Passive recon
+curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
+curl -skL -o curl_sitemap.txt http://<TARGET>/sitemap.xml
 
 # Enum web server + version + OS + frameworks + libraries
 whatweb --aggression 3 http://<TARGET> --log-brief=whatweb_scan.txt
 
-# Fingerprint web server
+# Fingerprint + vuln scan
 nikto -o nikto_fingerprint_scan.txt -Tuning b -h http://<TARGET>
-
-# Enum web server vulns
 nikto -o nikto_vuln_scan.txt -h http://<TARGET>
 
 # Enum web app logic & vulns
@@ -53,26 +51,14 @@ python3 ReconSpider.py <URL> && cat results.json
 
 ### Directory Brute-Forcing
 
-```bash
-# OTHER LARGER DIR LIST
-/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt
+- Larger directory list: `/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt`
 
+```bash
 # Directory Bruteforce
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common --scan-dir-listings -u http://<TARGET>
 
 # Bruteforce File Extensions (-x)
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_extensions --scan-dir-listings -x php,html,txt,bak,zip -u http://<TARGET>
-
----
-
-# AUTOMATED Recon
-git clone https://github.com/thewhiteh4t/FinalRecon.git
-cd FinalRecon
-chmod +x ./finalrecon.py
-python3 -m venv venv
-source venv/bin/activate
-pip3 install -r requirements.txt
-./finalrecon.py -nb -r -cd final_recon_scan -w /usr/share/wordlists/dirb/common.txt --headers --crawl --ps --dns --sub --dir --url http://<URL>
 ```
 
 ## URL Encoding

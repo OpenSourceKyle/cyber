@@ -27,6 +27,8 @@ title = "🌐 DNS: UDP/TCP 53"
 echo '<IP_ADDR> <DOMAIN>' | sudo tee -a /etc/hosts
 ```
 
+## Enumeration
+
 ```bash
 # Registrar Info
 whois <DOMAIN> | whois.txt
@@ -36,11 +38,6 @@ dig @<DNS_SERVER> ns <DOMAIN>
 
 # PTR Record or Reverse DNS Query
 dig @<DNS_SERVER> -x <IP_ADDRESS>
-
-# OLD: version / all records / zone transfer
-dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
-dig @<DNS_SERVER> ANY <DOMAIN>
-dig @<DNS_SERVER> AXFR <DOMAIN>
 
 # --- Record Types ---
 # ANY: return all records -- sometimes doesnt work!
@@ -56,25 +53,25 @@ dig @<DNS_SERVER> AXFR <DOMAIN>
 # CAA: Certification Authority Authorization
 for type in A AAAA CNAME MX NS SOA SRV TXT CAA; do echo -e "\n--- $type ---"; dig @<DNS_SERVER> +short $type <DOMAIN>; done
 
-# PASSIVE: subdomain enum
-# NOTE: requires API keys
-subfinder -v -d <DOMAIN>
-
-# ACTIVE: subdomain enum (quick, external)
-puredns bruteforce /usr/share/seclists/Discovery/DNS/subdomains-top1million-20000.txt <DOMAIN>
-
-# ACTIVE: subdomain enum (slower, internal)
-# /usr/share/SecLists/Discovery/DNS/namelist.txt
-gobuster dns --threads 64 --output gobuster_dns_top110000 --quiet -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-110000.txt --resolver <DNS_SERVER> --domain <DOMAIN>
+# server version
+dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
+# all records
+dig @<DNS_SERVER> ANY <DOMAIN>
+# zone transfer
+dig @<DNS_SERVER> AXFR <DOMAIN>
 ```
 
-### 🌐 Subdomains
+## Subdomains
 
 - Certificate Transparency: https://crt.sh/
 - https://domain.glass/
 - (PAID) https://buckets.grayhatwarfare.com/
 
 ```bash
+# PASSIVE: subdomain enum
+# NOTE: requires API keys
+subfinder -v -d <DOMAIN>
+
 # Domain => Subdomains via Cert Registry
 curl -s "https://crt.sh/?q=<DOMAIN>&output=json" | jq . | grep name | cut -d":" -f2 | grep -v "CN=" | cut -d'"' -f2 | awk '{gsub(/\\n/,"\n");}1;' | sort -u | tee subdomainlist.txt
 # Full Info 
@@ -86,12 +83,11 @@ for i in $(cat domain_ipaddress.txt) ; do host $i | grep "has address" | cut -d"
 # (IPv4) Addresses => Services via Shodan
 for i in $(cat ip-addresses.txt) ; do shodan host $i ; done
 
-# DNS: old technique
-dig any <DOMAIN>
-
 # Content Search: google.com Dork
 inurl:<DOMAIN> intext:<TERM>
 ```
+
+{{< embed-section page="Docs/9 - Notes/ffuf" header="subdomain-search">}}
 
 ### LLMNR & NBT-NS
 

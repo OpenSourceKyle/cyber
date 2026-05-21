@@ -22,33 +22,31 @@ set-hook -g after-new-session 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-
 set-hook -g after-new-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
 set-hook -g after-split-window 'pipe-pane -o "cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-#{session_name}-#{window_index}-#{pane_index}.log"'
 set-hook -g session-created 'run-shell "tmux list-panes -s -F \"#{pane_id}\" | xargs -I{} tmux pipe-pane -t {} -o \"cat >> #{@logs_dir}/$(date +%Y%m%d-%H%M%S)-restored-{}.log\""'
+set-hook -g client-detached 'run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh'
+set-hook -g session-closed 'run-shell ~/.tmux/plugins/tmux-resurrect/scripts/save.sh'
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-sessionist'
 set -g @plugin 'tmux-plugins/tmux-pain-control'
-# set -g @plugin 'tmux-plugins/tmux-resurrect'
-set -g @plugin 'tmux-plugins/tmux-continuum'
+set -g @plugin 'tmux-plugins/tmux-resurrect'
 set -g @plugin 'tmux-plugins/tmux-yank'
 set -g @plugin 'sainnhe/tmux-fzf'
 set -g @plugin 'christoomey/vim-tmux-navigator'
 set -g @plugin 'catppuccin/tmux'
-set -g @continuum-restore 'on'
-set -g @continuum-save-interval '15'
-set -g @resurrect-capture-pane-contents 'on'
-set -g @resurrect-strategy-vim 'session'
 set -g @catppuccin_flavour 'mocha'
 set -g @catppuccin_window_status_style "rounded"
+set -g @resurrect-capture-pane-contents 'on'
 set -g status-right "#{E:@catppuccin_status_session} #{E:@catppuccin_status_host}"
 run '~/.tmux/plugins/tpm/tpm'
 EOF
 [ ! -d ~/.tmux/plugins/tpm ] && git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 export TMUX_PLUGIN_MANAGER_PATH="$HOME/.tmux/plugins/"
 tmux start-server
-tmux new-session -d
+tmux new-session -d -s pentest-engagement
 $TMUX_PLUGIN_MANAGER_PATH/tpm/bin/install_plugins
 tmux kill-server
-printf '\n[ -z "$TMUX" ] && exec tmux\n' >> ~/.bashrc
-printf '\n[ -z "$TMUX" ] && exec tmux\n' >> ~/.zshrc
+printf '\n[ -z "$TMUX" ] && tmux new-session -A -s pentest-engagement\n' >> ~/.bashrc
+printf '\n[ -z "$TMUX" ] && tmux new-session -A -s pentest-engagement\n' >> ~/.zshrc
 ```
 
 ## Tmux Core Hotkeys

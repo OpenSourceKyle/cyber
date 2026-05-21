@@ -17,12 +17,11 @@ title = "Check - DNS Enumeration"
 ### Active Recon
 
 3. [ ] Identify authoritative nameservers and attempt zone transfer
-    - [DNS Zone Transfer & Record Enumeration]({{% ref "dns.md" %}})
-    - `dig axfr @<NS> <DOMAIN>` -- full zone dump if misconfigured
+    - [DNS Zone Transfer & Record Enumeration]({{% ref "dns.md#enumeration" %}})
 
 4. [ ] Enumerate standard record types (A, AAAA, MX, TXT, SRV, NS)
     - Run PTR/reverse lookups against discovered IP ranges
-    - [DNS Enumeration]({{% ref "dns.md" %}})
+    - [DNS Enumeration]({{% ref "dns.md#enumeration" %}})
 
 5. [ ] Active subdomain brute force
     - [Subdomain Brute Force]({{% ref "ffuf.md#subdomain-search" %}})

@@ -25,7 +25,7 @@ sudo nmap -sn -PR --send-eth -n -v -oA host_discovery_simple.txt -iL scope.txt
 sudo nmap --open -oA host_discovery_simple.txt -iL scope.txt
 
 # Optimized for labs (-T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1)
-sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
+sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery_lab.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
 
 # Find live hosts + extract to list
 sudo nmap -n -sn --reason -oA host_disc <TARGET>
@@ -41,19 +41,13 @@ For "ghost hosts" consider: `-PU137,138,161,53,67,123,500,4500` to discover via 
 ```bash
 # Scan live hosts with list (top 1000 ports)
 sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live -iL live_hosts.txt
-
-# TCP Full-Connect (3-way handshake)
-sudo nmap -n -Pn -sT -sV -sC --reason <TARGET>
-
-# Trace packet
-sudo nmap -n -Pn -sS --packet-trace --disable-arp-ping -p <PORT> <TARGET>
 ```
 
-### All Ports
+#### All Ports
 
 Full TCP + UDP coverage for thorough host enumeration.
 
-#### TCP
+##### TCP
 
 - `rustscan` TCP Full-Scan (3-way handshake): https://github.com/bee-san/RustScan
 - `masscan` TCP Half-Scan (SYN): https://github.com/robertdavidgraham/masscan
@@ -65,40 +59,24 @@ rustscan -a live_hosts.txt --ulimit 5000 -- -sC -sV -v --stats-every 30s -oA rus
 # Masscan (-sS) + Nmap: large networks
 sudo masscan --rate 1000 -p1-65535 -iL live_hosts.txt -oL masscan.txt -e <INTERFACE>
 PORTS=$(awk '/open/ {print $3}' masscan.txt | sort -u | paste -sd, -)
-sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA masscan_nmap_all_tcp <TARGET>
+sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA masscan_nmap_all_tcp -iL live_hosts.txt
 
 # nmap only
-sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp <TARGET>
+sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp -iL live_hosts.txt
 ```
 
-#### UDP
+##### UDP
 
 Top 100 (full -p- UDP is impractically slow)
 
 ```bash
-sudo nmap -n -Pn -sU -sV --top-ports 100 -v -oA nmap_all_udp <TARGET>
+sudo nmap -n -Pn -sU --top-ports 100 -v -oA nmap_all_udp -iL live_hosts.txt
 ```
 
-### Miscellaneous
+### Service Scanning
 
 ```bash
-# Create HTML report from nmap XML
-# https://nmap.org/book/output.html
-xsltproc <SCAN_FILE>.xml -o <OUTPUT>.html
-
-# Decoy scan using multiple source IPs
-sudo nmap -n -Pn --max-retries=1 --source-port <SRC_PORT> -D RND:5 <TARGET>
-
-# Performance and Behavior Flags
---max-retries <ATTEMPTS>
--T <AGGRESSION_1_5>
---packet-trace
---reason
---disable-arp-ping
---top-ports=<NUM>
---script <SCRIPT>
--g <SRC_PORT>
---dns-server <NAMESERVER>
+sudo nmap -n -Pn -sn -sV -sC -O -iL live_hosts.txt
 ```
 
 ### Statically-compiled `nmap`
@@ -115,11 +93,11 @@ wget https://github.com/andrew-d/static-binaries/raw/refs/heads/master/binaries/
 
 ### Nmap Scripting Engine (NSE)
 
+- [NSE Usage Guide](https://nmap.org/book/nse-usage.html)
+
 The Nmap Scripting Engine (NSE) extends Nmap's functionality with custom scripts for vulnerability detection, service enumeration, and exploitation.
 
-**Reference:** [NSE Usage Guide](https://nmap.org/book/nse-usage.html)
-
-#### How to Use NSE
+#### Usage
 
 **Basic Usage:**
 - `-sC` - Run a set of popular, common scripts
@@ -165,4 +143,26 @@ sudo wget --output-file /usr/share/nmap/scripts/<SCRIPT>.nse \
     https://svn.nmap.org/nmap/scripts/<SCRIPT>.nse
 
 nmap --script-updatedb
+```
+
+## Miscellaneous
+
+```bash
+# Create HTML report from nmap XML
+# https://nmap.org/book/output.html
+xsltproc <SCAN_FILE>.xml -o <OUTPUT>.html
+
+# Decoy scan using multiple source IPs
+sudo nmap -n -Pn --max-retries=1 --source-port <SRC_PORT> -D RND:5 <TARGET>
+
+# Performance and Behavior Flags
+--max-retries <ATTEMPTS>
+-T <AGGRESSION_1_5>
+--packet-trace
+--reason
+--disable-arp-ping
+--top-ports=<NUM>
+--script <SCRIPT>
+-g <SRC_PORT>
+--dns-server <NAMESERVER>
 ```

