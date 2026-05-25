@@ -4,7 +4,7 @@ title = "Check - Initial Enumeration"
 
 ## Initial Setup
 
-1. [ ] Setup [tmux]({{% ref "tmux.md#install-and-setup" %}}), engagement folder (via Obsidian template), and use [Flameshot](https://flameshot.org/) for screenshots
+1. [ ] Setup [tmux]({{% ref "tmux.md#install-and-setup" %}}), engagement folder (via Obsidian template), [setup Bloodhound (w/`netexec` integration enabled)]({{% ref "bloodhound.me" %}}), and use [Flameshot](https://flameshot.org/) for screenshots
 
 2. [ ] Login into [SysReptor and create engagement report](https://labs.sysre.pt/projects?ordering=-created)
     - Use [trigger-based event reporting](https://www.brunorochamoura.com/posts/cpts-report/#triggers)
@@ -25,6 +25,7 @@ title = "Check - Initial Enumeration"
     - **Ensure that off limits IPs are noted in `scope_excludes.txt` excluded `nmap --excludefile scope_excludes.txt`**
 
 2. [ ] Host Discovery
+    - `netexec smb|ssh` quick sweep
     - [NMAP Host Discovery Scan]({{% ref "nmap.md#host-discovery" %}})
         - ARP scanning (same subnet only)
     - [ICMP sweep ping or fping]({{% ref "scanning.md#ping-sweep" %}})

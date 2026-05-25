@@ -4,6 +4,10 @@ title = "Check - Active Directory"
 
 > **BEFORE DOING ANYTHING --  SYNC CLOCK WITH THE DOMAIN CONTROLLER**
 
+```bash
+sudo ntpdate <DC_IP>
+```
+
 ```powershell
 net time /domain /set /y
 ```
@@ -30,6 +34,7 @@ net time /domain /set /y
 4. [ ] Try [Impacket's `lookupsid.py`]({{% ref "active-directory.md#user-enumeration" %}}) for discovering users with SID/RID brute forcing.
 
 5. [ ] Use [Kerbrute]({{% ref "active-directory.md#user-enumeration" %}}) and common wordlists (that match the naming convention of the organization) to brute force usernames against a discovered DC.
+    - [Username Generation & Wordlists]({{% ref "online-credentials-attacks.md#user-enum" %}})
 
 6. [ ] Check for users that do not require Kerberos pre-auth ([AS-REP Roasting]({{% ref "active-directory.md#as-rep-roasting" %}})) to get their password hash.
 
@@ -105,9 +110,13 @@ net time /domain /set /y
     - [OverPass the Hash / Pass the Key]({{% ref "active-directory.md#pass-the-key-ptk--overpass-the-hash-oth" %}})
 
 7. [ ] Check for common vulnerabilities and misconfigurations to escalate privileges or move laterally:
+    - [Zerologon (CVE-2020-1472)]({{% ref "active-directory.md#zerologon-cve-2020-1472" %}})
     - [NoPac (SAMAccountName Spoofing)]({{% ref "active-directory.md#nopac-samaccountname-spoofing" %}})
+    - [PetitPotam (NTLM Coercion)]({{% ref "active-directory.md#petitpotam-ntlm-coercion" %}})
+    - [DFSCoerce (NTLM Coercion)]({{% ref "active-directory.md#dfscoerce-ntlm-coercion" %}})
+    - [ShadowCoerce (NTLM Coercion)]({{% ref "active-directory.md#shadowcoerce-ntlm-coercion" %}})
+    - [EternalBlue (MS17-010)]({{% ref "active-directory.md#eternalblue-ms17-010" %}})
     - [PrintNightmare]({{% ref "privilege-escalation-windows.md#roguepotato-godpotato-printspoofer-printnightmare" %}})
-    - [PetitPotam]({{% ref "active-directory.md#esc8-ntlm-relay-to-http-enrollment" %}})
     - [Exchange group permissions]({{% ref "active-directory.md#exchange-privilege-escalation" %}})
     - [MS-RPRN Printer bug]({{% ref "active-directory.md#printer-bug-enumeration-spooler-service" %}})
     - Sniff for LDAP credentials

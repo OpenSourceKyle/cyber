@@ -3,6 +3,11 @@ title = "🪟 WinRM: TCP 5985/5986"
 +++
 
 - `TCP 5985/5986`: via HTTP/HTTPS respectively
+- Requires **1 of**:
+    - Local administrator
+    - Member of the `Remote Management Users` group
+    - Domain Admin (inherits local admin)
+    - explicit permissions for PowerShell Remoting in the session configuration
 
 ```bash
 # Enum via nmap

@@ -24,7 +24,8 @@ tar -xvzf bloodhound-cli-linux-amd64.tar.gz
 # Start and reset password for BloodHound via Docker
 sudo systemctl enable --now docker
 sudo ./bloodhound-cli install
-./bloodhound-cli resetpwd
+sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
+#./bloodhound-cli resetpwd  # needed if PW not grabbed from install
 ```
 
 **Collecting Info**

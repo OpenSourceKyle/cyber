@@ -53,6 +53,8 @@ hashcat -m <HASH_MODE> -a <ATTACK_MODE> <HASH_FILE> <WORDLIST>
 
 ### Windows Hashes
 
+**NOTE:** `$DCC2$` is the Domain Cached Credentials 2 (DCC2), MS Cache 2 -- Those hashes can be cracked using Hashcat, provided a weak password is set because this algorithm is much stronger than NTLM. Also, they cannot be used for a Pass the Hash attack.
+
 ```bash
 # NT hashes (NTLM)
 hashcat -m 1000 <HASHES> <WORDLIST>

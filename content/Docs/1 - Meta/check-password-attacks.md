@@ -2,8 +2,9 @@
 title = "Check - Password Attacks"
 +++
 
-> **ALWAYS get the password lockout policy before any spraying.** One failed attempt per user per lockout window max. If policy is unknown, one attempt only -- then wait an hour before a second.
-> - [Password Policy Enumeration]({{% ref "netexec.md#password-policy-enumeration" %}})
+- **ALWAYS get the password lockout policy before any spraying.** One failed attempt per user per lockout window max. If policy is unknown, one attempt only -- then wait an hour before a second.
+    - [Password Policy Enumeration]({{% ref "netexec.md#password-policy-enumeration" %}})
+- **REMEMBER:** spray against all types of authentication (domain and local `--local-auth`) or even application-level (like for MSSQL) when trying passwords
 
 ### When to Stop
 
@@ -15,7 +16,7 @@ Password attacks can be frustrating.
 
 ### Get Usernames
 
-No usernames = no attack. Don't skip this.
+[Username Generation, Brute-Forcing, and Wordlists]({{% ref "online-credentials-attacks.md#user-enum" %}})
 
 1. [ ] SMB null session or RPC for domain users
     - [User Enumeration via nxc]({{% ref "netexec.md#enumerate-users" %}})
@@ -43,12 +44,12 @@ Try passwords in this order (one per spray run):
 
 ### Offline Hash Cracking
 
-| Hash Source | Hashcat Mode |
-|-------------|-------------|
-| NTLM (SAM/NTDS) | `1000` |
-| NTLMv2 (Responder/relay) | `5600` |
-| Kerberoast TGS | `13100` |
-| AS-REP Roast | `18200` |
+| Hash Source              | Hashcat Mode |
+| ------------------------ | ------------ |
+| NTLM (SAM/NTDS)          | `1000`       |
+| NTLMv2 (Responder/relay) | `5600`       |
+| Kerberoast TGS           | `13100`      |
+| AS-REP Roast             | `18200`      |
 
 Wordlist order:
 1. [ ] `rockyou.txt` straight

