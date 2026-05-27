@@ -1,5 +1,5 @@
 +++
-title = "Check - SQL Injection (SQLMap)"
+title = "06 - Check - SQL Injection (SQLMap)"
 +++
 
 ### Phase 1: Manual Triage & Setup
@@ -13,7 +13,7 @@ title = "Check - SQL Injection (SQLMap)"
     - Save request from Burp to `req.txt`, mark injection point with `*`
 
 3. [ ] Tune SQLMap if the baseline fails (wrong boundaries, slow checks, logic issues)
-    - [Attack Tuning & Escalation]({{% ref "sqlmap.md#attack-tuning--escalation" %}})
+    - [Attack Tuning & Escalation]({{% ref "sqlmap.md#attack-tuning-escalation" %}})
     - Adjust level/risk, prefix/suffix, and technique flags to match what Burp shows
 
 ### Phase 2: Stability & Evasion
@@ -22,7 +22,7 @@ title = "Check - SQL Injection (SQLMap)"
     - [SQLMap Troubleshooting]({{% ref "sqlmap.md#troubleshooting" %}})
 
 5. [ ] Bypass WAF blocking or 403 responses
-    - [Evasion & Protections Bypass]({{% ref "sqlmap.md#evasion--protections-bypass" %}})
+    - [Evasion & Protections Bypass]({{% ref "sqlmap.md#evasion-protections-bypass" %}})
     - Use tamper scripts and random user-agent
 
 ### Phase 3: Loot & Shells

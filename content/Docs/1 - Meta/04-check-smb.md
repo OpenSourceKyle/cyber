@@ -1,5 +1,5 @@
 +++
-title = "Check - SMB Enumeration"
+title = "04 - Check - SMB Enumeration"
 +++
 
 ### Unauthenticated Enumeration

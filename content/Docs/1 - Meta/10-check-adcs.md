@@ -1,5 +1,5 @@
 +++
-title = "Check - ADCS (Certificate Services)"
+title = "10 - Check - ADCS (Certificate Services)"
 +++
 
 ## Active Directory Certificate Services (ADCS)
@@ -47,4 +47,4 @@ title = "Check - ADCS (Certificate Services)"
     - [Unconstrained / Constrained / RBCD Delegation]({{% ref "active-directory.md#adcs-attack-reference" %}})
     - Check BloodHound for `GenericWrite` on users (Shadow Credentials)
     - [NoPac / SAMAccountName Spoofing]({{% ref "active-directory.md" %}})
-    - [Active Directory Checklist]({{% ref "check-active-directory.md" %}})
+    - [Active Directory Checklist]({{% ref "09-check-active-directory.md" %}})

@@ -1,5 +1,5 @@
 +++
-title = "Check - Windows Privilege Escalation"
+title = "08 - Check - Windows Privilege Escalation"
 +++
 
 ### Initial Foothold
@@ -12,14 +12,14 @@ title = "Check - Windows Privilege Escalation"
 
 3. [ ] Map the network: interfaces, routes, hosts file -- note any unexpected subnets
 
-4. [ ] Check if the host is domain-joined -- if so, run BloodHound immediately
+4. [ ] Run BloodHound if on domain
     - [BloodHound Collection]({{% ref "bloodhound.md" %}})
 
 5. [ ] Check token privileges -- SeImpersonate/SeDebug/SeBackup are instant escalation
     - [Good Privileges]({{% ref "privilege-escalation-windows.md#good-privileges" %}})
 
 6. [ ] Hunt for credentials in the registry, files, and via LaZagne
-    - [Windows Credential Harvesting]({{% ref "authentication-windows.md#creds-harvesting" %}})
+    - [Windows Credential Harvesting]({{% ref "finding-creds.md" %}})
 
 7. [ ] Check ARP table and routes for other hosts and pivot scope
 
@@ -69,7 +69,7 @@ title = "Check - Windows Privilege Escalation"
     - [Always Install Elevated]({{% ref "privilege-escalation-windows.md#alwaysinstallelevated" %}})
 
 7. [ ] Check for Weak File / Service Permissions.
-    - [Permissive File System ACLs]({{% ref "privilege-escalation-windows.md#filefolder-permissions" %}})
+    - [Permissive File System ACLs]({{% ref "privilege-escalation-windows.md#file-folder-permissions" %}})
     - [Weak Service Permissions]({{% ref "privilege-escalation-windows.md#weak-service-acls" %}})
     - [Unquoted Service Path]({{% ref "privilege-escalation-windows.md#unquoted-service-paths" %}})
     - Permissive Registry ACLs
@@ -85,7 +85,7 @@ title = "Check - Windows Privilege Escalation"
     - [Credential Hunting]({{% ref "finding-creds.md" %}})
     - [Credential Hunting Other Files]({{% ref "finding-creds.md#searching" %}})
     - Further Credential Theft
-    - [Dumping Hashes / Credentials]({{% ref "authentication-windows.md#secrets-dumping-sam" %}})
+    - [Dumping Hashes / Credentials]({{% ref "netexec.md#sam-database" %}})
     - [Mimikatz]({{% ref "mimikatz-post-exploit.md" %}})
 
 11. [ ] Attempt to bypass UAC Controls if present.
@@ -139,9 +139,9 @@ title = "Check - Windows Privilege Escalation"
 ### With `Administrator`
 
 1. [ ] Attempt to recover all user passwords or NTLM hashes on the system.
-    - [Dump the LSASS process to try and recover more user passwords or NTLM hashes]({{% ref "authentication-windows.md#lsass" %}})
-    - [Stealing NTLM Hashes from an LSASS.DMP Memory Dump]({{% ref "authentication-windows.md#lsass" %}})
-    - [Dumping the SAM Database to recover password hashes]({{% ref "authentication-windows.md#secrets-dumping-sam" %}})
+    - [Dump the LSASS process to try and recover more user passwords or NTLM hashes]({{% ref "privilege-escalation-windows.md#via-sedebug" %}})
+    - [Stealing NTLM Hashes from an LSASS.DMP Memory Dump]({{% ref "privilege-escalation-windows.md#via-sedebug" %}})
+    - [Dumping the SAM Database to recover password hashes]({{% ref "netexec.md#sam-database" %}})
 
 2. [ ] If on a Domain Controller, dump NTDS.dit to recover all domain account hashes.
     - [NTDS Extraction via NetExec]({{% ref "netexec.md#ntds-dump" %}})

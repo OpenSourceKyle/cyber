@@ -1,5 +1,5 @@
 +++
-title = "Check - Linux Privilege Escalation"
+title = "07 - Check - Linux Privilege Escalation"
 +++
 
 ### Initial Foothold

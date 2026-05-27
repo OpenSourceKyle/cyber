@@ -39,7 +39,7 @@ Invoke-Bloodhound -ZipFileName bh_logs.zip -CollectionMethod All -Domain <DOMAIN
 # - OR
 
 # SharpHound.exe alternative
-.\SharpHound.exe --zipfilename bh_logs.zip -c All -d <DOMAIN>
+.\SharpHound.exe --OutputDirectory <PATH> --zipfilename bh_logs.zip -c All -d <DOMAIN>
 ```
 
 **Uploading Info**

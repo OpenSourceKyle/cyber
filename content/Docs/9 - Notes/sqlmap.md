@@ -171,7 +171,7 @@ sqlmap -u "http://target.com/vuln.php?id=1" -v 6 --batch
 sqlmap -u "http://target.com/vuln.php?id=1" --batch --proxy http://127.0.0.1:8080
 ```
 
-### Attack Tuning & Escalation
+### Attack Tuning Escalation
 
 #### "Silver Bullet" Commands
 

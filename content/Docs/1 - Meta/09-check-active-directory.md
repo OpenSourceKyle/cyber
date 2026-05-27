@@ -1,16 +1,18 @@
 +++
-title = "Check - Active Directory"
+title = "09 - Check - Active Directory"
 +++
 
-> **BEFORE DOING ANYTHING --  SYNC CLOCK WITH THE DOMAIN CONTROLLER**
+# ASAP
+
+**SYNC CLOCK WITH THE DOMAIN CONTROLLER**
 
 ```bash
 sudo ntpdate <DC_IP>
+
+net.exe time /domain /set /y
 ```
 
-```powershell
-net time /domain /set /y
-```
+1. [ ] **RUN [BLOODHOUND]({{% ref "bloodhound.md" %}})** and mark everything owned -- This is the holy grail
 
 ---
 
@@ -28,21 +30,17 @@ net time /domain /set /y
 
 2. [ ] Grab all users by an [SMB Null Session against the DC with netexec]({{% ref "netexec.md#enumerate-users" %}})
 
-3. [ ] Attempt an anonymous LDAP search against the domain controller to grab all users.
-    - [Anonymous LDAP Search via nxc]({{% ref "netexec.md#anonymous-ldap-search" %}})
+3. [ ] Attempt an [anonymous LDAP search against the domain controller to grab all users]({{% ref "netexec.md#anonymous-ldap-search" %}})
 
-4. [ ] Try [Impacket's `lookupsid.py`]({{% ref "active-directory.md#user-enumeration" %}}) for discovering users with SID/RID brute forcing.
+4. [ ] Try [RID Brute-forcing]({{% ref "netexec.md#enumerate-users" %}}) for discovering users with SID/RID brute forcing.
 
-5. [ ] Use [Kerbrute]({{% ref "active-directory.md#user-enumeration" %}}) and common wordlists (that match the naming convention of the organization) to brute force usernames against a discovered DC.
-    - [Username Generation & Wordlists]({{% ref "online-credentials-attacks.md#user-enum" %}})
-
-6. [ ] Check for users that do not require Kerberos pre-auth ([AS-REP Roasting]({{% ref "active-directory.md#as-rep-roasting" %}})) to get their password hash.
+5. [ ] Brute-force [usernames with wordlists via AS-REP Roasting]({{% ref "netexec.md#asreproast" %}})
 
 #### Get User Foothold
 
-1. [ ] Start [Responder]({{% ref "protocol-poisoners.md" %}})/Inveigh on network interface to listen for NTLM users and hashes. Attempt to crack with Hashcat/John.
+1. [ ] Start [Responder/Inveigh]({{% ref "protocol-poisoners.md" %}}) on network interface to listen for NTLM users and hashes. Attempt to crack with Hashcat/John.
 
-2. [ ] Attempt a [password spray]({{% ref "check-password-attacks.md" %}}) against all discovered users.
+2. [ ] Attempt a [password spray]({{% ref "03-check-password-attacks.md" %}}) against all discovered users.
 
 ---
 
@@ -50,11 +48,9 @@ net time /domain /set /y
 
 #### Host Identification
 
-1. [ ] Run [BloodHound]({{% ref "bloodhound.md" %}}) with discovered credentials (mark anything we have control over as owned).
+1. [ ] Use [ldapdomaindump]({{% ref "active-directory.md#ad-enumeration" %}}) to identify all domain-joined computers.
 
-2. [ ] Use [ldapdomaindump]({{% ref "active-directory.md#ad-enumeration" %}}) to identify all domain-joined computers.
-
-3. [ ] Enumerate accessible [shares on servers with NetExec]({{% ref "netexec.md#shares-enumeration" %}}), PowerView, or Snaffler.
+2. [ ] Enumerate accessible [shares on servers with NetExec]({{% ref "netexec.md#shares-enumeration" %}}), PowerView, or Snaffler.
 
 #### User Identification
 
@@ -73,7 +69,7 @@ net time /domain /set /y
 
 2. [ ] [Dump any credentials with Mimikatz]({{% ref "mimikatz-post-exploit.md" %}}) or Rubeus.
 
-3. [ ] Look for kerberoastable accounts through [BloodHound]({{% ref "bloodhound.md#analysis-and-queries" %}}), [PowerView]({{% ref "powerview.md#kerberoastable-account-enumeration" %}}), `GetUserSPNs.py`.
+3. [ ] Look for kerberoastable accounts through [NetExec]({{% ref "netexec.md#kerberoast" %}}), [BloodHound]({{% ref "bloodhound.md#analysis-and-queries" %}}), [PowerView]({{% ref "powerview.md#kerberoastable-account-enumeration" %}}), or `GetUserSPNs.py`.
 
 4. [ ] Look at owned users for abusable ACL entries (`ForceChangePassword`, `AddMember`, `GenericAll`, etc.). Easiest to do in [BloodHound]({{% ref "bloodhound.md#enumerating-acls-of-user" %}}).
     - [ACL Enumeration]({{% ref "active-directory.md" %}})
@@ -89,11 +85,17 @@ net time /domain /set /y
 
 ### Exploitation
 
-1. [ ] Kerberoast all accounts with SPNs -- grab TGS tickets and crack offline.
-    - [`GetUserSPNs.py`]({{% ref "active-directory.md#impacket-getuserspns" %}}) (Linux) or [Rubeus]({{% ref "active-directory.md" %}}) (Windows)
-    - Crack with [Hashcat]({{% ref "offline-hash-cracking.md" %}}) on a GPU rig
+1. [ ] Kerberos attack chain -- run in order, each step unlocks the next:
+    1. [ ] **AS-REP roast (w/o creds)** -- only need usernames. Users with `DONT_REQ_PREAUTH` hand you a crackable TGT hash.
+        - [ASREPRoasting]({{% ref "netexec.md#asreproast" %}})
+        - Crack with [Hashcat]({{% ref "offline-hash-cracking.md" %}}) -- cracked hash = first domain user
+    2. [ ] **AS-REP roast again (w/ creds)** -- authenticated enum finds accounts anonymous enum misses.
+        - [ASREPRoasting (credentialed)]({{% ref "netexec.md#asreproast" %}})
+    3. [ ] **Kerberoast (w/ creds)** -- any domain user can request TGS tickets for SPN accounts; crack offline.
+        - [NetExec LDAP]({{% ref "netexec.md#kerberoast" %}}) or [`GetUserSPNs.py`]({{% ref "active-directory.md#impacket-getuserspns" %}}) (Linux) or [Rubeus]({{% ref "active-directory.md" %}}) (Windows)
+        - Crack with [Hashcat]({{% ref "offline-hash-cracking.md" %}}) on a GPU rig
 
-2. [ ] Check for [Group Policy Preferences (GPP) Passwords]({{% ref "active-directory.md#sysvol--group-policy-passwords" %}}) in SYSVOL -- often cleartext credentials.
+2. [ ] Check for [Group Policy Preferences (GPP) Passwords]({{% ref "netexec.md#gpp_password" %}}) in SYSVOL -- often cleartext credentials.
 
 3. [ ] [Abuse any over-permissive ACL entries to gain control of more users and move laterally.]({{% ref "active-directory.md#access-control-list-acl" %}})
 
@@ -107,7 +109,7 @@ net time /domain /set /y
 6. [ ] Use obtained NTLM hashes or Kerberos tickets to move laterally.
     - [Pass the Hash (PtH)]({{% ref "pass-the-hash.md" %}})
     - [Pass the Ticket (PtT)]({{% ref "active-directory.md#pass-the-ticket-ptt" %}})
-    - [OverPass the Hash / Pass the Key]({{% ref "active-directory.md#pass-the-key-ptk--overpass-the-hash-oth" %}})
+    - [OverPass the Hash / Pass the Key]({{% ref "active-directory.md#pass-the-key-ptk-overpass-the-hash-oth" %}})
 
 7. [ ] Check for common vulnerabilities and misconfigurations to escalate privileges or move laterally:
     - [Zerologon (CVE-2020-1472)]({{% ref "active-directory.md#zerologon-cve-2020-1472" %}})
@@ -121,7 +123,7 @@ net time /domain /set /y
     - [MS-RPRN Printer bug]({{% ref "active-directory.md#printer-bug-enumeration-spooler-service" %}})
     - Sniff for LDAP credentials
     - Enumerate DNS records for interesting servers
-    - [Check for DONT_REQ_PREAUTH field and AS-REP Roast any discovered users]({{% ref "active-directory.md#as-rep-roasting" %}})
+    - [Check for DONT_REQ_PREAUTH field and AS-REP Roast any discovered users]({{% ref "netexec.md#asreproast" %}})
     - Check for GPOs that we have write access over (can be checked with [BloodHound]({{% ref "bloodhound.md" %}}))
     - Resource Based Constrained Delegation, Constrained Delegation, Unconstrained Delegation
 
@@ -158,7 +160,7 @@ net time /domain /set /y
 
 1. [ ] Discover any current domain trusts with other domains using `Get-ADTrust`, `Get-DomainTrust` ([PowerView]({{% ref "powerview.md#domain-trust-enumeration" %}})), or [BloodHound]({{% ref "bloodhound.md" %}}).
 
-2. [ ] Attempt [cross-forest Kerberoasting]({{% ref "active-directory.md#kerberoasting-cracking-tgs" %}}).
+2. [ ] Attempt [cross-forest Kerberoasting]({{% ref "netexec.md#kerberoast" %}}).
 
 3. [ ] If admin accounts share names across domains and one is compromised, try reused credentials.
 

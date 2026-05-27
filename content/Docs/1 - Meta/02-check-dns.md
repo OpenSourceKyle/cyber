@@ -1,5 +1,5 @@
 +++
-title = "Check - DNS Enumeration"
+title = "02 - Check - DNS Enumeration"
 +++
 
 ## DNS Enumeration
@@ -11,7 +11,7 @@ title = "Check - DNS Enumeration"
     - Look for A, MX, TXT, NS, SRV records
 
 2. [ ] Enumerate subdomains from certificate transparency logs
-    - [Subdomain Discovery]({{% ref "dns.md#-subdomains" %}})
+    - [Subdomain Discovery]({{% ref "dns.md#subdomains" %}})
     - Use `crt.sh` and similar CT log search
 
 ### Active Recon
@@ -32,5 +32,5 @@ title = "Check - DNS Enumeration"
 6. [ ] Check for dangling CNAMEs pointing to unclaimed cloud/SaaS resources (domain takeover)
 
 7. [ ] If internal network -- check LLMNR/NBT-NS exposure
-    - [LLMNR & NBT-NS Poisoning]({{% ref "dns.md#llmnr--nbt-ns" %}})
+    - [LLMNR & NBT-NS Poisoning]({{% ref "dns.md#llmnr-nbt-ns" %}})
     - If enabled and no SMB signing: run [Responder]({{% ref "protocol-poisoners.md" %}}) to capture hashes

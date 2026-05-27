@@ -89,7 +89,7 @@ inurl:<DOMAIN> intext:<TERM>
 
 {{< embed-section page="Docs/9 - Notes/ffuf" header="subdomain-search">}}
 
-### LLMNR & NBT-NS
+### LLMNR NBT-NS
 
 - `UDP 5355`: LLMNR (modern)
 - `UDP 137`: NBT-NS (ancient)

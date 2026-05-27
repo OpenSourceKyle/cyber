@@ -45,4 +45,15 @@ fping -ag <TARGET_SUBNET>
 run post/multi/gather/ping_sweep RHOSTS=<TARGET_SUBNET>
 ```
 
+## Metasploit
+
+```bash
+# TCP port scan across a subnet
+use auxiliary/scanner/portscan/tcp
+set RHOSTS <TARGET_SUBNET>
+set PORTS 22,80,443,445,3389,5985
+set THREADS 20
+run
+```
+
 {{< embed-section page="Docs/9 - Notes/nmap" >}}

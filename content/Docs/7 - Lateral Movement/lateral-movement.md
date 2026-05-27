@@ -216,6 +216,10 @@ EOF
 sudo ln -sf /etc/proxychains_ssh.conf /etc/proxychains.conf
 ```
 
+**Run all commands in proxy context:**
+```bash
+sudo proxychains -q -f <CONFIG_FILE> bash
+```
 #### Metasploit
 
 ```bash
@@ -297,7 +301,7 @@ sudo sshuttle -r <USER>@<TARGET> --ssh-cmd "ssh -o StrictHostKeyChecking=no -o U
 ```bash
 ### LINUX
 # DYNAMIC
-git clone https://github.com/jpillora/chisel.git && cd chisel && go build
+git clone https://github.com/jpillora/chisel.git && cd chisel
 # STATIC
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o chisel_static
 
