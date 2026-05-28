@@ -9,13 +9,19 @@ title = "01 - Check - Initial Enumeration"
     - [Flameshot](https://flameshot.org/) for screenshots
     - [tmux]({{% ref "tmux.md#install-and-setup" %}})
     - [Metasploit database]({{% ref "metasploit.md#database" %}})
-    - [Bloodhound (w/`netexec` integration enabled)]({{% ref "bloodhound.md" %}})
-
+    - [Bloodhound (w/`netexec` integration enabled)]({{% ref "bloodhound.md#setup" %}})
+    - Terminal:
+```bash
+mkdir ~/my_data
+echo 'cd ~/my_data' >> ~/.bashrc
+echo 'cd ~/my_data' >> ~/.zshrc
+```
 
 2. [ ] Login into [SysReptor and create engagement report](https://labs.sysre.pt/projects?ordering=-created)
     - Use [trigger-based event reporting](https://www.brunorochamoura.com/posts/cpts-report/#triggers)
 
 3. [ ] Read engagement and scoping documents target scope (IP ranges, domains, subnets)
+    - Create network diagram
 
 ### Passive Recon
 

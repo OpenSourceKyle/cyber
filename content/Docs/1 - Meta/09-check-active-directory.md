@@ -7,8 +7,14 @@ title = "09 - Check - Active Directory"
 **SYNC CLOCK WITH THE DOMAIN CONTROLLER**
 
 ```bash
+# Linux
 sudo ntpdate <DC_IP>
 
+# Per app run
+sudo apt install -y faketime
+faketime <DC_TIME> <COMMAND>
+
+# Windows
 net.exe time /domain /set /y
 ```
 

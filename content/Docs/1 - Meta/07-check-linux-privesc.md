@@ -25,7 +25,7 @@ title = "07 - Check - Linux Privilege Escalation"
     - [Checking Sudo Privileges]({{% ref "privilege-escalation-linux.md#manual-survey" %}})
 
 8. [ ] Hunt for credentials in env vars, shell history, and web app config files
-    - [Linux Credential Harvesting]({{% ref "authentication-linux.md" %}})
+    - [Linux Credential Harvesting]({{% ref "finding-creds.md#linux" %}})
 
 9. [ ] Check ARP table for other hosts and pivot scope
 

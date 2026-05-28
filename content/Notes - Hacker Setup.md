@@ -11,13 +11,13 @@ type = "home"
 
 Be strategic... only review sections on exam
 
-- DOUBLE CHECK: REDO certain sections
-    - Active Directory
-    - SQL Injection
-    - `sqlmap`
-    - XSS
-    - File Inclusion
-    - File Upload
+- ~~DOUBLE CHECK: REDO certain sections~~
+    - ~~Active Directory~~
+    - ~~SQL Injection~~
+    - ~~`sqlmap`~~
+    - ~~XSS~~
+    - ~~File Inclusion~~
+    - ~~File Upload~~
 
 ## Kali
 

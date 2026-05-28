@@ -28,7 +28,7 @@ title = "Pre-Engagement"
 
 ## Collection Structure
 
-Also see [[tmux]] and use `tmux` logging to automatically collect the terminal output.
+Also see [tmux]({{% ref "tmux.md" %}}) and use `tmux` logging to automatically collect the terminal output.
 
 ```bash
 mkdir -p {Admin,Deliverables,Evidence/{Findings,Scans/{Vuln,'Service Enum','Web Enum','AD Enum'},Notes,OSINT,'Log Output','Misc Files'},Retest}

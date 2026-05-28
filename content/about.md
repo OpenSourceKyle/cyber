@@ -28,7 +28,7 @@ Because this site uses Hugo to generate a static pages from Markdown sources, on
   - built-in website (site-wide)
   - CTRL+F browser (within whatever smaller context you are currently viewing)
 - navigation via:
-  - a single, "megapage" of all the content nested into it or smaller "metapages" of categorical sections
+  - a single, "megapage" of all the content nested into it or smaller "metapages" of categorical sections; currently at `/docs/`, `/` is just the checklists
   - the navigation section on the left
   - individual pages for the specific tool, technique, or procedure
   - table of contents for those individual pages

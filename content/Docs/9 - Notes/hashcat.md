@@ -5,10 +5,50 @@ title = "Hashcat"
 Hashcat is a fast password recovery tool that supports multiple attack modes and hash types. It's the world's fastest and most advanced password recovery utility.
 
 **References:**
-- Hash Type Codes: <https://hashcat.net/wiki/doku.php?id=example_hashes>
 - Permutation Rules: `/usr/share/hashcat/rules`
 - Cheat Sheet: <https://pentesting.site/cheat-sheets/hashcat/>
 - Rule-Based Attack: <https://hashcat.net/wiki/doku.php?id=rule_based_attack>
+
+## Quick Password Mutation
+
+If making a custom password list from some target and environment information, that list can be mutated with `hashcat` given a list of something like:
+
+**`pwlist.txt`**:
+```
+Welcome1
+Password1
+Password
+P@ssw0rd
+Changem123
+Secret
+January
+February
+March
+April
+May
+June
+July
+August
+September
+October
+November
+December
+Winter
+Spring
+Summer
+Fall
+<BOX_HOSTNAME>
+<COMPANY>
+```
+
+```bash
+for i in $(cat pwlist.txt); do echo $i; echo ${i}\!; echo ${i}2025; echo ${i}2026; done > passwords.txt
+
+hashcat \
+    -r /usr/share/hashcat/rules/best64.rule \
+    -r /usr/share/hashcat/rules/toggles1.rule \
+    --stdout passwords.txt | sort -u > passwords_mutated.txt
+```
 
 ## Important Notes
 
@@ -50,6 +90,9 @@ hashcat -m <HASH_MODE> -a <ATTACK_MODE> <HASH_FILE> <WORDLIST>
 | **6** | **Hybrid Wordlist + Mask** | Wordlist + mask pattern |
 
 ## Common Hash Types & Modes
+
+- Hash Type Codes: <https://hashcat.net/wiki/doku.php?id=example_hashes>
+    - `hashcat --example-hashes | grep -i <SEARCH>`
 
 ### Windows Hashes
 
@@ -110,11 +153,12 @@ Rule-based attacks apply transformations to words in a wordlist, creating permut
 
 ### Rule Comparison Table
 
-| Rule File | Rule Count | Use Case |
-| :--- | :--- | :--- |
-| **`best64.rule`** | 64 | **First Run.** Instant results for easy passwords. |
-| **`d3ad0ne.rule`** | ~34,000 | **Deep Crack.** Good for standard "complex" user passwords. |
-| **`dive.rule`** | ~100,000+ | **Paranoid.** Extremely slow; last resort for dictionary attacks. |
+| Rule File          | Rule Count | Use Case                                                                                                       |
+| :----------------- | :--------- | :------------------------------------------------------------------------------------------------------------- |
+| **`best64.rule`**  | 64         | **First Run.** Instant results for easy passwords.                                                             |
+| **`toggle1.rule`** |            | **Optional: Add w/ `base64.rule`** Toggles the case of exactly one letter at a time in each password candidate |
+| **`d3ad0ne.rule`** | ~34,000    | **Deep Crack.** Good for standard "complex" user passwords.                                                    |
+| **`dive.rule`**    | ~100,000+  | **Paranoid.** Extremely slow; last resort for dictionary attacks.                                              |
 
 ### Using Rules
 

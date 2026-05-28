@@ -53,13 +53,14 @@ printf '\n[ -z "$TMUX" ] && tmux new-session -A -s pentest-engagement\n' >> ~/.z
 
 *Default Prefix: `CTRL+B`*
 
-| Action | Hotkey | Description |
-| :--- | :--- | :--- |
-| **Create New Tab (Window)** | `Prefix` + `C` | Creates a new tmux window (full-screen tab). |
-| **Next Tab** | `Prefix` + `N` | Switches to the next tmux window. |
-| **Previous Tab** | `Prefix` + `P` | Switches to the previous tmux window. |
-| **Switch by Number** | `Prefix` + `0-9` | Jumps directly to a window by index. |
-| **Rename Current Tab** | `Prefix` + `,` | Renames the current window for easier tracking. |
+| Action                      | Hotkey               | Description                                     |
+| :-------------------------- | :------------------- | :---------------------------------------------- |
+| **Create New Tab (Window)** | `Prefix` + `C`       | Creates a new tmux window (full-screen tab).    |
+| **Next Tab**                | `Prefix` + `N`       | Switches to the next tmux window.               |
+| **Previous Tab**            | `Prefix` + `P`       | Switches to the previous tmux window.           |
+| **Switch by Number**        | `Prefix` + `0-9`     | Jumps directly to a window by index.            |
+| **Rename Current Tab**      | `Prefix` + `,`       | Renames the current window for easier tracking. |
+| **Search Output**           | `Prefix` + `[` + `/` | Search for words within the terminal output.    |
 
 ## [Tmux Logging](https://github.com/tmux-plugins/tmux-logging) Hotkeys
 

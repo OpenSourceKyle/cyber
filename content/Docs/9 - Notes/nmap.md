@@ -19,13 +19,13 @@ title = "Nmap"
 
 ```bash
 # ARP (default behavior)
-sudo nmap -sn -PR --send-eth -n -v -oA host_discovery_simple.txt -iL scope.txt
+sudo nmap -sn -PR --send-eth -n -v -oA host_discovery_simple.txt --excludefile scope_excludes.txt -iL scope.txt
 
 # Basic host discovery
-sudo nmap --open -oA host_discovery_simple.txt -iL scope.txt
+sudo nmap --open -oA host_discovery_simple.txt --excludefile scope_excludes.txt -iL scope.txt
 
 # Optimized for labs (-T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1)
-sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery_lab.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
+sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -oA host_discovery_lab.txt --excludefile scope_excludes.txt -iL scope.txt -T4 --max-rtt-timeout 150ms --min-parallelism 100 --min-rate 1000 --max-retries 1
 
 # Find live hosts + extract to list
 sudo nmap -n -sn --reason -oA host_disc <TARGET>
@@ -40,7 +40,7 @@ For "ghost hosts" consider: `-PU137,138,161,53,67,123,500,4500` to discover via 
 
 ```bash
 # Scan live hosts with list (top 1000 ports)
-sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live -iL live_hosts.txt
+sudo nmap -n -Pn -sS -sV -sC --reason --top-ports=1000 -oA host_disc_live --excludefile scope_excludes.txt -iL live_hosts.txt
 ```
 
 #### All Ports
@@ -59,10 +59,10 @@ rustscan -a live_hosts.txt --ulimit 5000 -- -sC -sV -v --stats-every 30s -oA rus
 # Masscan (-sS) + Nmap: large networks
 sudo masscan --rate 1000 -p1-65535 -iL live_hosts.txt -oL masscan.txt -e <INTERFACE>
 PORTS=$(awk '/open/ {print $3}' masscan.txt | sort -u | paste -sd, -)
-sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA masscan_nmap_all_tcp -iL live_hosts.txt
+sudo nmap --stats-every 30s -sS -sV -sC -v -p$PORTS -oA masscan_nmap_all_tcp --excludefile scope_excludes.txt -iL live_hosts.txt
 
 # nmap only
-sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp -iL live_hosts.txt
+sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp --excludefile scope_excludes.txt -iL live_hosts.txt
 ```
 
 ##### UDP
@@ -70,13 +70,13 @@ sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp -iL live_hosts.txt
 Top 100 (full -p- UDP is impractically slow)
 
 ```bash
-sudo nmap -n -Pn -sU --top-ports 100 -v -oA nmap_all_udp -iL live_hosts.txt
+sudo nmap -n -Pn -sU --top-ports 100 -v -oA nmap_all_udp --excludefile scope_excludes.txt -iL live_hosts.txt
 ```
 
 ### Service Scanning
 
 ```bash
-sudo nmap -n -Pn -sn -sV -sC -O -iL live_hosts.txt
+sudo nmap -n -Pn -sn -sV -sC -O --excludefile scope_excludes.txt -iL live_hosts.txt
 ```
 
 ### Statically-compiled `nmap`

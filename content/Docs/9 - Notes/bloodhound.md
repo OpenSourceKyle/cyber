@@ -13,7 +13,7 @@ title = "BloodHound"
 
 BloodHound is **THE TOOL** for AD enumeration. "\[L\]everages graph theory to reveal hidden and often unintended relationships across identity and access management systems..." **visually** along with other pre-built queries to find weakness in domain structures.
 
-**Pre-Requisites**
+## Setup
 
 - https://bloodhound.specterops.io/get-started/quickstart/community-edition-quickstart
 
@@ -28,7 +28,7 @@ sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
 #./bloodhound-cli resetpwd  # needed if PW not grabbed from install
 ```
 
-**Collecting Info**
+## Collecting Info
 
 - Collection Methods: https://bloodhound.specterops.io/collect-data/ce-collection/sharphound-flags
 
