@@ -52,8 +52,27 @@ Invoke-Bloodhound -ZipFileName bh_logs.zip -CollectionMethod All -Domain <DOMAIN
 
 This is helpful when on a non-Windows both or from outside of the domain:
 
+#### RustHound-CE
+
+- https://github.com/g0h4n/RustHound-CE
+
+**RustHound-CE collects certificate information as well!**
+
+```bash
+# Dependencies: https://github.com/g0h4n/RustHound-CE/blob/main/HELP.md#required-dependencies
+sudo apt update -y && sudo apt install -y gcc clang libclang-dev libgssapi-krb5-2 libkrb5-dev libsasl2-modules-gssapi-mit musl-tools gcc-mingw-w64-x86-64 cargo
+LIBGSSAPI_IMPL=mit cargo install rusthound-ce
+
+$HOME/.cargo/bin/rusthound-ce --domain <DOMAIN> --ldapusername <USER> --ldappassword <PASSWORD> --ldapfqdn <DC_FQDN> --zip --collectionmethod All
+```
+
+#### BloodHound-CE-Python
+
+- https://github.com/dirkjanm/BloodHound.py
+
 ```bash
 pipx install bloodhound-ce
+
 bloodhound-ce-python -d '<DOMAIN>' -u '<USER>' -p '<PASSWORD>' --auth-method ntlm -ns <DC_IP> --zip --outputprefix bh_logs -c All
 ```
 

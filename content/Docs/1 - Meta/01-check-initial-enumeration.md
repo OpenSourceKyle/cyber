@@ -42,7 +42,7 @@ echo 'cd ~/my_data' >> ~/.zshrc
         - ARP scanning (same subnet only)
     - [ICMP sweep ping or fping]({{% ref "scanning.md#ping-sweep" %}})
     - TCP/UDP host discovery (`nmap -sn`, masscan)
-    - **Add discovered hostnames to `/etc/hosts` file**
+    - **Add discovered hostnames (`nxc ... --generate-hosts-file`) to `/etc/hosts` file**
 
 {{< embed-section page="Docs/9 - Notes/netexec" header="generating-hosts-file" expanded=true >}}
 
