@@ -2,21 +2,9 @@
 title = "09 - Check - Active Directory"
 +++
 
-# ASAP
+# **SYNC CLOCK DC**
 
-**SYNC CLOCK WITH THE DOMAIN CONTROLLER**
-
-```bash
-# Linux
-sudo ntpdate <DC_IP>
-
-# Per app run
-sudo apt install -y faketime
-faketime <DC_TIME> <COMMAND>
-
-# Windows
-net.exe time /domain /set /y
-```
+{{< embed-section page="Docs/7 - Lateral Movement/active-directory" header="sync-clock" expanded=true >}}
 
 1. [ ] **RUN [BLOODHOUND]({{% ref "bloodhound.md" %}})** and mark everything owned -- This is the holy grail
 

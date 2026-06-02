@@ -35,9 +35,15 @@ whois <DOMAIN> | whois.txt
 
 # Query Nameserver for domain
 dig @<DNS_SERVER> ns <DOMAIN>
-
 # PTR Record or Reverse DNS Query
-dig @<DNS_SERVER> -x <IP_ADDRESS>
+dig @<DNS_SERVER> -x <DNS_SERVER>
+dig @<DNS_SERVER> 127.0.0.1
+# server version
+dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
+# all records
+dig @<DNS_SERVER> ANY <DOMAIN>
+# zone transfer
+dig @<DNS_SERVER> AXFR <DOMAIN>
 
 # --- Record Types ---
 # ANY: return all records -- sometimes doesnt work!
@@ -52,13 +58,28 @@ dig @<DNS_SERVER> -x <IP_ADDRESS>
 # SRV: Service Records
 # CAA: Certification Authority Authorization
 for type in A AAAA CNAME MX NS SOA SRV TXT CAA; do echo -e "\n--- $type ---"; dig @<DNS_SERVER> +short $type <DOMAIN>; done
+```
 
-# server version
-dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
-# all records
-dig @<DNS_SERVER> ANY <DOMAIN>
-# zone transfer
-dig @<DNS_SERVER> AXFR <DOMAIN>
+### `dnsrecon`
+
+- https://github.com/darkoperator/dnsrecon
+
+**Setup:**
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+git clone https://github.com/darkoperator/dnsrecon.git && cd dnsrecon && uv sync
+uv run dnsrecon
+```
+
+```bash
+# Standard enum (SOA, NS, A, AAAA, MX, SRV) + zone transfer attempt
+uv run dnsrecon -a -t std -d <DOMAIN> -n <DNS_SERVER>
+
+# Brute force subdomains
+uv run dnsrecon -t brt -d <DOMAIN> -n <DNS_SERVER> -D /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
+
+# Reverse lookup of internal subnet
+uv run dnsrecon -t rvl -d <DOMAIN> -n <DNS_SERVER> -r <SUBNET>
 ```
 
 ## Subdomains

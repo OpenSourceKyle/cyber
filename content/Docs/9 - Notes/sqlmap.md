@@ -51,29 +51,15 @@ By default sqlmap prioritizes speed: **level 1** only tests **GET** (URL) and **
 - **`--forms`:** Parses the HTML response, finds `<form>` inputs, and builds POST requests. Without it, a URL that only shows a login form is only tested as GET.
 - **`*` marker:** For REST (e.g. `/user/105`) or when the injection point isn’t a normal param, put `*` at the value to test: `sqlmap -u "http://target/item/12*"` — sqlmap injects at `12`.
 
-### Techniques (BEUSTQ)
+### Techniques
 
-Try the simpler/faster techniques first to find easy wins, but
+#### Easy Win
+
+Try the simpler/faster techniques (of `BEUSTQ`) first to find easy wins, but
 
 **NOTE: remember this will miss techniques!**
 ```bash
-sqlmap --technique=BEU
-```
-
-#### Union-based
-
-Combine two queries to dump data directly into the response. Count the displayed columns (and maybe iteratively increase columns amount)
-
-```bash
-sqlmap -u "<URL>" --technique=U --union-cols=5
-```
-
-#### Error-based
-
-Trigger DB errors that leak data inside the error message.
-
-```bash
-sqlmap -u "<URL>" --technique=E
+sqlmap -u "<URL>" --risk 3 --level 5 --technique=BEU 
 ```
 
 #### Blind Boolean
@@ -86,12 +72,20 @@ Infer data from whether the page content or behaviour changes (true vs false).
 sqlmap -u "<URL>" --technique=B --level 5 --risk 3
 ```
 
-#### Blind Time
+#### Error-based
 
-Infer data from response delays (e.g. SLEEP) when the condition is true.
+Trigger DB errors that leak data inside the error message.
 
 ```bash
-sqlmap -u "<URL>" --technique=T
+sqlmap -u "<URL>" --technique=E
+```
+
+#### Union-based
+
+Combine two queries to dump data directly into the response. Count the displayed columns (and maybe iteratively increase columns amount)
+
+```bash
+sqlmap -u "<URL>" --technique=U --union-cols=5
 ```
 
 #### Stacked queries
@@ -100,6 +94,14 @@ Append extra SQL statements after the vulnerable one (e.g. INSERT/UPDATE/DELETE 
 
 ```bash
 sqlmap -u "<URL>" --technique=S
+```
+
+#### Blind Time
+
+Infer data from response delays (e.g. SLEEP) when the condition is true.
+
+```bash
+sqlmap -u "<URL>" --technique=T
 ```
 
 #### Inline queries

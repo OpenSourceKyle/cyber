@@ -71,18 +71,18 @@ title = "05 - Check - Web Enumeration"
     - Review session cookies (Secure, HttpOnly flags) and CSRF protections
 
 14. [ ] **File upload endpoint**
-    - [File Upload Exploitation]({{% ref "file-upload.md" %}})
+    - [File Upload Exploitation]({{% ref "web-file-upload.md" %}})
     - Chain: extension bypass → Content-Type mismatch → magic bytes → SVG XXE → RCE or LFI
 
 15. [ ] **Parameters that reflect user input** -- test each payload type:
-    - Template expression (`{{7*7}}`): [SSTI]({{% ref "ssti-xxe.md" %}})
-    - HTML/JS injection (`<script>alert(1)</script>`): [XSS]({{% ref "xss.md" %}})
-    - OS command (`; id`): [Command Injection]({{% ref "command-injection.md" %}})
-    - Path traversal (`../../../etc/passwd`): [File Inclusion / LFI]({{% ref "file-inclusion.md" %}})
+    - Template expression (`{{7*7}}`): [SSTI]({{% ref "web-ssti-xxe.md" %}})
+    - HTML/JS injection (`<script>alert(1)</script>`): [XSS]({{% ref "web-xss.md" %}})
+    - OS command (`; id`): [Command Injection]({{% ref "web-command-injection.md" %}})
+    - Path traversal (`../../../etc/passwd`): [File Inclusion / LFI]({{% ref "web-file-inclusion.md" %}})
     - [Intercept and test all input with Burp Suite]({{% ref "web-proxy-tools-zap-burp.md" %}})
 
 16. [ ] **XML-accepting endpoint** (`Content-Type: application/xml`, SOAP)
-    - [XXE Injection]({{% ref "ssti-xxe.md" %}})
+    - [XXE Injection]({{% ref "web-ssti-xxe.md" %}})
     - Probe with entity injection → reflected: classic XXE | no reflection: try OOB exfil
 
 17. [ ] **Admin panel**
@@ -91,7 +91,7 @@ title = "05 - Check - Web Enumeration"
     - Test for [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}}) on user ID parameters
 
 18. [ ] **Parameters referencing file paths** (`?page=`, `?file=`, `?path=`)
-    - [File Inclusion / Path Traversal]({{% ref "file-inclusion.md" %}})
+    - [File Inclusion / Path Traversal]({{% ref "web-file-inclusion.md" %}})
     - Run an LFI automation scan against any parameters that reference a file
     - If LFI confirmed, try:
         - `/etc/passwd`
@@ -111,7 +111,7 @@ title = "05 - Check - Web Enumeration"
     - [Websocket / API Injection with sqlmap]({{% ref "sqlmap.md" %}})
 
 22. [ ] **Nothing bites** -- check for SSRF and hidden surface
-    - Look for parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks): [SSRF]({{% ref "ssrf.md" %}})
+    - Look for parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks): [SSRF]({{% ref "web-ssrf.md" %}})
     - Review JavaScript source for hidden endpoints, API keys, GraphQL introspection paths
 
 ### Shells and Payloads

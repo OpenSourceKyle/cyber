@@ -32,46 +32,42 @@ sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
 
 - Collection Methods: https://bloodhound.specterops.io/collect-data/ce-collection/sharphound-flags
 
-```bash
-# Bloodhound/SharpHound - AD Mapping
-Import-Module .\Downloads\SharpHound.ps1    
-Invoke-Bloodhound -ZipFileName bh_logs.zip -CollectionMethod All -Domain <DOMAIN> 
-# - OR
-
-# SharpHound.exe alternative
-.\SharpHound.exe --OutputDirectory <PATH> --zipfilename bh_logs.zip -c All -d <DOMAIN>
-```
-
-**Uploading Info**
+### Uploading Info
 - Transfer Bloodhound data to attacker
 - Upload zipfile to Bloodhound: http://127.0.0.1:8080/ui/login
 - Upload to Bloodhound: http://127.0.0.1:8080/ui/administration/file-ingest
 
-## Analysis and Queries
-
-| **BEST QUERIES**                                  | **Why**                    |
-| ------------------------------------------------- | -------------------------- |
-| Find Shortest Paths to Domain Admins              | Primary attack path        |
-| Find Principals with DCSync Rights                | Instant game over if found |
-| Find Kerberoastable Users                         | Most common foothold       |
-| Shortest Paths to DA from Kerberoastable Users    | Combined path              |
-| Find AS-REP Roastable Users                       | No creds needed            |
-| Find Computers where Domain Users are Local Admin | Easy lateral movement      |
+### Windows
 
 ```bash
-# Search Box >
+# EXE
+.\SharpHound.exe --OutputDirectory <PATH> --zipfilename bh_logs.zip -c All -d <DOMAIN>
 
-domain:<DOMAIN>
-
-### Pre-Built Queries
-# Domain Info > Analysis >
-
-# Out-of-date Computers (for Exploits)
-Find Computers with Unsupported Operating Systems
-
-# Find Logged-In/Cached Domain Admins
-Find Computers where Domain Users are Local Admin
+# PowerShell
+Import-Module .\Downloads\SharpHound.ps1    
+Invoke-Bloodhound -ZipFileName bh_logs.zip -CollectionMethod All -Domain <DOMAIN> 
 ```
+
+### Linux
+
+This is helpful when on a non-Windows both or from outside of the domain:
+
+```bash
+pipx install bloodhound-ce
+bloodhound-ce-python -d '<DOMAIN>' -u '<USER>' -p '<PASSWORD>' --auth-method ntlm -ns <DC_IP> --zip --outputprefix bh_logs -c All
+```
+
+## Analysis and Queries
+
+| **BEST QUERIES**                                    | **Why**                                    |
+| --------------------------------------------------- | ------------------------------------------ |
+| `Find Shortest Paths to Domain Admins`              | Primary attack path                        |
+| `Find Principals with DCSync Rights`                | Instant game over if found                 |
+| `Find Kerberoastable Users`                         | Most common foothold                       |
+| `Shortest Paths to DA from Kerberoastable Users`    | Combined path                              |
+| `Find AS-REP Roastable Users`                       | No creds needed                            |
+| `Find Computers where Domain Users are Local Admin` | Easy lateral movement                      |
+| `Shortest paths from Owned objects`                 | See what currently owned users could yield |
 
 ## Domain Trusts
 

@@ -55,4 +55,5 @@ mirror .
 # Download ALL files
 mkdir ftp_files && cd ftp_files
 wget -m --no-passive-ftp ftp://anonymous:anonymous@<TARGET>
+wget -m --no-passive-ftp ftp://<USER>:'<PASSWORD>'@<TARGET>
 ```

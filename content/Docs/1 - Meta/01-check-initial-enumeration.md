@@ -21,7 +21,7 @@ echo 'cd ~/my_data' >> ~/.zshrc
     - Use [trigger-based event reporting](https://www.brunorochamoura.com/posts/cpts-report/#triggers)
 
 3. [ ] Read engagement and scoping documents target scope (IP ranges, domains, subnets)
-    - Create network diagram
+    - **Create network diagram**
 
 ### Passive Recon
 
@@ -37,12 +37,14 @@ echo 'cd ~/my_data' >> ~/.zshrc
     - **Ensure that off limits IPs are noted in `scope_excludes.txt` excluded `nmap --excludefile scope_excludes.txt`**
 
 2. [ ] Host Discovery
-    - [netexec smb/ssh quick sweep]({{% ref "netexec.md#null-session-enumeration" %}})
+    - [`nxc smb` or `nxc ssh` quick sweep (no creds)]({{% ref "netexec.md#null-session-enumeration" %}})
     - [NMAP Host Discovery Scan]({{% ref "nmap.md#host-discovery" %}})
         - ARP scanning (same subnet only)
     - [ICMP sweep ping or fping]({{% ref "scanning.md#ping-sweep" %}})
     - TCP/UDP host discovery (`nmap -sn`, masscan)
     - **Add discovered hostnames to `/etc/hosts` file**
+
+{{< embed-section page="Docs/9 - Notes/netexec" header="generating-hosts-file" expanded=true >}}
 
 3. [ ] Start [Responder in Analyze mode]({{% ref "protocol-poisoners.md" %}}) as a background listener to passively capture hashes and hosts while scanning.
 
@@ -67,3 +69,7 @@ echo 'cd ~/my_data' >> ~/.zshrc
 8. [ ] Check file share services (FTP, SMB, etc.) for anonymous logon and credential files.
     - [FTP Enumeration]({{% ref "ftp.md" %}})
     - [SMB Enumeration]({{% ref "smb-cifs-rpc.md" %}})
+
+## with Credentials
+
+9. [ ] [`netexec` sweep with ALL PROTOCOLS]({{% ref "netexec.md#password-spraying" %}})
