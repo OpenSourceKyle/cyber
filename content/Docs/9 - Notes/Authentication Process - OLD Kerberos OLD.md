@@ -11,7 +11,7 @@ type = "home"
 
 **we often want to persist through service accounts with delegation permissions to forge silver and golden tickets**
 
-{{< figure src="/images/AD-auth-process.png" alt="Kerberos Authentication Process" >}}
+{{< figure src="images/AD-auth-process.png" alt="Kerberos Authentication Process" >}}
 
 - TGT
 - TGS

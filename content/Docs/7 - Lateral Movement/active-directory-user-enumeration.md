@@ -253,7 +253,7 @@ dsquery * -filter "(userAccountControl:1.2.840.113556.1.4.803:=8192)" -limit 5 -
 dsquery * -filter "(&(objectCategory=user)(userAccountControl:1.2.840.113556.1.4.803:=2)(adminCount=1)(description=*))" -limit 5 -attr SAMAccountName description
 ```
 
-{{< figure src="/images/LDAP-OID-UAC-values.png" caption="User Account Control Bit Values" >}}
+{{< figure src="images/LDAP-OID-UAC-values.png" caption="User Account Control Bit Values" >}}
 
 #### PowerShell Version
 
