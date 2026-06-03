@@ -19,6 +19,8 @@ title = "🌐 HTTP: TCP 80/443"
     - Linux: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-linux.txt
     - Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
 
+## Basic Enumeration
+
 ```bash
 # WAF detection -- run first; a WAF changes how aggressive everything after this can be
 wafw00f <TARGET>
@@ -31,20 +33,11 @@ curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
 curl -skL -o curl_sitemap.txt http://<TARGET>/sitemap.xml
 
 # Enum web server + version + OS + frameworks + libraries
-whatweb --aggression 3 http://<TARGET> --log-brief=whatweb_scan.txt
+whatweb --aggression 3 --log-brief=whatweb_scan.txt http://<TARGET>
 
 # Fingerprint + vuln scan
 nikto -o nikto_fingerprint_scan.txt -Tuning b -h http://<TARGET>
 nikto -o nikto_vuln_scan.txt -h http://<TARGET>
-
-# Enum web app logic & vulns
-wapiti -f txt -o wapiti_scan.txt --url http://<TARGET>
-
-# Webpage Crawler
-pip3 install --break-system-packages scrapy
-wget -O ReconSpider.zip https://academy.hackthebox.com/storage/modules/144/ReconSpider.v1.2.zip && unzip ReconSpider.zip
-python3 ReconSpider.py <URL> && cat results.json
-# !!! CHECK "results.json" !!!
 ```
 
 {{< embed-section page="Docs/9 - Notes/ffuf" header="vhost-brute-force" >}}
@@ -57,7 +50,7 @@ python3 ReconSpider.py <URL> && cat results.json
 # Directory Bruteforce
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common --scan-dir-listings -u http://<TARGET>
 
-# Bruteforce File Extensions (-x)
+# Bruteforce w/ File Extensions (-x)
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_extensions --scan-dir-listings -x php,html,txt,bak,zip -u http://<TARGET>
 ```
 

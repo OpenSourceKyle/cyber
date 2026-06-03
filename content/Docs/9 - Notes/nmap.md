@@ -30,7 +30,6 @@ sudo nmap -n -sn -v --stats-every 30s -PS445,80,443,3389,135,5985,22,8080,111 -o
 # Find live hosts + extract to list
 sudo nmap -n -sn --reason -oA host_disc <TARGET>
 grep 'Status: Up' host_disc.gnmap | awk '{print $2}' | tee live_hosts.txt
-
 awk '/Up$/{print $2}' host_discovery.txt > live_hosts.txt
 ```
 

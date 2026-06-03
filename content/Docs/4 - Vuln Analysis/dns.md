@@ -60,33 +60,12 @@ dig @<DNS_SERVER> AXFR <DOMAIN>
 for type in A AAAA CNAME MX NS SOA SRV TXT CAA; do echo -e "\n--- $type ---"; dig @<DNS_SERVER> +short $type <DOMAIN>; done
 ```
 
-### `dnsrecon`
-
-- https://github.com/darkoperator/dnsrecon
-
-**Setup:**
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-git clone https://github.com/darkoperator/dnsrecon.git && cd dnsrecon && uv sync
-uv run dnsrecon
-```
-
-```bash
-# Standard enum (SOA, NS, A, AAAA, MX, SRV) + zone transfer attempt
-uv run dnsrecon -a -t std -d <DOMAIN> -n <DNS_SERVER>
-
-# Brute force subdomains
-uv run dnsrecon -t brt -d <DOMAIN> -n <DNS_SERVER> -D /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt
-
-# Reverse lookup of internal subnet
-uv run dnsrecon -t rvl -d <DOMAIN> -n <DNS_SERVER> -r <SUBNET>
-```
-
 ## Subdomains
+
+{{< embed-section page="Docs/9 - Notes/ffuf" header="subdomain-search">}}
 
 - Certificate Transparency: https://crt.sh/
 - https://domain.glass/
-- (PAID) https://buckets.grayhatwarfare.com/
 
 ```bash
 # PASSIVE: subdomain enum
@@ -107,8 +86,6 @@ for i in $(cat ip-addresses.txt) ; do shodan host $i ; done
 # Content Search: google.com Dork
 inurl:<DOMAIN> intext:<TERM>
 ```
-
-{{< embed-section page="Docs/9 - Notes/ffuf" header="subdomain-search">}}
 
 ### LLMNR NBT-NS
 

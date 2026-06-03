@@ -2,7 +2,7 @@
 title = "00 - Alpha Checklists"
 +++
 
-This is a meta-checklist that encompasses the various methodologies for properly pentesting certain targets.
+This is a meta-checklist that encompasses other checklists..
 
 {{< clear-checks >}}
 

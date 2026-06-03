@@ -2,7 +2,7 @@
 title = "06 - Check - SQL Injection (SQLMap)"
 +++
 
-### Phase 1: Manual Triage & Setup
+### Manual Triage & Setup
 
 1. [ ] Manually confirm injection in Burp first -- verify a True vs False response difference before running SQLMap
     - [SQL Injection -- Manual Testing]({{% ref "sql-injection.md" %}})
@@ -16,7 +16,7 @@ title = "06 - Check - SQL Injection (SQLMap)"
     - [Attack Tuning & Escalation]({{% ref "sqlmap.md#attack-tuning-escalation" %}})
     - Adjust level/risk, prefix/suffix, and technique flags to match what Burp shows
 
-### Phase 2: Stability & Evasion
+### Stability & Evasion
 
 4. [ ] Fix hallucinated or garbage output by anchoring to a known success string
     - [SQLMap Troubleshooting]({{% ref "sqlmap.md#troubleshooting" %}})
@@ -25,7 +25,7 @@ title = "06 - Check - SQL Injection (SQLMap)"
     - [Evasion & Protections Bypass]({{% ref "sqlmap.md#evasion-protections-bypass" %}})
     - Use tamper scripts and random user-agent
 
-### Phase 3: Loot & Shells
+### Loot & Shells
 
 6. [ ] Check DBA status and current database before dumping
     - [Database Enumeration]({{% ref "sqlmap.md#database-enumeration" %}})

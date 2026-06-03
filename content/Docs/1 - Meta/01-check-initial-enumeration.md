@@ -23,20 +23,14 @@ echo 'cd ~/my_data' >> ~/.zshrc
 3. [ ] Read engagement and scoping documents target scope (IP ranges, domains, subnets)
     - **Create network diagram**
 
-### Passive Recon
-
-1. [ ] Gather public info (DNS, WHOIS, certificates, company structure)
-    - [Passive Information Gathering]({{% ref "passive-information-gathering.md" %}})
-    - [Search Engine Dorking]({{% ref "search-engine-dorking.md" %}})
-
-2. [ ] Search public data leaks ([Google Dorks]({{% ref "search-engine-dorking.md" %}}), GitHub, Pastebin, etc.)
-
 ### Active Recon
 
 1. [ ] Document all active hosts on the target network/IP range/subnet(s) in **Obsidian notes**.
     - **Ensure that off limits IPs are noted in `scope_excludes.txt` excluded `nmap --excludefile scope_excludes.txt`**
 
-2. [ ] Host Discovery
+2. [ ] Start [Responder in Analyze mode]({{% ref "protocol-poisoners.md" %}}) as a background listener to passively capture hashes and hosts while scanning.
+
+3. [ ] Host Discovery
     - [`nxc smb` or `nxc ssh` quick sweep (no creds)]({{% ref "netexec.md#null-session-enumeration" %}})
     - [NMAP Host Discovery Scan]({{% ref "nmap.md#host-discovery" %}})
         - ARP scanning (same subnet only)
@@ -46,8 +40,6 @@ echo 'cd ~/my_data' >> ~/.zshrc
 
 {{< embed-section page="Docs/9 - Notes/netexec" header="generating-hosts-file" expanded=true >}}
 
-3. [ ] Start [Responder in Analyze mode]({{% ref "protocol-poisoners.md" %}}) as a background listener to passively capture hashes and hosts while scanning.
-
 4. [ ] For each active host, scan ALL TCP/UDP ports. Document each open port per host in Obsidian.
     - [NMAP All Ports (TCP + UDP)]({{% ref "nmap.md#all-ports" %}})
 
@@ -56,7 +48,7 @@ echo 'cd ~/my_data' >> ~/.zshrc
     - [Netcat banner grabbing (manual confirmation)]({{% ref "scanning.md#manual-scanning" %}})
     - **Document services and service versions in Obsidian**
 
-6. [ ] For each detected service, do individual service enumeration to look for more information and vulnerabilities.
+6. [ ] For each detected service, do **individual service enumeration** to look for more information and vulnerabilities.
 
 7. [ ] Check for vulnerabilities in discovered services / service versions.
     - [Search Metasploit for service exploits with the discovered version]({{% ref "metasploit.md" %}})

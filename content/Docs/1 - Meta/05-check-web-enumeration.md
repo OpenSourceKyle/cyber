@@ -4,20 +4,12 @@ title = "05 - Check - Web Enumeration"
 
 ## Webserver Enumeration Methodology
 
-### Passive Recon
-
-1. [ ] Look at public DNS records for domains/subdomains to enumerate.
-    - [DNS Enumeration]({{% ref "passive-information-gathering.md#via-dns" %}})
-
-2. [ ] Look at certificates and other public info for domains/subdomains to enumerate.
-    - [Public Domain Information]({{% ref "passive-information-gathering.md" %}})
-
 ### Active Recon
 
 1. [ ] Add domain to `/etc/hosts` file and [`EyeWitness` all pages from `nmap` results]({{% ref "common-web-applications.md#eyewitness" %}})
 
 2. [ ] Fingerprint server technology and check for known CVEs.
-    - [Web Technology Fingerprinting]({{% ref "http.md" %}})
+    - [Web Technology Fingerprinting]({{% ref "http.md#basic-enumeration" %}})
     - Known CVE for detected version: check ExploitDB first -- if found, exploit and move on
 
 3. [ ] Run directory/page brute force discovery.
@@ -25,9 +17,7 @@ title = "05 - Check - Web Enumeration"
         - [If extension is discovered, fuzz for directories and other pages (with extension appended)]({{% ref "ffuf.md#search-file-extensions" %}})
     - [Directory Brute-Forcing]({{% ref "http.md#directory-brute-forcing" %}})
 
-4. [ ] Look in `robots.txt` or `sitemap.xml` for hidden endpoints.
-    - `https://www.example.com/robots.txt`
-    - `https://www.example.com/sitemap.xml`
+4. [ ] Look in [`robots.txt` or `sitemap.xml` for hidden endpoints]({{% ref "http.md" %}}).
 
 5. [ ] Run subdomain/vhost brute force discovery (**run multiple wordlists**).
     - [Subdomain brute force discovery (external only)]({{% ref "ffuf.md#subdomain-search" %}})
@@ -58,21 +48,20 @@ title = "05 - Check - Web Enumeration"
 
 12. [ ] Look for vulnerabilities in discovered web service versions and/or technologies.
     - [Search Metasploit for service exploits with the discovered version]({{% ref "metasploit.md" %}})
-    - Search ExploitDB for service exploits with the discovered version
+    - Search [ExploitDB](https://www.exploit-db.com/) or GitHub for service exploits with the discovered version
+        - Use `searchsploit` locally
     - Search Google for `<Service> <Version> Exploit GitHub`
 
-### By Finding
+### By Finding (on Webpage)
 
 13. [ ] **Login form** -- work through in order:
     - Try default credentials first -- [Default Credential Lists]({{% ref "online-credentials-attacks.md#default-creds" %}})
     - [Test for SQL injection auth bypass]({{% ref "sql-injection.md" %}})
     - [Brute force with Hydra if lockout policy permits]({{% ref "online-credentials-attacks.md" %}})
-    - Check password reset and recovery mechanisms
-    - Review session cookies (Secure, HttpOnly flags) and CSRF protections
 
 14. [ ] **File upload endpoint**
     - [File Upload Exploitation]({{% ref "web-file-upload.md" %}})
-    - Chain: extension bypass → Content-Type mismatch → magic bytes → SVG XXE → RCE or LFI
+    - Chain: extension bypass → `Content-Type` mismatch → magic bytes → SVG XXE → RCE or LFI
 
 15. [ ] **Parameters that reflect user input** -- test each payload type:
     - Template expression (`{{7*7}}`): [SSTI]({{% ref "web-ssti-xxe.md" %}})

