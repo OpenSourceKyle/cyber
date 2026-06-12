@@ -29,14 +29,10 @@ source ~/.bashrc
 cd ~
 git clone https://github.com/quentinhardy/odat.git
 cd odat/
-pip install --break-system-packages python-libnmap
 git submodule init
 git submodule update
-pip3 install --break-system-packages cx_Oracle
-sudo apt install -y python3-scapy
-sudo pip3 install --root-user-action colorlog termcolor passlib python-libnmap
-sudo apt install -y build-essential libgmp-dev
-pip3 install --break-system-packages pycryptodome
+uv pip install python-libnmap cx_Oracle pycryptodome colorlog termcolor passlib
+sudo apt install -y python3-scapy build-essential libgmp-dev
 
 # Enumeration
 odat.py all -d <SID> -s <TARGET>

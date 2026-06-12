@@ -16,6 +16,7 @@ faketime <DC_TIME> <COMMAND>
 net.exe time /domain /set /y
 ```
 
+- https://notes.dollarboysushil.com/active-directory-attacks
 - AD Cheatsheet: https://wadcoms.github.io/
     - Filter by info currently known and by attack type like enumeration, exploitation, etc.
 - https://adsecurity.org/

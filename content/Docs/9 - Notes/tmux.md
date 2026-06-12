@@ -6,7 +6,7 @@ title = "tmux"
 - [Ippsec Tmux Cheat Sheet](https://mavericknerd.github.io/knowledgebase/ippsec/tmux/)
 - https://tmuxcheatsheet.com/
 
-## Install and Setup
+## Setup
 
 Install [Tmux Plugin Manager (TPM)](https://github.com/tmux-plugins/tpm):
 

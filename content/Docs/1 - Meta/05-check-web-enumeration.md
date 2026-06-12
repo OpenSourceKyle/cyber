@@ -2,41 +2,41 @@
 title = "05 - Check - Web Enumeration"
 +++
 
-## Webserver Enumeration Methodology
+[Review the default server directories for the particular webserver]({{% ref "http.md#default-server-directories" %}})
 
-### Active Recon
+## Active Recon
 
 1. [ ] Add domain to `/etc/hosts` file and [`EyeWitness` all pages from `nmap` results]({{% ref "common-web-applications.md#eyewitness" %}})
 
 2. [ ] Fingerprint server technology and check for known CVEs.
     - [Web Technology Fingerprinting]({{% ref "http.md#basic-enumeration" %}})
-    - Known CVE for detected version: check ExploitDB first -- if found, exploit and move on
+    - Known CVE for detected version: 
+        - Search [ExploitDB](https://www.exploit-db.com/) or GitHub for service exploits with the discovered version
+        - Use `searchsploit` locally
+        - Search Google for `<Service> <Version> Exploit GitHub`
+        - [Search Metasploit for service exploits with the discovered version]({{% ref "metasploit.md" %}})
 
-3. [ ] Run directory/page brute force discovery.
-    - [First fuzz for extension]({{% ref "ffuf.md#find-file-extension" %}})
-        - [If extension is discovered, fuzz for directories and other pages (with extension appended)]({{% ref "ffuf.md#search-file-extensions" %}})
+3. [ ] Look in [`robots.txt` or `sitemap.xml` for hidden endpoints]({{% ref "http.md#basic-enumeration" %}}).
+
+4. [ ] [Crawl the webpage for all links]({{% ref "http.md#crawling" %}})
+
+5. [ ] Run directory brute force.
+    - [First fuzz for file extensions]({{% ref "ffuf.md#find-file-extension" %}})
+    - [When web technology used (e.g. PHP)  is known, fuzz for directories and other pages (with extension appended)]({{% ref "ffuf.md#search-file-extensions" %}})
     - [Directory Brute-Forcing]({{% ref "http.md#directory-brute-forcing" %}})
 
-4. [ ] Look in [`robots.txt` or `sitemap.xml` for hidden endpoints]({{% ref "http.md" %}}).
+6. [ ] Run vhost brute force discovery (**run multiple wordlists**).
+    - [vHost Brute Force]({{% ref "ffuf.md#vhost-brute-force" %}})
 
-5. [ ] Run subdomain/vhost brute force discovery (**run multiple wordlists**).
-    - [Subdomain brute force discovery (external only)]({{% ref "ffuf.md#subdomain-search" %}})
-    - [vHost Brute Force (internal & external)]({{% ref "ffuf.md#vhost-brute-force" %}})
-
-6. [ ] Fuzz for hidden GET/POST parameters on discovered endpoints.
+7. [ ] Fuzz for hidden GET/POST parameters on discovered endpoints.
     - [Parameter Fuzzing]({{% ref "ffuf.md#parameter-fuzzing" %}})
-
-7. [ ] Crawl the webpage for all links.
-    - [Web Crawling / Robots]({{% ref "http.md" %}})
 
 8. [ ] Look for comments in HTML for sensitive information.
     - Check all crawled and discovered pages (EyeWitness)
 
 9. [ ] Capture server errors (e.g. 500, 403) that might leak tech stack info.
 
-10. [ ] If the webserver is determined to be running NodeJS or MongoDB, look for NoSQL injection vulnerabilities.
-
-11. [ ] Look for web service versions on discovered pages (Jenkins, WP, blog platforms, etc.). Use enumeration techniques depending on the technology.
+10. [ ] Look for web service versions on discovered pages (Jenkins, WP, blog platforms, etc.). Use enumeration techniques depending on the technology.
     - Look for CMS or app-specific files (`wp-content`, `.git/`, etc.)
     - [WordPress Enumeration]({{% ref "common-web-applications.md#wordpress" %}})
     - [Joomla Enumeration]({{% ref "common-web-applications.md#joomla" %}})
@@ -46,87 +46,73 @@ title = "05 - Check - Web Enumeration"
     - IIS Tilde Enumeration
     - Other
 
-12. [ ] Look for vulnerabilities in discovered web service versions and/or technologies.
-    - [Search Metasploit for service exploits with the discovered version]({{% ref "metasploit.md" %}})
-    - Search [ExploitDB](https://www.exploit-db.com/) or GitHub for service exploits with the discovered version
-        - Use `searchsploit` locally
-    - Search Google for `<Service> <Version> Exploit GitHub`
+## By Finding on Webpage
 
-### By Finding (on Webpage)
+### Login Form
 
-13. [ ] **Login form** -- work through in order:
-    - Try default credentials first -- [Default Credential Lists]({{% ref "online-credentials-attacks.md#default-creds" %}})
-    - [Test for SQL injection auth bypass]({{% ref "sql-injection.md" %}})
-    - [Brute force with Hydra if lockout policy permits]({{% ref "online-credentials-attacks.md" %}})
+- [ ] Try default credentials first -- [Default Credential Lists]({{% ref "online-credentials-attacks.md#default-creds" %}})
+- [ ] [Test for SQL injection auth bypass]({{% ref "sql-injection.md" %}})
+- [ ] [Brute force with Hydra if lockout policy permits]({{% ref "online-credentials-attacks.md#brute-force-hydra" %}})
 
-14. [ ] **File upload endpoint**
-    - [File Upload Exploitation]({{% ref "web-file-upload.md" %}})
-    - Chain: extension bypass → `Content-Type` mismatch → magic bytes → SVG XXE → RCE or LFI
+### Search Field
 
-15. [ ] **Parameters that reflect user input** -- test each payload type:
-    - Template expression (`{{7*7}}`): [SSTI]({{% ref "web-ssti-xxe.md" %}})
-    - HTML/JS injection (`<script>alert(1)</script>`): [XSS]({{% ref "web-xss.md" %}})
-    - OS command (`; id`): [Command Injection]({{% ref "web-command-injection.md" %}})
-    - Path traversal (`../../../etc/passwd`): [File Inclusion / LFI]({{% ref "web-file-inclusion.md" %}})
-    - [Intercept and test all input with Burp Suite]({{% ref "web-proxy-tools-zap-burp.md" %}})
+- [ ] [Test for SQL injection to dump database info]({{% ref "sql-injection.md" %}})
 
-16. [ ] **XML-accepting endpoint** (`Content-Type: application/xml`, SOAP)
-    - [XXE Injection]({{% ref "web-ssti-xxe.md" %}})
-    - Probe with entity injection → reflected: classic XXE | no reflection: try OOB exfil
+### File Path Parameters
 
-17. [ ] **Admin panel**
-    - Try default credentials
-    - Test auth bypass headers (`X-Forwarded-For: 127.0.0.1`, `X-Real-IP: 127.0.0.1`)
-    - Test for [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}}) on user ID parameters
+`?page=`, `?file=`, `?path=`
 
-18. [ ] **Parameters referencing file paths** (`?page=`, `?file=`, `?path=`)
-    - [File Inclusion / Path Traversal]({{% ref "web-file-inclusion.md" %}})
-    - Run an LFI automation scan against any parameters that reference a file
-    - If LFI confirmed, try:
-        - `/etc/passwd`
-        - `/home/<username>/.ssh/id_rsa`
-        - `/var/mail/<username>` (PHP webshell via mail poisoning)
-        - Webserver config: `/etc/nginx/nginx.conf`, `/etc/apache2/sites-enabled/default`
-        - Log poisoning: `/var/log/apache2/access.log`, `/var/log/nginx/access.log`
-        - Any file paths leaked from error pages
+- [ ] [File Inclusion / Path Traversal]({{% ref "web-file-inclusion.md" %}})
+- [ ] Run an LFI automation scan against any parameters that reference a file
+- [ ] If LFI confirmed, try:
+    - local PHP files (in case of filtering)
+    - `/etc/passwd`
+    - `/home/<username>/.ssh/id_rsa`
+    - `/var/mail/<username>` (PHP webshell via mail poisoning)
+    - Webserver config: `/etc/nginx/nginx.conf`, `/etc/apache2/sites-enabled/default`
+    - Log poisoning: `/var/log/apache2/access.log`, `/var/log/nginx/access.log`
+    - Any file paths leaked from error pages
 
-19. [ ] **Sequential IDs or object references** in GET/POST requests
-    - [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}})
+### Admin Panel
 
-20. [ ] **HTTP verb tampering** -- try alternate verbs to bypass access controls or validation
-    - [HTTP Verb Tampering]({{% ref "web-exploitation.md#http-verb-tampering" %}})
+- [ ] Try default credentials
+- [ ] Test auth bypass headers (`X-Forwarded-For: 127.0.0.1`, `X-Real-IP: 127.0.0.1`)
+- [ ] Test for [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}}) on user ID parameters
 
-21. [ ] **Websocket or API endpoint**
-    - [Websocket / API Injection with sqlmap]({{% ref "sqlmap.md" %}})
+### File Upload
 
-22. [ ] **Nothing bites** -- check for SSRF and hidden surface
-    - Look for parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks): [SSRF]({{% ref "web-ssrf.md" %}})
-    - Review JavaScript source for hidden endpoints, API keys, GraphQL introspection paths
+- [ ] [File Upload Exploitation]({{% ref "web-file-upload.md" %}})
+- [ ] Chain: extension bypass → `Content-Type` mismatch → magic bytes → SVG XXE → RCE or LFI
 
-### Shells and Payloads
+### Sequential IDs / Object References
 
-1. [ ] [Linux Reverse Shells]({{% ref "shells.md" %}})
+- [ ] [IDOR]({{% ref "web-exploitation.md#insecure-direct-object-references-idor" %}})
 
-2. [ ] Going from webshell to reverse shell:
-    - [Web Shells]({{% ref "shells.md#web" %}})
-    - Make sure to URL encode the payload as needed
+### Reflected Input Parameters
 
-### On Webserver
+- [ ] Template expression (`{{7*7}}`): [SSTI]({{% ref "web-ssti-xxe.md" %}})
+- [ ] HTML/JS injection (`<script>alert(1)</script>`): [XSS]({{% ref "web-xss.md" %}})
+- [ ] OS command (`; id`): [Command Injection]({{% ref "web-command-injection.md" %}})
+- [ ] Path traversal (`../../../etc/passwd`): [File Inclusion / LFI]({{% ref "web-file-inclusion.md" %}})
+- [ ] [Intercept and test all input with Burp Suite]({{% ref "web-proxy-tools-zap-burp.md" %}})
 
-1. [ ] Check web configuration files and source code for vulnerabilities, hardcoded credentials, etc.
-    - [Enumeration: Credential Hunting]({{% ref "finding-creds.md" %}})
-    - Check the source code of all pages, including index
-    - Apache (httpd) default locations:
-        - `/var/www/html`
-        - `/var/www/`
-        - `/srv/http/` (Arch Linux)
-        - `/usr/share/httpd/` (RHEL/CentOS)
-        - `/etc/apache2/sites-available/000-default.conf`
-    - Nginx default locations:
-        - `/usr/share/nginx/html`
-        - `/var/www/html`
-        - `/etc/nginx/sites-available/` and `/etc/nginx/sites-enabled/`
-    - Other possible locations:
-        - `/opt/web/`
-        - `/home/user/public_html/`
-        - `~/www/` or `~/html/`
+### XML Endpoint
+
+`Content-Type: application/xml`, SOAP
+
+- [ ] [XXE Injection]({{% ref "web-ssti-xxe.md" %}})
+- [ ] Probe with entity injection → reflected: classic XXE
+    - No reflection: try OOB exfil
+
+### HTTP Verb Tampering
+
+- [ ] [HTTP Verb Tampering]({{% ref "web-exploitation.md#http-verb-tampering" %}})
+
+### API Endpoint
+
+- [ ] [API Injection with sqlmap]({{% ref "sqlmap.md" %}})
+
+### Nothing Bites -- Hidden Surface
+
+- [ ] Look for parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks): [SSRF]({{% ref "web-ssrf.md" %}})
+- [ ] Review JavaScript source for hidden endpoints, API keys, GraphQL introspection paths

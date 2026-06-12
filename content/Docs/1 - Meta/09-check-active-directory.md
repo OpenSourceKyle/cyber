@@ -6,7 +6,8 @@ title = "09 - Check - Active Directory"
 
 {{< embed-section page="Docs/7 - Lateral Movement/active-directory" header="sync-clock" expanded=true >}}
 
-1. [ ] **RUN [BLOODHOUND]({{% ref "bloodhound.md" %}})** and mark everything owned -- This is the holy grail
+1. [ ] **RUN [BLOODHOUND]({{% ref "bloodhound.md" %}})** and mark everything owned -- This is the holy grail.
+    - Run both **SharpHound** and **RustHound** since they are not exhaustive
 
 ---
 
@@ -48,7 +49,7 @@ title = "09 - Check - Active Directory"
 
 #### User Identification
 
-1. [ ] Gather the [domain password policy using the discovered credentials]({{% ref "netexec.md#password-policy-enumeration" %}})
+1. [ ] Gather the [domain password policy using the discovered credentials]({{% ref "netexec.md#basic-enumeration" %}})
 
 2. [ ] Use the discovered credentials and a tool like [NetExec]({{% ref "netexec.md" %}}) to get all users, groups, and logged-on users against the server you have credentials for (ultimate goal is DC).
 

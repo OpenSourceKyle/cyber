@@ -72,25 +72,34 @@ This searches for `.php` files
 ffuf -ic -recursion -recursion-depth 1 -w /usr/share/wordlists/seclists/Discovery/Web-Content/directory-list-2.3-small.txt:FUZZ -e .php -u http://<TARGET>/FUZZ -v
 ```
 
-### Subdomain search
-
-```bash
-# NOTE: remember this will not find internal, private subdomains
-ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt -u http://FUZZ.<DOMAIN>
-```
-
 ### vHost Brute-Force
+
+**NOTE: watch the SECURE in http`S`**
 
 Just changes HTTP header
 
 ```bash
 # NOTE: filter out by response size since an HTTP response of 200 OK will always be received
 ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -H 'Host: FUZZ.<DOMAIN>' -u http://<TARGET>/ -fs <SIZE>
+
 # Add NEW vHosts to automatically resolve them later
 echo '<IP_ADDR> <VHOST>.<FQDN>' | sudo tee -a /etc/hosts
 ```
 
 ### Parameter fuzzing
+
+#### Discover Parameters
+
+- https://github.com/s0md3v/Arjun
+
+Arjun will attempt to discover all parameters.
+
+```bash
+pipx install arjun
+
+arjun -t 8 -oT arjun_parameter.txt -w large -m GET -u <TARGET>
+arjun -t 8 -oT arjun_parameter.txt -w large -m POST -u <TARGET>
+```
 
 #### GET
 

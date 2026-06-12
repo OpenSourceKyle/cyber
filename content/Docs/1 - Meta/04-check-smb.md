@@ -9,7 +9,7 @@ title = "04 - Check - SMB Enumeration"
     - [Enumerate Shares with NetExec]({{% ref "netexec.md#shares-enumeration" %}})
 
 2. [ ] Run comprehensive unauthenticated enumeration (users, groups, OS info, password policy)
-    - [Null Session Enumeration (nxc)]({{% ref "netexec.md#null-session-enumeration" %}})
+    - [Null Session Enumeration (nxc)]({{% ref "netexec.md#basic-enumeration" %}})
 
 3. [ ] Check SMB security posture -- determine if signing is required
     - Signing disabled on a host = relay candidate; add to relay target list

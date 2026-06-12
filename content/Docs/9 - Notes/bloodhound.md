@@ -24,8 +24,8 @@ tar -xvzf bloodhound-cli-linux-amd64.tar.gz
 # Start and reset password for BloodHound via Docker
 sudo systemctl enable --now docker
 sudo ./bloodhound-cli install
-netexec && sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
-#./bloodhound-cli resetpwd  # needed if PW not grabbed from install
+netexec ; sleep 5 && sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
+#sudo ./bloodhound-cli resetpwd  # needed if PW not grabbed from install
 ```
 
 ## Collecting Info
@@ -38,6 +38,8 @@ netexec && sed -i 's/bh_enabled = False/bh_enabled = True/' ~/.nxc/nxc.conf
 - Upload to Bloodhound: http://127.0.0.1:8080/ui/administration/file-ingest
 
 ### Windows
+
+#### SharpHound
 
 ```bash
 # EXE
@@ -61,7 +63,7 @@ This is helpful when on a non-Windows both or from outside of the domain:
 ```bash
 # Dependencies: https://github.com/g0h4n/RustHound-CE/blob/main/HELP.md#required-dependencies
 sudo apt update -y && sudo apt install -y gcc clang libclang-dev libgssapi-krb5-2 libkrb5-dev libsasl2-modules-gssapi-mit musl-tools gcc-mingw-w64-x86-64 cargo
-LIBGSSAPI_IMPL=mit cargo install rusthound-ce
+LIBGSSAPI_IMPL=mit cargo install rusthound-ce --locked
 
 $HOME/.cargo/bin/rusthound-ce --domain <DOMAIN> --ldapusername <USER> --ldappassword <PASSWORD> --ldapfqdn <DC_FQDN> --zip --collectionmethod All
 ```

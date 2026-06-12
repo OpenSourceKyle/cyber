@@ -19,8 +19,7 @@ cd ..
 source eyewitness-venv/bin/activate
 
 # SCAN using nmap XML results output
-mkdir ../scan_eyewitness
-python Python/EyeWitness.py --web -x ../scan_nmap_disc_all_ports.xml -d ../scan_eyewitness
+python Python/EyeWitness.py --web -d ../scan_eyewitness -x ../<NMAP>.xml
 ```
 
 ## Wordpress
@@ -111,7 +110,7 @@ curl -s <TARGET> | grep -i Joomla
 
 **Scanning**
 ```bash
-pip3 install droopescan 
+uv tool install droopescan
 
 droopescan scan joomla --url <TARGET>
 ```
@@ -133,7 +132,7 @@ curl -s <TARGET> | grep -m2 ""
 
 **Scanning**
 ```bash
-pip3 install droopescan
+uv tool install droopescan
 
 droopescan scan drupal --url <TARGET>
 ```

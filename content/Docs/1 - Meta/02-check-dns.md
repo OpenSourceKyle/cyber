@@ -13,12 +13,6 @@ title = "02 - Check - DNS Enumeration"
     - Run PTR/reverse lookups against discovered IP ranges
     - [DNS Enumeration]({{% ref "dns.md#enumeration" %}})
 
-3. [ ] Active subdomain brute force
-    - [Subdomain Brute Force]({{% ref "ffuf.md#subdomain-search" %}})
-    - Use multiple wordlists; combine with passive CT log findings
-
-### Vulnerability Analysis
-
-4. [ ] If internal network -- check LLMNR/NBT-NS exposure
+3. [ ] If internal network -- check LLMNR/NBT-NS exposure
     - [LLMNR & NBT-NS Poisoning]({{% ref "dns.md#llmnr-nbt-ns" %}})
     - If enabled and no SMB signing: run [Responder]({{% ref "protocol-poisoners.md" %}}) to capture hashes

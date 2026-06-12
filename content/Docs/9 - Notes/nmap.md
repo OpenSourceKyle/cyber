@@ -15,6 +15,13 @@ title = "Nmap"
 | **`Closed/Filtered`** | with `-sI` IP ID idle scan -- Can't tell if port is closed or blocked by a firewall |
 | **`Unfiltered`**      | with `-sA` `TCP ACK` scans -- Can't determine state, but port is accessible         |
 
+### Quickstart
+
+```bash
+# Quick + All Ports
+sudo nmap -n -Pn -sS -sV -sC --open --stats-every 30s -vvv -oA nmap_quick <TARGET> && sudo nmap -n -Pn -sS -p- -sV -sC --open --stats-every 30s -vvv -oA nmap_all <TARGET>
+```
+
 ### Host Discovery
 
 ```bash
@@ -66,10 +73,10 @@ sudo nmap -n -Pn -sS -p- --stats-every 30s -oA nmap_all_tcp --excludefile scope_
 
 ##### UDP
 
-Top 100 (full -p- UDP is impractically slow)
+Top 100 (full `-p-` UDP is impractically slow)
 
 ```bash
-sudo nmap -n -Pn -sU --top-ports 100 -v -oA nmap_all_udp --excludefile scope_excludes.txt -iL live_hosts.txt
+sudo nmap -n -Pn -sU --top-ports 100 -sV -sC --open -vvv --stats-every 30s -oA nmap_top100_udp --excludefile scope_excludes.txt -iL live_hosts.txt
 ```
 
 ### Service Scanning

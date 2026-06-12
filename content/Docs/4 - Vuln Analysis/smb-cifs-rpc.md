@@ -37,7 +37,7 @@ SMB/CIFS/RPC: TCP 135/139/445
 
 ## Enumeration (nxc)
 
-{{< embed-section page="Docs/9 - Notes/netexec" header="null-session-enumeration" >}}
+{{< embed-section page="Docs/9 - Notes/netexec" header="basic-enumeration" >}}
 
 {{< embed-section page="Docs/9 - Notes/netexec" header="user-enumeration" >}}
 

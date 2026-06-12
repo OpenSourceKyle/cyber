@@ -3,7 +3,7 @@ title = "03 - Check - Password Attacks"
 +++
 
 - **ALWAYS get the password lockout policy before any spraying.** One failed attempt per user per lockout window max. If policy is unknown, one attempt only -- then wait an hour before a second.
-    - [Password Policy Enumeration]({{% ref "netexec.md#password-policy-enumeration" %}})
+    - [Password Policy Enumeration]({{% ref "netexec.md#basic-enumeration" %}})
 - **REMEMBER:** spray against all types of authentication (domain and local `--local-auth`) or even application-level (like for MSSQL) when trying passwords
 
 ### When to Stop
@@ -31,7 +31,7 @@ Password attacks can be frustrating.
 
 | Service                | Tool                                                                                      |
 | ---------------------- | ----------------------------------------------------------------------------------------- |
-| AD / SMB / WinRM       | `nxc` -- [Password Spraying]({{% ref "netexec.md#password-spraying" %}})                  |
+| AD / SMB / WinRM       | `nxc` -- [Password Spraying]({{% ref "netexec.md" %}})                  |
 | Kerberos (no auth log) | [Kerbrute's passwordspray]({{% ref "online-credentials-attacks.md#kerberos-spraying" %}}) |
 | SSH / FTP / Web form   | `hydra` -- [Brute Force]({{% ref "online-credentials-attacks.md#brute-force-hydra" %}})   |
 

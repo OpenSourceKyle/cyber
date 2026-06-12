@@ -31,7 +31,7 @@ showmount -e <TARGET>
 # Mount NFS
 mkdir target-NFS
 sudo mount -t nfs -o nolock <TARGET>:/ ./target-NFS
-sudo umount ./target-NFS
+#sudo umount ./target-NFS
 
 # Enumerate
 sudo nmap -n -Pn -p111,2049 -sV -sC <TARGET>

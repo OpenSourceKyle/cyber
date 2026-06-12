@@ -30,16 +30,14 @@ title = "08 - Check - Windows Privilege Escalation"
 1. [ ] Check web configuration files and source code for vulnerabilities, hardcoded credentials, etc.
     - [Enumeration: Credential Hunting]({{% ref "finding-creds.md" %}})
     - Check the source code of all pages, including index
-    - Potential locations:
-        - `C:\xampp\htdocs` (common with Apache)
-        - `C:\inetpub`
+    {{< embed-section page="Docs/4 - Vuln Analysis/http" header="default-server-directories" >}}
 
 ### Default Methodology
 
 1. [ ] Review winPEAS output (launched at Initial Foothold step 1). Transfer to attack box and examine in a text editor.
     - [winPEAS]({{% ref "privilege-escalation-windows.md#winpeas" %}}) (Things to check)
     - [Seatbelt]({{% ref "privilege-escalation-windows.md#seatbelt" %}})
-    - [PowerUp / SharpUp]({{% ref "privilege-escalation-windows.md#sharpup" %}})
+    - [SharpUp]({{% ref "privilege-escalation-windows.md#sharpup" %}})
     - [Bloodhound]({{% ref "bloodhound.md" %}})
 
 2. [ ] Run the full Manual Survey -- identity, network, system info, installed software, processes, users, tasks.

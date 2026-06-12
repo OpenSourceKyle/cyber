@@ -29,40 +29,36 @@ echo '<IP_ADDR> <DOMAIN>' | sudo tee -a /etc/hosts
 
 ## Enumeration
 
+- Record Types:
+    - `ANY`: return all records -- sometimes doesnt work!
+    - `A`: IPv4 address
+    - `AAAA`: IPv6 address
+    - `CNAME`: Canonical Name
+    - `MX`: Mail Servers
+    - `NS`: Name Servers
+    - `PTR`: Pointer Record
+    - `SOA`: Start of Authority
+    - `TXT`: Text Records
+    - `SRV`: Service Records
+    - `CAA`: Certification Authority Authorization
+
 ```bash
-# Registrar Info
-whois <DOMAIN> | whois.txt
-
 # Query Nameserver for domain
-dig @<DNS_SERVER> ns <DOMAIN>
+dig @<DNS_SERVER> +noall +answer +authority ns <DOMAIN>
 # PTR Record or Reverse DNS Query
-dig @<DNS_SERVER> -x <DNS_SERVER>
-dig @<DNS_SERVER> 127.0.0.1
-# server version
-dig @<DNS_SERVER> CH TXT version.bind <DOMAIN>
-# all records
-dig @<DNS_SERVER> ANY <DOMAIN>
-# zone transfer
-dig @<DNS_SERVER> AXFR <DOMAIN>
-
-# --- Record Types ---
-# ANY: return all records -- sometimes doesnt work!
-# A: IPv4 address
-# AAAA: IPv6 address
-# CNAME: Canonical Name
-# MX: Mail Servers
-# NS: Name Servers
-# PTR: Pointer Record
-# SOA: Start of Authority
-# TXT: Text Records
-# SRV: Service Records
-# CAA: Certification Authority Authorization
-for type in A AAAA CNAME MX NS SOA SRV TXT CAA; do echo -e "\n--- $type ---"; dig @<DNS_SERVER> +short $type <DOMAIN>; done
+dig @<DNS_SERVER> +noall +answer +authority -x <DNS_SERVER>
+dig @<DNS_SERVER> +noall +answer +authority 127.0.0.1
+# Server version
+dig @<DNS_SERVER> +noall +answer +authority CH TXT version.bind
+# All records
+dig @<DNS_SERVER> +noall +answer +authority ANY <DOMAIN>
+# Zone transfer
+dig @<DNS_SERVER> +noall +answer +authority AXFR <DOMAIN>
+# The remaining ones
+for type in A AAAA CNAME MX NS SOA SRV TXT CAA ; do echo -e "\n--- $type ---" ; dig @<DNS_SERVER> +noall +answer +authority $type <DOMAIN> ; done
 ```
 
 ## Subdomains
-
-{{< embed-section page="Docs/9 - Notes/ffuf" header="subdomain-search">}}
 
 - Certificate Transparency: https://crt.sh/
 - https://domain.glass/

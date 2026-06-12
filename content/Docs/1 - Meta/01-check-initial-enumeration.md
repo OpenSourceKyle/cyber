@@ -6,15 +6,20 @@ title = "01 - Check - Initial Enumeration"
 
 1. [ ] Setup:
     - Engagement folder (via Obsidian template)
-    - [Flameshot](https://flameshot.org/) for screenshots
     - [tmux]({{% ref "tmux.md#install-and-setup" %}})
     - [Metasploit database]({{% ref "metasploit.md#database" %}})
     - [Bloodhound (w/`netexec` integration enabled)]({{% ref "bloodhound.md#setup" %}})
-    - Terminal:
+    - [Flameshot](https://flameshot.org/) for screenshots and terminal:
 ```bash
+pushd /usr/share/wordlists/ && sudo gunzip rockyou.txt.gz && popd
+sudp apt update -y
+sudo apt autoremove -y
+sudo apt install -y flameshot ripgrep
+sudo updatedb
 mkdir ~/my_data
 echo 'cd ~/my_data' >> ~/.bashrc
 echo 'cd ~/my_data' >> ~/.zshrc
+curl -LsSf https://astral.sh/uv/install.sh | sh && curl -LsSf https://astral.sh/uv/install.sh | sudo sh
 ```
 
 2. [ ] Login into [SysReptor and create engagement report](https://labs.sysre.pt/projects?ordering=-created)
@@ -31,7 +36,7 @@ echo 'cd ~/my_data' >> ~/.zshrc
 2. [ ] Start [Responder in Analyze mode]({{% ref "protocol-poisoners.md" %}}) as a background listener to passively capture hashes and hosts while scanning.
 
 3. [ ] Host Discovery
-    - [`nxc smb` or `nxc ssh` quick sweep (no creds)]({{% ref "netexec.md#null-session-enumeration" %}})
+    - [`nxc smb` or `nxc ssh` quick sweep (no creds)]({{% ref "netexec.md#basic-enumeration" %}})
     - [NMAP Host Discovery Scan]({{% ref "nmap.md#host-discovery" %}})
         - ARP scanning (same subnet only)
     - [ICMP sweep ping or fping]({{% ref "scanning.md#ping-sweep" %}})
@@ -64,4 +69,4 @@ echo 'cd ~/my_data' >> ~/.zshrc
 
 ## with Credentials
 
-9. [ ] [`netexec` sweep with ALL PROTOCOLS]({{% ref "netexec.md#password-spraying" %}})
+9. [ ] [`netexec` sweep with ALL PROTOCOLS]({{% ref "netexec.md#protocol-spraying" %}})

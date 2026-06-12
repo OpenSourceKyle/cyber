@@ -393,3 +393,15 @@ tunnel_start --tun ligolo
 session
 tunnel_start --tun ligolo
 ```
+
+### File Transfer
+
+This example shows how the target could request files from the attacker machine
+
+```bash
+python3 -m http.server <ATTACKER_FORWARD_PORT>
+listener_add --addr 0.0.0.0:<TARGET_LISTEN_PORT> --to 127.0.0.1:<ATTACKER_FORWARD_PORT> --tcp
+
+# Example request
+Invoke-WebRequest -Uri "http://<TARET>:<TARGET_LISTEN_PORT>/<FILE>"
+```
