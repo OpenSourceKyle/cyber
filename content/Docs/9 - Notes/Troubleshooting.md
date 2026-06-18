@@ -44,7 +44,7 @@ sudo dnsmasq \
 sudo sed -i '1s/^/nameserver 127.0.0.1\n/' /etc/resolv.conf
 
 # Verify
-dig <FQDN_TARGET>
+dig +short <FQDN_TARGET>
 ```
 
 ## Wine Installation

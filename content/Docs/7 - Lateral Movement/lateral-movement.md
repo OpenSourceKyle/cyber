@@ -264,17 +264,14 @@ set version 4a
 run -j
 jobs
 
-# Step 2a: in MSF
-use post/multi/manage/autoroute
-set SESSION <SESSION>
-set SUBNET <TARGET_SUBNET>
-run -j
-jobs
-route print
-
-# OR Step 2b: in MSF session
+# OR Step 2a: in MSF session
 run autoroute -s <TARGET_SUBNET>
 run autoroute -p
+
+# Step 2b: in MSF
+#unset RHOSTS  # avoids error
+run post/multi/manage/autoroute SUBNET=<SUBNET> SESSION=<SESSION>
+route
 ```
 
 ## Sshuttle

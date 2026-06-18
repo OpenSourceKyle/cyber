@@ -22,6 +22,12 @@ title = "Nmap"
 sudo nmap -n -Pn -sS -sV -sC --open --stats-every 30s -vvv -oA nmap_quick <TARGET> && sudo nmap -n -Pn -sS -p- -sV -sC --open --stats-every 30s -vvv -oA nmap_all <TARGET>
 ```
 
+```bash
+# Metasploit version
+db_nmap -n -Pn -sS -sV -sC --open --stats-every 30s -vvv -oA nmap_quick <TARGET>
+db_nmap -n -Pn -sS -p- -sV -sC --open --stats-every 30s -vvv -oA nmap_all <TARGET>
+```
+
 ### Host Discovery
 
 ```bash

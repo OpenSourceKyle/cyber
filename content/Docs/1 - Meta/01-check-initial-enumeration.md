@@ -12,9 +12,9 @@ title = "01 - Check - Initial Enumeration"
     - [Flameshot](https://flameshot.org/) for screenshots and terminal:
 ```bash
 pushd /usr/share/wordlists/ && sudo gunzip rockyou.txt.gz && popd
-sudp apt update -y
+sudo apt update -y
 sudo apt autoremove -y
-sudo apt install -y flameshot ripgrep
+sudo apt install -y --fix-missing flameshot ripgrep
 sudo updatedb
 mkdir ~/my_data
 echo 'cd ~/my_data' >> ~/.bashrc
@@ -46,7 +46,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh && curl -LsSf https://astral.sh/
 {{< embed-section page="Docs/9 - Notes/netexec" header="generating-hosts-file" expanded=true >}}
 
 4. [ ] For each active host, scan ALL TCP/UDP ports. Document each open port per host in Obsidian.
-    - [NMAP All Ports (TCP + UDP)]({{% ref "nmap.md#all-ports" %}})
+    - [NMAP All Ports (TCP + UDP)]({{% ref "nmap.md#quickstart" %}})
 
 5. [ ] For each open port, run service version scan with scripts and OS detection.
     - [NMAP service enumeration and OS detection]({{% ref "nmap.md#service-scanning" %}})

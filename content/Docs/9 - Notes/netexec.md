@@ -76,12 +76,12 @@ nxc smb <DC_FQDN> --generate-krb5-file krb5.conf && sudo mv -v /etc/krb5.conf /e
 
 **Get a TGT (saves to `<USER>.ccache`):**
 ```bash
-nxc smb <DC_FQDN> -u <USER> -p '<PASSWORD>' --generate-tgt <USER>
+nxc smb <DC_FQDN> -u <USER> -p '<PASSWORD>' -k --generate-tgt <USER>
 ```
 
 **Get a TGT from a PFX certificate:**
 ```bash
-nxc smb <DC_FQDN> -u '<USER>' --pfx-cert <CERT>.pfx --generate-tgt '<USER>'
+nxc smb <DC_FQDN> -u '<USER>' --pfx-cert <CERT>.pfx -k --generate-tgt '<USER>'
 ```
 
 **Use an existing TGT from ccache `--use-kcache` since `-k` alone tries fresh TGT request:**
@@ -169,7 +169,8 @@ done
 Single command covers users, groups, shares, and password policy via null/anonymous session:
 
 ```bash
-nxc smb <TARGET> -u '' -p '' --users --groups --shares --pass-pol --rid-brute 10000
+nxc smb <TARGET> -u '' -p '' --users --shares --pass-pol --rid-brute 10000
+nxc ldap <DC_FQDN> -u '' -p '' --groups
 ```
 
 ### User Enumeration
@@ -556,6 +557,22 @@ Active Directory Certificate Services (ADCS) is Windows' built-in PKI that issue
 
 ```bash
 netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M adcs
+```
+
+### Recover Dead AD Objects
+
+This uses an experimental `netexec` module to facilitate enumeration and recovery.
+
+```bash
+git clone https://github.com/Fabrizzio53/NetExec.git && cd NetExec
+```
+
+```bash
+# Show deleted objects
+uv run nxc/netexec.py ldap <DC_FQDN> -u <USER> -p <PASSWORD> -M tombstone -o ACTION=query
+
+# Restore object by its SID
+uv run nxc/netexec.py ldap <DC_FQDN> -u <USER> -p <PASSWORD> -M tombstone -o ACTION=restore ID=<SID>
 ```
 
 ### ASREPROAST

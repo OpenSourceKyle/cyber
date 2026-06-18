@@ -38,7 +38,7 @@ title = "🌐 HTTP: TCP 80/443"
 **Nginx:**
 - Web roots: `/usr/share/nginx/html`, `/var/www/html`
 - Config: `/etc/nginx/nginx.conf`
-- Sites: `/etc/nginx/sites-available/`, `/etc/nginx/sites-enabled/`, `/etc/nginx/conf.d/`
+- Sites: `/etc/nginx/sites-available/default`, `/etc/nginx/sites-enabled/default`, `/etc/nginx/conf.d/`
 - Logs: `/var/log/nginx/access.log`, `/var/log/nginx/error.log`
 
 **IIS:**

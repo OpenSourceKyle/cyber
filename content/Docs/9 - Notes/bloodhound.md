@@ -73,9 +73,9 @@ $HOME/.cargo/bin/rusthound-ce --domain <DOMAIN> --ldapusername <USER> --ldappass
 - https://github.com/dirkjanm/BloodHound.py
 
 ```bash
-pipx install bloodhound-ce
+uv tool install bloodhound-ce
 
-bloodhound-ce-python -d '<DOMAIN>' -u '<USER>' -p '<PASSWORD>' --auth-method ntlm -ns <DC_IP> --zip --outputprefix bh_logs -c All
+bloodhound-ce-python -d '<DOMAIN>' -u '<USER>' -p '<PASSWORD>' -ns <DC_IP> --auth-method auto --zip --outputprefix bh_logs -c All
 ```
 
 ## Analysis and Queries
