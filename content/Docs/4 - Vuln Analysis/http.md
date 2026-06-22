@@ -59,7 +59,7 @@ title = "🌐 HTTP: TCP 80/443"
 
 ```bash
 # WAF detection
-wafw00f <TARGET>
+wafw00f http://<TARGET>
 
 # Headers
 curl -skLI -o curl_http_headers.txt http://<TARGET>
@@ -71,7 +71,7 @@ curl -skLI http://<TARGET>/{sitemap.xml,robots.txt}
 whatweb --log-brief=whatweb_scan.txt --aggression 3 http://<TARGET>
 
 # Fingerprint + vuln scan
-nikto -o nikto_vuln_scan.txt -h http://<TARGET>
+nikto -o nikto_vuln_scan.txt -C all -h http://<TARGET>
 ```
 
 {{< embed-section page="Docs/9 - Notes/ffuf" header="vhost-brute-force" >}}
@@ -94,7 +94,7 @@ feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --dept
 # Bruteforce w/ File Extensions
 # LIN:  -x php,html,htm,txt,bak,zip,xml,json,js,sh,py,config
 # WIN:  -x asp,aspx,ashx,asmx,html,htm,txt,bak,zip,xml,json,js,config,cs
-feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 5 -o feroxbuster_dir_extensions --scan-dir-listings -x <EXTENSIONS> --insecure -u http://<TARGET>
+feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 5 -o feroxbuster_dir_extensions --scan-dir-listings --insecure -u http://<TARGET> -x <EXTENSIONS>
 ```
 
 ## Crawling

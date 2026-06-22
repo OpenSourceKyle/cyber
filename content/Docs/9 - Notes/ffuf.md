@@ -11,6 +11,11 @@ When fuzzing for file extensions, try to discern (or guess by searching for `ind
 
 ## Important Options
 
+**URL Encoding (e.g. for command injection payloads)**
+```bash
+  -enc                Encoders for keywords, eg. 'FUZZ:urlencode b64encode'
+```
+
 ```bash
 HTTP OPTIONS:
   -H               Header "Name: Value", separated by colon. Multiple -H flags are accepted.
@@ -56,7 +61,7 @@ EXAMPLE USAGE:
 
 ### Find file extension
 
-Although not perfect, most base pages will use `index` with the appropriate technology extension
+Although not perfect, most base pages will use `index` with the appropriate technology extension... this can help find some secrets
 
 ```bash
 # NOTE: already includes '.' so do not add to -u
@@ -76,7 +81,7 @@ ffuf -ic -recursion -recursion-depth 1 -w /usr/share/wordlists/seclists/Discover
 
 **NOTE: watch the SECURE in http`S`**
 
-Just changes HTTP header
+Just changes HTTP `Host:` header
 
 ```bash
 # NOTE: filter out by response size since an HTTP response of 200 OK will always be received
@@ -86,9 +91,15 @@ ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5
 echo '<IP_ADDR> <VHOST>.<FQDN>' | sudo tee -a /etc/hosts
 ```
 
+### Subdomain Brute-Force
+
+```bash
+ffuf -w /usr/share/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -u http://FUZZ.<DOMAIN>
+```
+
 ### Parameter fuzzing
 
-#### Discover Parameters
+#### Quick
 
 - https://github.com/s0md3v/Arjun
 
@@ -97,8 +108,8 @@ Arjun will attempt to discover all parameters.
 ```bash
 uv tool install arjun
 
-arjun -t 8 -oT arjun_parameter.txt -w large -m GET -u <TARGET>
-arjun -t 8 -oT arjun_parameter.txt -w large -m POST -u <TARGET>
+arjun -t 8 -oT arjun_parameter_get.txt -w large -m GET -u http://<TARGET>
+arjun -t 8 -oT arjun_parameter_post.txt -w large -m POST -u http://<TARGET>
 ```
 
 #### GET
@@ -129,7 +140,7 @@ for i in $(seq 1 100000) ; do echo $i >> ids.txt ; done
 ffuf -w <CUSTOM_WORDLIST>:FUZZ -u http://<TARGET>/<PAGE> -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d '<PARAM>=FUZZ' -fs <SIZE>
 
 ### USERNAMES
-ffuf -w /usr/share/seclists/Usernames/top-usernames-shortlist.txt:FUZZ -u http://<TARGET>/<PAGE> -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d '<PARAM>=FUZZ' -fs <SIZE>
+ffuf -w /usr/share/seclists/Usernames/Names/names.txt:FUZZ -u http://<TARGET>/<PAGE> -H 'Content-Type: application/x-www-form-urlencoded' -X POST -d '<PARAM>=FUZZ' -fs <SIZE>
 ```
 
 ```bash
