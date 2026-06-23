@@ -116,3 +116,80 @@ title = "05 - Check - Web Enumeration"
 
 - [ ] Look for parameters accepting URLs or destinations (`?url=`, `?dest=`, webhooks): [SSRF]({{% ref "web-ssrf.md" %}})
 - [ ] Review JavaScript source for hidden endpoints, API keys, GraphQL introspection paths
+
+---
+
+The same information said another way:
+
+# Big Picture
+
+1. Screenshot everything first (EyeWitness) -> triage by interest
+2. Prioritize `dev`/`staging`/`vault`/`git` named hosts
+3. Every input field maps to a vuln class -- match the observation, test that class first
+4. When something's "off" but unfamiliar -> note the behavior, research the class, don't freeze
+
+## By Observation: See This -> Test This First
+
+- **Upload form (CV, profile pic, attachment)**
+    - Unrestricted file upload. Test client-side bypass first (change Content-Type to image/png), then extension tricks. Find the upload dir (/uploads) to reach your shell.
+
+- **Parameter referencing a file (`?page=`, `?file=`, `?pl=`)**
+    - LFI / path traversal. Pull /etc/passwd to confirm, then log poisoning or source disclosure.
+
+- **Sequential ID in URL (`?id=9`, `/profile/123`, `/invoice/456`)**
+    - IDOR. Increment/decrement the number, see if you reach other users' data.
+
+- **Login form**
+    - In order: weak creds (admin:admin), SQLi auth bypass (`'`), username enumeration via error messages, then brute force (hydra) as last resort.
+
+- **Single quote throws a DB error**
+    - SQLi. Confirm with UNION, then sqlmap to dump.
+
+- **Search box / any field hitting a database**
+    - SQLi. Same flow.
+
+- **User-controllable text rendered back to other users (tickets, comments, profiles)**
+    - Stored/Blind XSS. Inject a callback payload, escalate to cookie theft.
+
+- **Input generates a PDF / document**
+    - SSRF to local file read. HTML/JS renders server-side -> XHR `file:///etc/passwd` payload.
+
+- **XML in the request body**
+    - XXE. Define an external entity pointing at /etc/passwd.
+
+- **Restricted shell / "monitoring console" / ping tool**
+    - Command injection. Bypass filters with `%0a`, `$IFS`, quote-splitting (`'i'd`).
+
+- **Registration form**
+    - Register, then hunt: privilege escalation at signup (role tampering), IDOR once inside, what new pages unlock.
+
+- **Non-standard HTTP methods allowed (OPTIONS shows PUT/TRACK)**
+    - HTTP verb tampering. Custom auth headers (`X-Custom-IP-Authorization`) may unlock hidden functionality.
+
+---
+
+## By Application/Service: Fingerprint -> Known Weakness
+
+- **WordPress**
+    - wpscan `-e ap` (plugins are the kill, not core). Old plugins = LFI/RCE. Then `-e u` for users -> brute force -> theme editor (404.php) for RCE.
+
+- **Drupal / Joomla**
+    - Version check. Old = Drupalgeddon/known CVE. Current = weak admin creds or vulnerable module only.
+
+- **GitLab / Gitea / self-hosted Git**
+    - Register if open, browse `/explore`. Hunt exposed repos for secrets, SSH keys, configs, and _hidden subdomains_ referenced in projects.
+
+- **Tomcat**
+    - /manager/html, default creds, WAR deploy for RCE.
+
+- **Jenkins**
+    - Script console (Groovy) = instant RCE if accessible.
+
+- **Drupal/WP/any CMS with `dev`, `staging`, `test`, `uat` in the name**
+    - Assume not hardened. Dig harder. Highest-value targets on the list.
+
+- **VPN / SSL portal (Fortinet, Citrix, Pulse)**
+    - Version-check for known CVE. Otherwise careful password spray (lockout risk).
+
+- **Key Vault / password manager / homegrown auth app**
+    - High data-exposure payoff. Worth dir brute-forcing for hidden upload/admin pages.
