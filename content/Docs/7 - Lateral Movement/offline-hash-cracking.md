@@ -103,7 +103,7 @@ done < <WORDLIST>
 
 ```bash
 # Create wordlist from website (lowercase, spider depth, min word length)
-cewl --lowercase -d <SPIDER_DEPTH> -m <MIN_WORD_LENGTH> -w <WORDLIST_FILENAME>
+cewl --lowercase -d <SPIDER_DEPTH> -m <MIN_WORD_LENGTH> -w <WORDLIST_FILENAME> http://<TARGET>
 ```
 
 **Hashcat rules:** Mutate a small keyword list into a large wordlist.

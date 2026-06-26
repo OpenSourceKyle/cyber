@@ -47,6 +47,50 @@ sudo sed -i '1s/^/nameserver 127.0.0.1\n/' /etc/resolv.conf
 dig +short <FQDN_TARGET>
 ```
 
+## Access Domain Names
+
+For a box that is not joined to the domain, but has domain access, add the DC (or DNS server) to resolve DNS names.
+
+**Split DNS Resolution (w/ VPN)**
+```bash
+# 1. Enable dnsmasq plugin (Global Config)
+sudo cp /etc/NetworkManager/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf.bak
+sudo sed -i '/\[main\]/a dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf
+
+# 2. Create the Domain Rule (Persistent)
+# Syntax: server=/domain.com/10.10.10.10
+echo "server=/<FQDN>/<DNS_SERVER>" | sudo tee /etc/NetworkManager/dnsmasq.d/split_dns.conf
+
+# 3. Restart NetworkManager to apply the plugin change
+sudo systemctl restart NetworkManager
+
+# 4. Configure the VPN Connection
+# Replace <CONNECTION_NAME> with your VPN profile name (e.g., 'tun0' or 'lab_vpn')
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns ""
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.never-default yes
+
+# 5. Reconnect VPN
+sudo nmcli connection down "<CONNECTION_NAME>"
+sudo nmcli connection up "<CONNECTION_NAME>"
+```
+
+**All DNS Resolution (no Internet access)**
+```bash
+# Configure the VPN connection to strictly use the Target DNS
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns "<DNS_SERVER>"
+sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
+
+# Reconnect to apply
+sudo nmcli connection down "<CONNECTION_NAME>"
+sudo nmcli connection up "<CONNECTION_NAME>"
+```
+
+**Verify**
+```bash
+nslookup <TARGET>
+```
+
 ## Wine Installation
 
 The Parrot OS PwnBox has some trouble with `wine` and `mono`, but this is necessary for Windows binaries like `ysoserial.exe`.

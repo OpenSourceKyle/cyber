@@ -99,8 +99,16 @@ sudo nmap -n -Pn -sn -sV -sC -O --excludefile scope_excludes.txt -iL live_hosts.
 
 ```bash
 wget https://github.com/andrew-d/static-binaries/raw/refs/heads/master/binaries/linux/x86_64/nmap && chmod +x nmap
+```
 
-./nmap -n -Pn -sT --stats-every 15s -vvv <TARGET_SUBNET>
+**Discovery-like Command (scans common ports)**
+```bash
+sudo ./nmap -n -sS -p21,22,23,53,80,135,139,389,443,445,1433,3389,5985,5986,8080 --open --stats-every 30s -vvv <SUBNET>
+```
+
+**Full Port Scan**
+```bash
+sudo ./nmap -p- -sS -Pn -n -T4 --min-rate 5000 -oN nmap_allports.txt -stats-every 30s -vvv <TARGET>
 ```
 
 ### Nmap Scripting Engine (NSE)

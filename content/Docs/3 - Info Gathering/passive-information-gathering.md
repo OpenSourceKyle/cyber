@@ -88,9 +88,9 @@ Check various sites, especially for different types of IT admins, to skim inform
 
 Passively, sampling the traffic can be a great way to understand the network insofar as hosts, services, and maybe even sometimes credentials
 
-{{< embed-section page="Docs/5 - Exploitation/protocol-poisoners" >}}
-
 ```bash
 # Sample the network traffic
 sudo tcpdump -i <INTERFACE> -w <OUTPUT_FILE>
 ```
+
+{{< embed-section page="Docs/5 - Exploitation/protocol-poisoners" >}}

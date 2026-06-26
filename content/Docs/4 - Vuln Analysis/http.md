@@ -62,7 +62,7 @@ title = "🌐 HTTP: TCP 80/443"
 wafw00f http://<TARGET>
 
 # Headers
-curl -skLI -o curl_http_headers.txt http://<TARGET>
+curl -skLIio- http://<TARGET>
 
 # Passive recon
 curl -skLI http://<TARGET>/{sitemap.xml,robots.txt}
@@ -75,6 +75,16 @@ nikto -o nikto_vuln_scan.txt -C all -h http://<TARGET>
 ```
 
 {{< embed-section page="Docs/9 - Notes/ffuf" header="vhost-brute-force" >}}
+
+## Crawling
+
+- https://github.com/projectdiscovery/katana
+
+```bash
+CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest
+
+katana -output katana_crawl.txt -depth 5 -u http://<TARGET>
+```
 
 ## Directory Brute-Forcing
 
@@ -95,16 +105,6 @@ feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --dept
 # LIN:  -x php,html,htm,txt,bak,zip,xml,json,js,sh,py,config
 # WIN:  -x asp,aspx,ashx,asmx,html,htm,txt,bak,zip,xml,json,js,config,cs
 feroxbuster -t 64 -w /usr/share/seclists/Discovery/Web-Content/common.txt --depth 5 -o feroxbuster_dir_extensions --scan-dir-listings --insecure -u http://<TARGET> -x <EXTENSIONS>
-```
-
-## Crawling
-
-- https://github.com/projectdiscovery/katana
-
-```bash
-CGO_ENABLED=1 go install github.com/projectdiscovery/katana/cmd/katana@latest
-
-katana -output katana_crawl.txt -depth 5 -u http://<TARGET>
 ```
 
 ## URL Encoding
