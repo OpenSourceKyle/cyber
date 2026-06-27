@@ -321,6 +321,7 @@ sudo ip tuntap add user $(whoami) mode tun ligolo
 sudo ip link set ligolo up
 sudo ip addr add <MY_IP_ON_SUBNET>/24 dev ligolo  # .252
 sudo ./proxy -selfcert -laddr 0.0.0.0:11601
+# sudo ip route add <SUBNET>/24 dev <INTERFACE>
 ```
 
 ### Target 

