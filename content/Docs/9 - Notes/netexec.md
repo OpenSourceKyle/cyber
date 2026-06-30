@@ -555,7 +555,7 @@ nxc ldap <DC_FQDN> -u <USER> -p '<PASS>' --get-sid
 
 ### gMSA Password Dump
 
-gMSA passwords are auto-rotating 240-byte machine-managed credentials stored in AD that can be retrieved as an NT hash by any principal explicitly granted `PrincipalsAllowedToRetrieveManagedPassword`.
+gMSA passwords are auto-rotating 240-byte machine-managed credentials stored in AD that can be retrieved as an NT hash by any principal explicitly granted `PrincipalsAllowedToRetrieveManagedPassword` or `ReadGMSAPassword` (BloodHound)
 
 Find who can read gMSA passwords, then dump the hash:
 
@@ -576,6 +576,8 @@ netexec ldap <DC_FQDN> -u <USER> -p '<PASSWORD>' -M adcs
 ```
 
 ### Recover Dead AD Objects
+
+- REQUIRES: `Reanimate Tombstones` or other direct permission on the object
 
 This uses an experimental `netexec` module to facilitate enumeration and recovery.
 
