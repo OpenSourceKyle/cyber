@@ -183,7 +183,7 @@ ffuf -w /opt/useful/seclists/Discovery/Web-Content/default-web-root-directory-li
 ### Windows
 
 ```bash
-ffuf -w /usr/share/seclists/Fuzzing/LFI/Windows/Windows-LFI-Payloads_by-adeadfed.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=FUZZ' -fs 0
+ffuf -w /usr/share/seclists/Fuzzing/LFI/LFI-Windows-adeadfed.txt:FUZZ -u 'http://<TARGET>/<PAGE>?<PARAMETER>=FUZZ' -fs 0
 ```
 
 Once confirmed, fuzz for accessible config files, logs, and sensitive paths:

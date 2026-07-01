@@ -45,6 +45,21 @@ fping -ag <TARGET_SUBNET>
 run post/multi/gather/ping_sweep RHOSTS=<TARGET_SUBNET>
 ```
 
+## Full TCP Port Scan
+
+Very slow but useful for adjacent targets when tunnels or proxies keep failing.
+
+```powershell
+$target = "172.16.210.21"
+1..65535 | % {
+    $client = New-Object System.Net.Sockets.TcpClient
+    $result = $client.BeginConnect($target,$_,$null,$null)
+    $success = $result.AsyncWaitHandle.WaitOne(100,$false)
+    if ($success -and $client.Connected) { "Port $_ is open" }
+    $client.Close()
+}
+```
+
 ## Metasploit
 
 ```bash
